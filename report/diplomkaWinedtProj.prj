@@ -1,0 +1,29 @@
+22 Patch Control
+
+0
+0
+1
+xholcn01-dp.tex
+4
+4
+0
+
+xholcn01-dp.tex
+TeX:UNIX
+403812347 1 -1 5512 -1 5460 0 0 1894 1164 0 1 137 340 -1 -1 0 0 79 -1 -1 79 1 0 5460 -1  0 -1 0
+xholcn01-dp-01-kapitoly-chapters.tex
+TeX:UNIX
+17936379 1 -1 0 -1 3751 26 26 694 631 1 1 89 525 -1 -1 0 0 3751 -1 -1 3751 1 0 3751 -1  0 -1 0
+xholcn01-dp-30-prilohy-appendices.tex
+TeX:UNIX
+17936379 1 -1 0 -1 36426 78 78 746 683 1 1 193 515 -1 -1 0 0 91 -1 -1 91 1 0 36426 -1  0 -1 0
+xholcn01-dp-20-literatura-bibliography.bib
+BibTeX
+1049586 0 0 1 153 41 52 52 720 657 0 1 361 693 -1 -1 0 0 16 0 0 16 1 0 41 153  0 -1 0
+
+*xholcn01-dp.tex
+>
+*xholcn01-dp-01-kapitoly-chapters
+*xholcn01-dp-20-literatura-bibliography
+*xholcn01-dp-30-prilohy-appendices
+<

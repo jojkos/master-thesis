@@ -1,0 +1,87 @@
+\chapter{Úvod}
+\blind{3}
+
+\chapter{Teorie}
+\begin{figure}
+    \begin{center}
+            \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
+    \end{center}
+	\caption{One image. \todo{Napsat pořádný titulek}}
+	\label{img:TODO}
+\end{figure}
+
+\section{Jazykové modely}
+\subsection{N-gram}
+\subsection{log-linear}
+
+\section{Neuronové sítě}
+\subsection{Rekurentní}
+\subsubsection{LSTM}
+\subsubsection{GRU}
+
+\section{Sequence to sequence modely}
+\subsection{Encoder-decoder architektura}
+\subsection{Attention}
+
+\section{Word embeddings}
+\subsection{word2vec}
+\subsection{glove}
+\subsection{fasttext}
+
+\section{Frameworky}
+Chci popsat různé frameworky ze kterých jsem vybíral a vysvětlit proč jsem zvolil Keras.
+\subsection{Tensorflow}
+\subsection{Theano}
+\subsection{CNTK}
+\subsection{Keras}
+
+\chapter{Návrh systému (Praxe, nové myšlenky, které práce přináší)}
+Rozhodl jsem se.
+Vymyslel jsem.
+Rozvrhl jsem.
+Vypočítal jsem.
+Odvodil jsem.
+Zjednodušil jsem.
+Vylepšil jsem.
+Navrhl jsem.
+Zjistil jsem.
+Vyzkoumal jsem.
+
+\section{Neformální návrh systému}
+Vyberu a použiju nějký dataset, který obsahuje zarovnané věty se stejným významem ve dvou různých jazycích. Tyto věty za pomocí nějakého tokenizeru rozdělím na jednotlivé tokeny (slova/značky jako vykřičník) a to bude vstup pro překládací model.
+
+Model bude sestavený z Embedding části, která převádí slova do vektorů s nějakým významem -- tedy z toho může neuronová síť něco použít, narozdíl od toho kdyby slova reprezentoval jen index. Pro tento účel použiju přednaučené embeddings od Facebooku (fasttext). Dále v modelu Encoder, který se sestává z vrstvy/vrstev rekurentní neuronové sítě (LSTM). Tímto Encoderem projde celá sekvence embeddings a vznikne tak "thought vector", což je význam dané věty převedený do nějakého velkého vektoru (latent dimension?). Z tohoto vektoru/prostoru pak Dekodér, což je také vrstva/vrstvy LSTM postupně generuje překlad po jednotlivých slovech. Na vstup nejdříve dostane startovací značku a jeho vnitřní stav (memory cell) se inicializuje stavem encoderu. Po každém vygenerovaném slovu dostane toto slovo na vstup a takto generuje tak dlouho, dokud nevygeneruje značku konec sekvence. Výstup z dekoderu je vrstva softmax o velikosti slovníku jazyka do kterého se překládá. Generovaná slova se vyberou buď jednoduchým argmaxem, tedy vybere se vždycky slovo s největší vycházející pravděpodobností a nebo nějakou pokročilejší metodou, jako je beam search.
+
+
+\section{Baseline systém v Moses}
+\todo{Jak rozlišit návrh a realizaci?}
+
+\section{Dataset/y}
+Jejich struktura, jak je zpracuji a použiji
+
+\chapter{Implementace, experimenty, vyhodnocení}
+Naprogramoval jsem.
+Posbíral jsem data.
+Pustil jsem to.
+Výsledky jsou takové.
+Je to tak a tak rychlé.
+
+\subsection{Bucketing}
+A padding. Rozdělení sekvencí na skupiny podle délky, abych nepaddingoval zbytečně a tím neplýtval výkon.
+
+\section{skóre BLEU}
+
+\chapter{Závěr}
+\begin{itemize}
+  \item Autor se ohlíží za tím, co udělal: „V práci je. Hlavní úspěchy jsou. Důležitými výsledky jsou. Podařilo se.“
+  \item Autor uvede nápady, které nestihl realizovat v podobě možností pokračování: „Ještě by šlo zkusit. Kdybych byl na začátku věděl, co vím teď, dělal bych.“
+  \item Autor (ve vlastním zájmu) rekapituluje, jak bylo naplněno zadání práce.
+\end{itemize}
+
+\subsection{Plány do budoucna}
+\begin{itemize}
+    \item použití bidirectional první vrstvy encoderu, pro lepší zachování contextu \cite{googleBridgingGap} na místo použití obrácených vstupů
+    \item použití wordpieces \cite{googleBridgingGap} místo celých slov pro lepší handling rare words
+    \item přidat attention \cite{attention}
+    \item přidat beam search \cite{nmtTutorial}, sehnat původní článek co přinesl beam search
+\end{itemize}

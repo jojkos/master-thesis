@@ -99,3 +99,23 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+local utils/
+podobneDp/
+zdroje/
+
+.idea/
+
+*.h5
+
+# latex
+*.dvi
+*.log
+*.blg
+*.aux
+*.ptc
+*.synctex
+*.toc
+*.bbl
+*.out
+*.bak
