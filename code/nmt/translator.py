@@ -14,6 +14,7 @@ from keras.layers import LSTM, Dense, Embedding, Input
 from keras.models import Model
 from keras.preprocessing.text import text_to_word_sequence
 from nltk import FreqDist
+import random
 
 # TODO how to properly log
 logging.basicConfig(level=logging.DEBUG,
@@ -38,7 +39,7 @@ class Translator(object):
                  in_lang, latent_dim,
                  log_folder, max_in_vocab_size, max_out_vocab_size, model_file, model_folder, num_samples,
                  reverse_input,
-                 target_lang, test_set, training_set, validaton_split):
+                 target_lang, test_dataset, training_dataset, validaton_split):
         self.batch_size = batch_size
         self.bucketing = bucketing
         self.bucket_range = bucket_range
@@ -57,12 +58,41 @@ class Translator(object):
         self.num_samples = num_samples
         self.reverse_input = reverse_input
         self.target_lang = target_lang
-        self.test_set = test_set
-        self.training_set = training_set
+        self.test_dataset_path = test_dataset
+        self.training_dataset_path = training_dataset
         self.validation_split = validaton_split
 
+        prepare_folders([self.log_folder, self.model_folder])
 
-    def tokenize(self, x_lines, y_lines):
+        self.training_dataset = self.prepare_training_dataset()
+        self.test_dataset = self.prepare_testing_dataset()
+
+        self.embedding_weights = None
+        if not os.path.isfile(self.model_weights_path) and self.embedding_path:
+            # load pretrained embeddings
+            self.embedding_weights = load_embedding_weights(self.embedding_path,
+                                                            self.training_dataset["x_ix_to_word"],
+                                                            limit=self.max_in_vocab_size)
+
+        self.model, self.encoder_model, self.decoder_model = self.define_models()
+
+        self.model.summary()
+
+        # logging for tensorboard
+        self.tensorboard_callback = TensorBoard(log_dir="{}{}".format(self.log_folder, time()),
+                                                write_graph=False)
+
+        logger.info("compiling model...")
+        # Run training
+        self.model.compile(optimizer='rmsprop', loss='categorical_crossentropy',
+                           metrics=['acc'])
+
+        if os.path.isfile(self.model_weights_path):
+            logger.info("Loading model weights from file..")
+            self.model.load_weights(self.model_weights_path)
+
+    @staticmethod
+    def tokenize(x_lines, y_lines):
         logger.info("tokenizing lines...")
         # TODO use tokenization from Moses so its same as for Moses baseline model
         x_word_seq = [text_to_word_sequence(x) for x in x_lines]
@@ -91,14 +121,14 @@ class Translator(object):
 
         return vocab
 
-    def get_vocabularies(self, x_word_seq, y_word_seq, max_in_vocab_size, max_out_vocab_size):
+    def get_vocabularies(self, x_word_seq, y_word_seq):
         logger.info("creating vocabularies...")
         # Creating the vocabulary set with the most common words
         # TODO how many most common words to use?
         dist = FreqDist(np.hstack(x_word_seq))
-        x_vocab = dist.most_common(max_in_vocab_size)
+        x_vocab = dist.most_common(self.max_in_vocab_size)
         dist = FreqDist(np.hstack(y_word_seq))
-        y_vocab = dist.most_common(max_out_vocab_size)
+        y_vocab = dist.most_common(self.max_out_vocab_size)
 
         # Creating an array of words from the vocabulary set,
         # we will use this array as index-to-word dictionary
@@ -133,8 +163,7 @@ class Translator(object):
 
     def encode_sequences(self, x_word_seq, y_word_seq,
                          x_max_seq_len, y_max_seq_len,
-                         x_word_to_ix, y_word_to_ix,
-                         reverse=True):
+                         x_word_to_ix, y_word_to_ix):
         """
         Take word sequences and convert them so that the model can be fit with them.
         Input words are just converted to integer index
@@ -155,7 +184,7 @@ class Translator(object):
 
         # prepare source sentences for embedding layer (encode to indexes)
         for i, seq in enumerate(x_word_seq):
-            if reverse:  # for better results according to paper Sequence to seq...
+            if self.reverse_input:  # for better results according to paper Sequence to seq...
                 seq = seq[::-1]
             for t, word in enumerate(seq):
                 if word in x_word_to_ix:
@@ -180,36 +209,32 @@ class Translator(object):
 
         return encoder_input_data, decoder_input_data, decoder_target_data
 
-    def prepare_training_dataset(self, dataset_path, input_lang, output_lang, num_samples, max_in_vocab_size,
-                                 max_out_vocab_size,
-                                 bucketing, bucket_range, reverse):
-        x_file_path = "{}.{}".format(dataset_path, input_lang)
-        x_lines = read_file_to_lines(x_file_path, num_samples)
+    def prepare_training_dataset(self):
+        x_file_path = "{}.{}".format(self.training_dataset_path, self.in_lang)
+        x_lines = read_file_to_lines(x_file_path, self.num_samples)
 
-        y_file_path = "{}.{}".format(dataset_path, output_lang)
-        y_lines = read_file_to_lines(y_file_path, num_samples)
+        y_file_path = "{}.{}".format(self.training_dataset_path, self.target_lang)
+        y_lines = read_file_to_lines(y_file_path, self.num_samples)
 
-        x_word_seq, y_word_seq, x_max_seq_len, y_max_seq_len = self.tokenize(x_lines, y_lines)
+        x_word_seq, y_word_seq, x_max_seq_len, y_max_seq_len = Translator.tokenize(x_lines, y_lines)
 
         x_ix_to_word, x_word_to_ix, x_vocab_len, y_ix_to_word, y_word_to_ix, y_vocab_len = self.get_vocabularies(
             x_word_seq,
-            y_word_seq,
-            max_in_vocab_size,
-            max_out_vocab_size)
+            y_word_seq
+        )
 
-        if bucketing:
+        if self.bucketing:
             encoder_input_data = []
             decoder_input_data = []
             decoder_target_data = []
 
-            buckets = split_to_buckets(x_word_seq, y_word_seq, bucket_range, x_max_seq_len, y_max_seq_len)
+            buckets = split_to_buckets(x_word_seq, y_word_seq, self.bucket_range, x_max_seq_len, y_max_seq_len)
 
             for ix, bucket in buckets.items():
                 enc_in, dec_in, dec_tar = self.encode_sequences(
                     bucket["x_word_seq"], bucket["y_word_seq"],
                     bucket["x_max_seq_len"], bucket["y_max_seq_len"],
-                    x_word_to_ix, y_word_to_ix,
-                    reverse=reverse
+                    x_word_to_ix, y_word_to_ix
                 )
 
                 encoder_input_data.append(enc_in)
@@ -219,8 +244,7 @@ class Translator(object):
             encoder_input_data, decoder_input_data, decoder_target_data = self.encode_sequences(
                 x_word_seq, y_word_seq,
                 x_max_seq_len, y_max_seq_len,
-                x_word_to_ix, y_word_to_ix,
-                reverse=reverse
+                x_word_to_ix, y_word_to_ix
             )
 
             encoder_input_data = [encoder_input_data]
@@ -237,61 +261,66 @@ class Translator(object):
             "decoder_target_data": decoder_target_data
         }
 
-    def prepare_testing_dataset(self, dataset_path, input_lang, output_lang, num_samples,
-                                x_word_to_ix, y_word_to_ix, y_ix_to_word, y_vocab_len):
-        x_file_path = "{}.{}".format(dataset_path, input_lang)
-        x_lines = read_file_to_lines(x_file_path, num_samples)
+    def prepare_testing_dataset(self):
+        """
+        # vocabularies of test dataset has to be the same as of training set
+        # otherwise embeddings would not correspond are use OOV
+        # and y one hot encodings wouldnt correspond either
 
-        y_file_path = "{}.{}".format(dataset_path, output_lang)
-        y_lines = read_file_to_lines(y_file_path, num_samples)
+        Returns:
 
-        x_word_seq, y_word_seq, x_max_seq_len, y_max_seq_len = self.tokenize(x_lines, y_lines)
+        """
+        x_file_path = "{}.{}".format(self.training_dataset_path, self.in_lang)
+        x_lines = read_file_to_lines(x_file_path, self.num_samples)
+
+        y_file_path = "{}.{}".format(self.training_dataset_path, self.target_lang)
+        y_lines = read_file_to_lines(y_file_path, self.num_samples)
+
+        x_word_seq, y_word_seq, x_max_seq_len, y_max_seq_len = Translator.tokenize(x_lines, y_lines)
 
         encoder_input_data, decoder_input_data, decoder_target_data = self.encode_sequences(
             x_word_seq, y_word_seq,
             x_max_seq_len, y_max_seq_len,
-            x_word_to_ix, y_word_to_ix,
-            reverse=True
+            self.training_dataset["x_word_to_ix"], self.training_dataset["y_word_to_ix"]
         )
 
         return {
-            "y_ix_to_word": y_ix_to_word,
-            "y_vocab_len": y_vocab_len,
+            "y_ix_to_word": self.training_dataset["y_ix_to_word"],
+            "y_vocab_len": self.training_dataset["y_vocab_len"],
             "y_max_seq_len": y_max_seq_len,
             "encoder_input_data": encoder_input_data,
             "decoder_input_data": decoder_input_data,
             "decoder_target_data": decoder_target_data
         }
 
-    def define_models(self, x_vocab_len, y_vocab_len,
-                      latent_dim, emmbedding_dim, embedding_weights=None):
+    def define_models(self):
         logger.info("Creating models...")
         # Define an input sequence and process it.
         encoder_inputs = Input(shape=(None,))
 
-        if embedding_weights is not None:
-            embedding_weights = [embedding_weights]  # Embedding layer wantes list as parameter
+        if self.embedding_weights is not None:
+            self.embedding_weights = [self.embedding_weights]  # Embedding layer wantes list as parameter
         # TODO trainable False or True?
         # TODO according to https://keras.io/layers/embeddings/
         # input dim should be +1 when used with mask_zero..is it correctly set here?
-        embedding = Embedding(x_vocab_len, emmbedding_dim,
-                              weights=embedding_weights, mask_zero=True)
+        embedding = Embedding(self.training_dataset["x_vocab_len"], self.embedding_dim,
+                              weights=self.embedding_weights, mask_zero=True)
         embedding_outputs = embedding(encoder_inputs)
 
-        encoder = LSTM(latent_dim, return_state=True)
+        encoder = LSTM(self.latent_dim, return_state=True)
         encoder_outputs, state_h, state_c = encoder(embedding_outputs)
         # We discard `encoder_outputs` and only keep the states.
         encoder_states = [state_h, state_c]
 
         # Set up the decoder, using `encoder_states` as initial state.
-        decoder_inputs = Input(shape=(None, y_vocab_len))
+        decoder_inputs = Input(shape=(None, self.training_dataset["y_vocab_len"]))
         # We set up our decoder to return full output sequences,
         # and to return internal states as well. We don't use the
         # return states in the training model, but we will use them in inference.
-        decoder_lstm = LSTM(latent_dim, return_sequences=True, return_state=True)
+        decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
         decoder_outputs, _, _ = decoder_lstm(decoder_inputs,
                                              initial_state=encoder_states)
-        decoder_dense = Dense(y_vocab_len, activation='softmax')
+        decoder_dense = Dense(self.training_dataset["y_vocab_len"], activation='softmax')
         decoder_outputs = decoder_dense(decoder_outputs)
 
         # Define the model that will turn
@@ -363,135 +392,102 @@ class Translator(object):
         return decoded_sentence
 
     @staticmethod
-    def encode_text_to_input_seq(text, x_word_to_ix):
+    def encode_text_to_input_seq(text, word_to_ix):
         sequences = text_to_word_sequence(text)
         x = np.zeros((1, len(text)), dtype='float32')
 
         for i, seq in enumerate(sequences):
-            if seq in x_word_to_ix:
-                ix = x_word_to_ix[seq]
+            if seq in word_to_ix:
+                ix = word_to_ix[seq]
             else:
                 ix = Translator.UNK_ID
             x[0][i] = ix
 
         return x
 
-    def run(self):
-        prepare_folders([self.log_folder, self.model_folder])
-
-        training_dataset = self.prepare_training_dataset(
-            dataset_path=self.test_set, input_lang=self.in_lang, output_lang=self.target_lang,
-            num_samples=self.num_samples, max_in_vocab_size=self.max_in_vocab_size,
-            max_out_vocab_size=self.max_out_vocab_size, bucketing=self.bucketing, bucket_range=self.bucket_range,
-            reverse=self.reverse_input
-        )
-
-        embedding_weights = None
-
-        if not os.path.isfile(self.model_weights_path) and self.embedding_path:
-            # load pretrained embeddings
-            embedding_weights = load_embedding_weights(self.embedding_path,
-                                                       training_dataset["x_ix_to_word"],
-                                                       limit=self.max_in_vocab_size)
-
-        model, encoder_model, decoder_model = self.define_models(
-            training_dataset["x_vocab_len"],
-            training_dataset["y_vocab_len"],
-            self.latent_dim, self.embedding_dim,
-            embedding_weights=embedding_weights
-        )
-
-        model.summary()
-
-        # logging for tensorboard
-        tensorboard = TensorBoard(log_dir="{}{}".format(self.log_folder, time()),
-                                  write_graph=False)
-
-        # Run training
-        model.compile(optimizer='rmsprop', loss='categorical_crossentropy',
-                      metrics=['acc'])
-
-        if os.path.isfile(self.model_weights_path):
-            logger.info("Loading model weights from file..")
-            model.load_weights(self.model_weights_path)
-
+    def fit(self):
+        logger.info("fitting the model...")
         for i in range(self.epochs):
             logger.info("Epoch {}".format(i + 1))
 
-            for j in range(len(training_dataset["encoder_input_data"])):
+            for j in range(len(self.training_dataset["encoder_input_data"])):
                 if self.bucketing:
                     logger.info("Bucket {}".format(j))
 
-                model.fit(
+                self.model.fit(
                     [
-                        training_dataset["encoder_input_data"][j],
-                        training_dataset["decoder_input_data"][j]
+                        self.training_dataset["encoder_input_data"][j],
+                        self.training_dataset["decoder_input_data"][j]
                     ],
-                    training_dataset["decoder_target_data"][j],
+                    self.training_dataset["decoder_target_data"][j],
                     batch_size=self.batch_size,
                     epochs=1,
                     validation_split=self.validation_split,
-                    callbacks=[tensorboard]
+                    callbacks=[self.tensorboard_callback]
                 )
 
-            model.save_weights(self.model_weights_path)
+                self.model.save_weights(self.model_weights_path)
 
-        # vocabularies of test dataset has to be the same as of training set
-        # otherwise embeddings would not correspond are use OOV
-        # and y one hot encodings wouldnt correspond either
-        test_dataset = self.prepare_testing_dataset(
-            self.test_set, self.in_lang, self.target_lang, self.num_samples,
-            training_dataset["x_word_to_ix"],
-            training_dataset["y_word_to_ix"],
-            training_dataset["y_ix_to_word"],
-            training_dataset["y_vocab_len"]
-        )
+    def evaluate(self):
+        logger.info("evaluating the model...")
 
         # TODO probably create 4th model without decoder_input_data for evaluation?
         # maybe not
-        model.evaluate(
+        self.model.evaluate(
             [
-                test_dataset["encoder_input_data"],
-                test_dataset["decoder_input_data"]
+                self.test_dataset["encoder_input_data"],
+                self.test_dataset["decoder_input_data"]
             ],
-            test_dataset["decoder_target_data"],
+            self.test_dataset["decoder_target_data"],
             batch_size=self.batch_size
         )
 
         if self.eval_translation:
             logger.info("Translating test dataset for BLEU evaluation...")
-            path = self.test_set + "." + self.target_lang + ".translated"
+            path = self.test_dataset_path + "." + self.target_lang + ".translated"
 
             with open(path, "w", encoding="utf-8") as out_file:
-                for seq in test_dataset["encoder_input_data"]:
+                for seq in self.test_dataset["encoder_input_data"]:
                     decoded_sentence = self.decode_sequence(
-                        seq, encoder_model, decoder_model,
-                        test_dataset["y_ix_to_word"],
-                        test_dataset["y_vocab_len"],
-                        test_dataset["y_max_seq_len"]
+                        seq, self.encoder_model, self.decoder_model,
+                        self.test_dataset["y_ix_to_word"],
+                        self.test_dataset["y_vocab_len"],
+                        self.test_dataset["y_max_seq_len"]
                     )
 
                     out_file.write(decoded_sentence + "\n")
 
-        # Take one sequence (part of the training test)
-        # for trying out decoding.
-        # for i in range(50, 60):
+                    # TODO moses
 
-        i = 156
+    def translate(self, seq=None):
+        """
 
-        input_seq = training_dataset["encoder_input_data"][i]
-        # input_seq = encode_text_to_input_seq("kočka chodí dírou", training_dataset["x_word_to_ix"])
+        Translates either given sequence or random sequence from training source dataset to target language
 
-        input_seq = input_seq.reshape((1, training_dataset["x_max_seq_len"]))
+        Args:
+            seq: if given, sequence that will be translated from source to target language.
+
+        """
+        expected_seq = None
+
+        if seq:
+            encoded_seq = Translator.encode_text_to_input_seq(seq, self.training_dataset["x_word_to_ix"])
+        else:
+            # TODO what about bucketing
+            encoder_input_data = self.training_dataset["encoder_input_data"][0]
+            i = random.randint(0, len(encoder_input_data) - 1)
+            encoded_seq = encoder_input_data[i]
+            seq = " ".join(self.training_dataset["x_word_seq"][i])
+            expected_seq = " ".join(self.training_dataset["y_word_seq"][i][1:-1])
+            encoded_seq = encoded_seq.reshape((1, len(encoded_seq)))
+
         decoded_sentence = self.decode_sequence(
-            input_seq, encoder_model, decoder_model,
-            training_dataset["y_ix_to_word"],
-            training_dataset["y_vocab_len"],
-            training_dataset["y_max_seq_len"]
+            encoded_seq, self.encoder_model, self.decoder_model,
+            self.training_dataset["y_ix_to_word"],
+            self.training_dataset["y_vocab_len"],
+            50 # TODO y_max_seq_len
         )
-        print('-')
-        print('Input sentence:', " ".join(training_dataset["x_word_seq"][i]))
-        print('Expected sentence:', " ".join(training_dataset["y_word_seq"][i][1:-1]))
-        print('Decoded sentence:', decoded_sentence)
 
-        # TODO moses
+        logger.info("Input sequence: {}".format(seq))
+        logger.info("Expcected sentence: {}".format(expected_seq))
+        logger.info("Translated sentence: {}".format(decoded_sentence))

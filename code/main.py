@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 def add_arguments(parser):
     """Build ArgumentParser."""
-    parser.add_argument("--training_set", type=str, help="Path to the training set", required=True)
-    parser.add_argument("--test_set", type=str, required=True,
+    parser.add_argument("--training_dataset", type=str, help="Path to the training set", required=True)
+    parser.add_argument("--test_dataset", type=str, required=True,
                         help="Path to the test set. Dataset are two files (one source one target language)."
                              + "Each line of a file is one sequence corresponding with the line of the second file.")
     parser.add_argument("--in_lang", type=str, help="Source language (dataset file extension)", required=True)
@@ -46,7 +46,7 @@ def add_arguments(parser):
                         help="Whether to generate translation for the test dataset and then compute the BLEU score")
 
 
-# python nmt.py --training_set "data/anki_ces-eng" --test_set "data/news-commentary-v9.cs-en" --in_lang "cs" --target_lang "en"
+# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/news-commentary-v9.cs-en" --in_lang "cs" --target_lang "en" --latent_dim 100 --num_samples 100
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the Translator class')
     add_arguments(parser)
@@ -63,12 +63,17 @@ def main():
         latent_dim=args.latent_dim, log_folder=args.log_folder, max_in_vocab_size=args.max_in_vocab_size,
         max_out_vocab_size=args.max_out_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
         num_samples=args.num_samples, reverse_input=args.reverse_input, target_lang=args.target_lang,
-        test_set=args.test_set, training_set=args.training_set, validaton_split=args.validation_split
+        test_dataset=args.test_dataset, training_dataset=args.training_dataset, validaton_split=args.validation_split
     )
-    translator.run()
+    translator.fit()
+    translator.evaluate()
 
-    # TODO instead of run => fit, evaluate?, translate(_seq/s)
+    translator.translate()
+    translator.translate("kočka chodí dírou")
+
     # TODO refactor methods in translator to use self instead of parameters
+    # TODO class for dataset
+    # TODO class for encoder/decoder
 
 
 if __name__ == "__main__":
