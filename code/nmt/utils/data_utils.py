@@ -5,9 +5,10 @@ import random
 import os
 import errno
 
-
 import numpy as np
 from gensim.models import KeyedVectors
+from keras.preprocessing.text import text_to_word_sequence
+from nmt import SpecialSymbols
 from gensim.models.wrappers import FastText
 
 random.seed(0)
@@ -205,6 +206,35 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
         del buckets[ix]
 
     return buckets
+
+
+def tokenize(x_lines, y_lines):
+    logger.info("tokenizing lines...")
+    # TODO use tokenization from Moses so its same as for Moses baseline model
+    x_word_seq = [text_to_word_sequence(x) for x in x_lines]
+    y_word_seq = [[SpecialSymbols.GO] + text_to_word_sequence(y) + [SpecialSymbols.EOS] for y in y_lines]
+
+    # Retrieving max sequence length for both source and target
+    x_max_seq_len = max(len(seq) for seq in x_word_seq)
+    y_max_seq_len = max(len(seq) for seq in y_word_seq)
+
+    logger.info("Max sequence length for inputs: {}".format(x_max_seq_len))
+    logger.info("Max sequence length for targets: {}".format(y_max_seq_len))
+
+    return x_word_seq, y_word_seq, x_max_seq_len, y_max_seq_len
+
+
+def split_lines(lines):
+    word_seq = []
+    max_seq_len = 0
+
+    for line in lines:
+        word_seq.append(line.split(" "))
+
+        if len(word_seq) > max_seq_len:
+            max_seq_len = len(word_seq)
+
+    return word_seq, max_seq_len
 
 
 if __name__ == "__main__":

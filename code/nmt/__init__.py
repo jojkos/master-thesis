@@ -1,1 +1,1 @@
-from .translator import Translator
+from .special_symbols import SpecialSymbols

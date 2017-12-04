@@ -117,3 +117,6 @@ local utils/
 *.bbl
 *.out
 *.bak
+
+code/logs/
+code/model/

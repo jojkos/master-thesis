@@ -3,7 +3,7 @@
 
 import logging
 import argparse
-from nmt import Translator
+from nmt.translator import Translator
 
 # TODO how to properly log
 logging.basicConfig(level=logging.DEBUG,
