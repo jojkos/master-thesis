@@ -28,9 +28,9 @@ def add_arguments(parser):
                         help="TODO maybe num_units instead? size of each network layer")
     parser.add_argument("--num_samples", type=int, default=1000,
                         help="How many samples to take from the dataset, 0 for all of them")
-    parser.add_argument("--max_in_vocab_size", type=int, default=15000,
+    parser.add_argument("--max_source_vocab_size", type=int, default=15000,
                         help="Maximum size of source vocabulary, 0 for unlimited")
-    parser.add_argument("--max_out_vocab_size", type=int, default=15000,
+    parser.add_argument("--max_target_vocab_size", type=int, default=15000,
                         help="Maximum size of target vocabulary, 0 for unlimited")
     parser.add_argument("--embedding_path", type=str, default=None, help="Path to pretrained fastText embeddings file")
     parser.add_argument("--embedding_dim", type=int, default=300, help="Dimension of embeddings")
@@ -44,9 +44,11 @@ def add_arguments(parser):
                         help="Whether to reverse source sequences (optimization for better learning)")
     parser.add_argument("--eval_translation", type=bool, default=True,
                         help="Whether to generate translation for the test dataset and then compute the BLEU score")
+    parser.add_argument("--clear", type=bool, default=False,
+                        help="Whether to delete old weights and logs before running")
 
 
-# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/news-commentary-v9.cs-en" --in_lang "cs" --target_lang "en" --latent_dim 100 --num_samples 100
+# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/news-commentary-v9.cs-en" --in_lang "cs" --target_lang "en" --latent_dim 100 --num_samples 100 --clear True
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the Translator class')
     add_arguments(parser)
@@ -60,10 +62,11 @@ def main():
         batch_size=args.batch_size, bucketing=args.bucketing, bucket_range=args.bucket_range,
         embedding_dim=args.embedding_dim, embedding_path=args.embedding_path, epochs=args.epochs,
         eval_translation=args.eval_translation, in_lang=args.in_lang,
-        latent_dim=args.latent_dim, log_folder=args.log_folder, max_in_vocab_size=args.max_in_vocab_size,
-        max_out_vocab_size=args.max_out_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
+        latent_dim=args.latent_dim, log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
+        max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
         num_samples=args.num_samples, reverse_input=args.reverse_input, target_lang=args.target_lang,
-        test_dataset=args.test_dataset, training_dataset=args.training_dataset, validaton_split=args.validation_split
+        test_dataset=args.test_dataset, training_dataset=args.training_dataset, validaton_split=args.validation_split,
+        clear=args.clear
     )
     translator.fit()
     translator.evaluate()

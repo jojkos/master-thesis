@@ -4,6 +4,7 @@ import logging
 import random
 import os
 import errno
+import shutil
 
 import numpy as np
 from gensim.models import KeyedVectors
@@ -15,8 +16,16 @@ random.seed(0)
 logger = logging.getLogger(__name__)
 
 
-def prepare_folder(path):
+def prepare_folder(path, clear):
     logger.debug("preparing folder {}".format(path))
+
+    if clear:
+        try:
+            logger.info("deleting folder {}".format(path))
+            shutil.rmtree(path)
+        except:
+            pass
+
     try:
         os.makedirs(path)
     except OSError as e:
@@ -27,9 +36,9 @@ def prepare_folder(path):
             logger.debug("folder {} already exists".format(path))
 
 
-def prepare_folders(paths):
+def prepare_folders(paths, clear):
     for path in paths:
-        prepare_folder(path)
+        prepare_folder(path, clear)
 
 
 def read_file_to_lines(path, max_lines):
