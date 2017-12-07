@@ -30,8 +30,9 @@ class Translator(object):
 
     """
 
-    def __init__(self, batch_size, bucketing, bucket_range, embedding_dim, embedding_path, epochs, eval_translation,
-                 in_lang, latent_dim,
+    def __init__(self, batch_size, bucketing, bucket_range, embedding_dim, embedding_path,
+                 max_embedding_num, epochs, eval_translation,
+                 source_lang, latent_dim,
                  log_folder, max_source_vocab_size, max_target_vocab_size, model_file, model_folder, num_samples,
                  reverse_input,
                  target_lang, test_dataset, training_dataset, validaton_split, clear):
@@ -40,16 +41,17 @@ class Translator(object):
         self.bucket_range = bucket_range
         self.embedding_dim = embedding_dim
         self.embedding_path = embedding_path
+        self.max_embedding_num = max_embedding_num
         self.epochs = epochs
         self.eval_translation = eval_translation
-        self.in_lang = in_lang
+        self.source_lang = source_lang
         self.latent_dim = latent_dim
         self.log_folder = log_folder
         self.max_source_vocab_size = max_source_vocab_size
         self.max_target_vocab_size = max_target_vocab_size
         # self.model_file = model_file
         self.model_folder = model_folder
-        self.model_weights_path = "{}{}".format(model_folder, model_file)
+        self.model_weights_path = "{}".format(os.path.join(model_folder, model_file))
         self.num_samples = num_samples
         self.reverse_input = reverse_input
         self.target_lang = target_lang
@@ -60,12 +62,14 @@ class Translator(object):
 
         utils.prepare_folders([self.log_folder, self.model_folder], clear)
 
-        self.training_dataset = Dataset(self.training_dataset_path, self.in_lang, self.target_lang,
+        self.training_dataset = Dataset(self.training_dataset_path, self.source_lang, self.target_lang,
                                         self.num_samples,
                                         True)  # TODO probably create parameter for it (tokenize), Moses tokenization will be used later on
-        self.test_dataset = Dataset(self.test_dataset_path, self.in_lang, self.target_lang,
+        self.test_dataset = Dataset(self.test_dataset_path, self.source_lang, self.target_lang,
                                     self.num_samples,
                                     True)  # TODO probably create parameter for it (tokenize), Moses tokenization will be used later on
+
+        logger.info("There are {} samples in datasets".format(self.training_dataset.num_samples))
 
         self.source_vocab = Vocabulary(self.training_dataset.x_word_seq, self.max_source_vocab_size)
         self.target_vocab = Vocabulary(self.training_dataset.y_word_seq, self.max_target_vocab_size)
@@ -78,14 +82,14 @@ class Translator(object):
             # load pretrained embeddings
             self.embedding_weights = utils.load_embedding_weights(self.embedding_path,
                                                                   self.source_vocab.ix_to_word,
-                                                                  limit=self.max_source_vocab_size)
+                                                                  limit=self.max_embedding_num)
 
         self.model, self.encoder_model, self.decoder_model = self._define_models()
 
         self.model.summary()
 
         # logging for tensorboard
-        self.tensorboard_callback = TensorBoard(log_dir="{}{}".format(self.log_folder, time()),
+        self.tensorboard_callback = TensorBoard(log_dir="{}".format(os.path.join(self.log_folder, str(time()))),
                                                 write_graph=False)
 
         logger.info("compiling model...")

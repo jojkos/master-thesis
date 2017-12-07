@@ -17,7 +17,7 @@ def add_arguments(parser):
     parser.add_argument("--test_dataset", type=str, required=True,
                         help="Path to the test set. Dataset are two files (one source one target language)."
                              + "Each line of a file is one sequence corresponding with the line of the second file.")
-    parser.add_argument("--in_lang", type=str, help="Source language (dataset file extension)", required=True)
+    parser.add_argument("--source_lang", type=str, help="Source language (dataset file extension)", required=True)
     parser.add_argument("--target_lang", type=str, help="Target language (dataset file extension)", required=True)
     parser.add_argument("--model_folder", type=str, default="model/", help="Path where the result model will be stored")
     parser.add_argument("--log_folder", type=str, default="logs/", help="Path where the result logs will be stored")
@@ -26,14 +26,16 @@ def add_arguments(parser):
     parser.add_argument("--batch_size", type=int, default=64, help="Size of one batch")
     parser.add_argument("--latent_dim", type=int, default=256,
                         help="TODO maybe num_units instead? size of each network layer")
-    parser.add_argument("--num_samples", type=int, default=1000,
-                        help="How many samples to take from the dataset, 0 for all of them")
+    parser.add_argument("--num_samples", type=int, default=-1,
+                        help="How many samples to take from the dataset, -1 for all of them")
     parser.add_argument("--max_source_vocab_size", type=int, default=15000,
-                        help="Maximum size of source vocabulary, 0 for unlimited")
+                        help="Maximum size of source vocabulary")
     parser.add_argument("--max_target_vocab_size", type=int, default=15000,
-                        help="Maximum size of target vocabulary, 0 for unlimited")
+                        help="Maximum size of target vocabulary")
     parser.add_argument("--embedding_path", type=str, default=None, help="Path to pretrained fastText embeddings file")
     parser.add_argument("--embedding_dim", type=int, default=300, help="Dimension of embeddings")
+    parser.add_argument("--max_embedding_num", type=int, default=None,
+                        help="how many first lines from embedding file should be loaded, None means all of them(irony)")
     parser.add_argument("--validation_split", type=float, default=0.2,
                         help="How big proportion of a development dataset should be used for validation during fiting")
     parser.add_argument("--bucketing", type=bool, default=False,
@@ -48,7 +50,7 @@ def add_arguments(parser):
                         help="Whether to delete old weights and logs before running")
 
 
-# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/news-commentary-v9.cs-en" --in_lang "cs" --target_lang "en" --latent_dim 100 --num_samples 100 --clear True
+# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/news-commentary-v9.cs-en" --source_lang "cs" --target_lang "en" --latent_dim 100 --num_samples 100 --clear True
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the Translator class')
     add_arguments(parser)
@@ -60,8 +62,9 @@ def main():
 
     translator = Translator(
         batch_size=args.batch_size, bucketing=args.bucketing, bucket_range=args.bucket_range,
-        embedding_dim=args.embedding_dim, embedding_path=args.embedding_path, epochs=args.epochs,
-        eval_translation=args.eval_translation, in_lang=args.in_lang,
+        embedding_dim=args.embedding_dim, embedding_path=args.embedding_path,
+        max_embedding_num=args.max_embedding_num, epochs=args.epochs,
+        eval_translation=args.eval_translation, source_lang=args.source_lang,
         latent_dim=args.latent_dim, log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
         max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
         num_samples=args.num_samples, reverse_input=args.reverse_input, target_lang=args.target_lang,

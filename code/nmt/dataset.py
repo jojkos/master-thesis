@@ -6,16 +6,18 @@ logger = logging.getLogger(__name__)
 
 
 class Dataset(object):
-    def __init__(self, dataset_path, in_lang, target_lang, num_samples, tokenize):
+    def __init__(self, dataset_path, source_lang, target_lang, num_samples, tokenize):
         self.dataset_path = dataset_path
-        self.in_lang = in_lang
+        self.source_lang = source_lang
         self.target_lang = target_lang
         self.num_samples = num_samples
 
         self._prepare_dataset(tokenize)
 
+        self.num_samples = len(self.x_word_seq)
+
     def _prepare_dataset(self, tokenize):
-        x_file_path = "{}.{}".format(self.dataset_path, self.in_lang)
+        x_file_path = "{}.{}".format(self.dataset_path, self.source_lang)
         x_lines = utils.read_file_to_lines(x_file_path, self.num_samples)
 
         y_file_path = "{}.{}".format(self.dataset_path, self.target_lang)
