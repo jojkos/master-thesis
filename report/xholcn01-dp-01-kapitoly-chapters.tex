@@ -1,20 +1,89 @@
 \chapter{Úvod}
 \blind{3}
 
-\chapter{Teorie}
+\chapter{Neformální návrh systému} \label{section:draft}
+Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to totéž jako to co dělá Google Translator\footnote{translate.google.cz} blíže popsáno v článku \cite{googleBridgingGap}. Vezme se věta v původním jazyce a vytvoří se z ní co nejvěrnější překlad v jazyce cílovém a to za pomocí nacvičené neuronové sítě. V této kapitole je vysvětleno jak by takový systém mohl vypadat a co za komponenty potřebuje k tomu aby fungoval.
+
+\begin{description}
+  \item[Dataset] aby bylo možné něco překládat, je nejprve zapotřebí mít nějaký dataset. Dataset obsahuje texty ve dvou jazycích mezi kterými se má překládat. Tyto texty musí být zarovnané, tak aby si jednotlivé věty v těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek.Použít nebo ne?\cite{googleLimits}
+      \todo{v kapitole o implementaci pak dát zná zorňující obrázek}
+
+  \item[Tokenizer] Dataset a jeho jednotlivé věty před začátkem trénování sitě je nejprve potřeba předpřipravit. Tokenizer rozdělí věty na jednotlivé tokeny \todo{obrázek ukázky tokenizace}. To usnadňuje práci s datasety a také například snižuje velikost slovníků (všech vyskytujících se slov/tokenů v datasetu pro jeden jazyk).
+  
+  \item[Slovník] Slovník se vytvoří jako seznam n nejčastějších slov v datasetu ve vstupním a cílovém jazyce. Čím je slovník menší, tím se zmenší výpočetní požadavky, ale na druhou stranu je potřeba vyřešit při trénování a překladu problém se slovy mimo slovník (OOV -- out of vocabulary). \todo{kde budou popsány unk symbol a tak..v implementaci?}
+  
+  \item[Word Embeddings] Obecně je možné vytvářet jazykové modely, které generují text po písmenech, částech slov nebo po slovech \url{http://www.fit.vutbr.cz/~imikolov/rnnlm/char.pdf}. V této práci se bude pracovat s celými slovy (tokeny). Word Embeddings je další forma předzpracování. Každý token ze vstupního slovníku se převede vektoru reálných čísel, ve kterém jsou zakódovány některé syntaktické a sémantické vlastnosti daného tokenu, což umožní neuronové síti se učit lépe, než kdyby se použilo například jenom číslo označující pozici tokenu ve slovníku. \todo{nějaká sekce o slovnících?} Více v sekci \ref{section:embeddings}.
+
+  \item[Model] Pro překlad je nejvhodnějším modelem sequence to sequence (dále seq2seq \cite{seq2seq}) s použitím encoder-decoder architektury. Na rozdíl od starších statistických metod překladu, kde se překládalo po frázích, moderní překlad pomocí neuronových sítí probíhá po celých sekvencích (větách). Nejprve enkodér vezme word embedding na vstupu a pomocí rekurentní neuronové sítě\ref{section:rnn} převede větu na vstupu do velkého vektoru reprezentující její význam. Dekodér -- taky rekurentní neuronová síť -- následně z tohoto vektoru slovo po slovu vygeneruje výslednou přeloženou větu. Dekodér tedy funguje jako jazykový model \ref{section:langmodel}, který je na inicializovaný na jednu konkrétní větu.
+\end{description}
 
 
-\section{Jazykové modely}
+\begin{figure}[h]
+    \begin{center}
+            \tmpframe{\includegraphics[width=1.0\linewidth]{img/draft.png}}
+    \end{center}
+	\caption{schéma návrhu systému pro překlad}
+	\label{img:draft}
+\end{figure}
+
+
+\chapter{Související teorie a pojmy}
+Účelem této kapitoly je blíže vysvětlit a rozebrat jednotlivé pojmy a komponenty potřebné pro vytvoření překladového systému. 
+
+
+
+\section{Jazykové modely}\label{section:langmodel}
+\todo{citace?}
+Zatímco u programovacích jazyků existuje jejich formální definice, přesně popisující jejich syntaxy a význam, u přirozených jazyků to tak není. Přirozený jazyk vznikl náhodným způsobem v průběhu staletí a tisíciletí narozdíl od formálně definovaných jazyků, které byly přímo navrženy. Přestože běžný jazyk se řídí nějakými pravidly, existuje značné množství výjimek a odchylek. I napříč tomu si však lidé navzájem rozumí. Problém však je tyto pravidla převést do formálních pravidel, tak aby jim rozuměl počítač. Řešením pro tento problém mohou být jazykové modely, které nevznikají pomocí definice formálních pravidel, ale učením se z příkladů.
+
+Jazykový model udává pro každou větu $w$ jaká je její pravděpodobnost. Respektive pro sekvenci slov $w = w_1, w_2..., w_m$ získá pravděpodobnost podle \ref{figure:probdistr}.
+
+\begin{align}\label{figure:probdistr}
+  p(w) = \prod_{i=1}^{m} p(w_i|w_{<i})
+\end{align}
+
+Pro každé slovo $w_i$ ze sekvence určí jaké je jeho podmíněná pravděpodobnost v případě, že se před ním nachází slova $w_i$.
+
+Ve výsledku tak jazykový model umožní zhodnotit přirozenost věty a generovat text podobný tomu, na kterém byl model nacvičen \cite{nmtTutorial}.
+
+\begin{description}
+  \item[Zhodnocení přirozenosti] Pomocí jazykového modelu je možné pro větu $w$ zhodnotit, jak moc je přirozená nebo-li jak moc je pravděpodobné, že by takováto věta mohla existovat v textu na kterém byl model nacvičen.
+  \item[Generování textu] Protože model umožňuje pro každé slovo $w_i$ získat pravděpodobnost následujícího slova $w_{i+1}$, je takto možné generovat náhodný, přirozeně (vůči zdrojovému textu) vypadající text. Což je přesně potřeba pro generování překladů.
+\end{description}
+
 
 \todo{jazykove modely v kontextu machine translation, generovani jazyku}
+
+
+
+Handling Unknown Words \cite{nmtTutorial}
 
 \subsection{N-gram}
 \subsection{log-linear}
 
-\section{Neuronové sítě?}
 
-\section{Rekurentní neuronové sítě}
-V této kapitole je popsán základní koncept rekurentních neuronových sítí (RNN\footnote{z anglického recurrent neural network}), jejich srovnání s běžnými neuronovými sítěmi a dále pak popis upravených variant RNN -- LSTM \ref{section:LSTM} a GRU \ref{section:GRU}. Kapitola volně vychází z práce \cite{nmtThesis}.\\
+\subsection{Word embeddings}\label{section:embeddings}
+\todo{souvislost s jazykovymy modely}
+
+\todo{více v sekci ... .. a tam budou obrázky, rovnice, vysvětlení...}
+
+\begin{figure}
+    \begin{center}
+            \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
+    \end{center}
+	\caption{One image. \todo{Napsat pořádný titulek}}
+	\label{img:TODO}
+\end{figure}
+
+Zmíním co existuje za druhy, lehce jejich rozdíly a vznik (co jsou zač) a pak se víc rozepíšu o fasttextu, protože to je ten co jsem použil (rovnice a kdesi cosi)
+\begin{itemize}
+  \item word2vec
+  \item glove
+  \item fasttext
+\end{itemize}
+
+\section{Rekurentní neuronové sítě}\label{section:rnn}
+V této kapitole je popsán základní koncept rekurentních neuronových sítí (RNN\footnote{z anglického recurrent neural network}), jejich srovnání s běžnými neuronovými sítěmi a dále pak popis upravených variant RNN -- LSTM \ref{section:LSTM} a GRU \ref{section:GRU}. Sekce volně vychází z práce \cite{nmtThesis}.\\
 
 
 RNN (Elman \cite{rnn}) jsou známé již přes dvě desítky let. Úspěšně jsou však používány až v posledních letech a to hlavně díky vyššímu výpočetnímu výkonu a většímu objemu trénovacích dat, který je v současné době dostupný a také, díky většímu výkonu, zpracovatelný. Tento druh neuronových sítí je obzvlášť vhodný například pro rozpoznávání psaného písma, rozpoznávání řeči, v kombinaci s konvolučními neuronovými sítěmi pro generování popisků obrázků a co je nejvíce zajímavé pro tuto práci, pro tvorbu jazykových modelů, generátorů textu a pro překlad.
@@ -97,23 +166,8 @@ LSTM (Long short term memory \cite{LSTM} je varianta RNN řešící problém miz
 \subsection{Trénování}
 \subsection{Global optimization methods viz wiki on RNN}
 
-\section{Word embeddings}
-\todo{souvislost s jazykovymy modely}
-\blind{2}
-\begin{figure}
-    \begin{center}
-            \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
-    \end{center}
-	\caption{One image. \todo{Napsat pořádný titulek}}
-	\label{img:TODO}
-\end{figure}
-\todo{subsection nebo itemize?}
-\subsection{word2vec}
-\blind{1}
-\subsection{glove}
-\blind{1}
-\subsection{fasttext}
-\blind{1}
+
+
 
 \section{Modely seq2seq}
 \blind{2}
@@ -133,41 +187,25 @@ LSTM (Long short term memory \cite{LSTM} je varianta RNN řešící problém miz
 	\label{img:TODO}
 \end{figure}
 \blind{3}
-\subsection{Attention/Pozornost}
 
 
 
+Ne jako samostatná kapitola, ale v rámci nějaké (asi implementace) bych udělal itemize a nebo přinejmenším aspon zběžně popsal proč jsem zvolili Keras.
+\emph{Frameworky}
+\begin{itemize}
+  \item Tensorflow
+  \item Theano
+  \item CNTK
+  \item Keras
+\end{itemize}
 
-\section{Frameworky}
-Chci popsat různé frameworky ze kterých jsem vybíral a vysvětlit proč jsem zvolil Keras.
-\blind{2}
-\todo{subsection nebo itemize?, mozna nejake obrazky}
-\subsection{Tensorflow}
-\blind{1}
-\subsection{Theano}
-\blind{1}
-\subsection{CNTK}
-\blind{1}
-\subsection{Keras}
-\blind{1}
 
-\chapter{Návrh systému (Praxe, nové myšlenky, které práce přináší)}
-Rozhodl jsem se.
-Vymyslel jsem.
-Rozvrhl jsem.
-Vypočítal jsem.
-Odvodil jsem.
-Zjednodušil jsem.
-Vylepšil jsem.
-Navrhl jsem.
-Zjistil jsem.
-Vyzkoumal jsem.
-
-\section{Neformální návrh systému}
-Vyberu a použiju nějký dataset, který obsahuje zarovnané věty se stejným významem ve dvou různých jazycích. Tyto věty za pomocí nějakého tokenizeru rozdělím na jednotlivé tokeny (slova/značky jako vykřičník) a to bude vstup pro překládací model.
-
-Model bude sestavený z Embedding části, která převádí slova do vektorů s nějakým významem -- tedy z toho může neuronová síť něco použít, narozdíl od toho kdyby slova reprezentoval jen index. Pro tento účel použiju přednaučené embeddings od Facebooku (fasttext). Dále v modelu Encoder, který se sestává z vrstvy/vrstev rekurentní neuronové sítě (LSTM). Tímto Encoderem projde celá sekvence embeddings a vznikne tak "thought vector", což je význam dané věty převedený do nějakého velkého vektoru (latent dimension?). Z tohoto vektoru/prostoru pak Dekodér, což je také vrstva/vrstvy LSTM postupně generuje překlad po jednotlivých slovech. Na vstup nejdříve dostane startovací značku a jeho vnitřní stav (memory cell) se inicializuje stavem encoderu. Po každém vygenerovaném slovu dostane toto slovo na vstup a takto generuje tak dlouho, dokud nevygeneruje značku konec sekvence. Výstup z dekoderu je vrstva softmax o velikosti slovníku jazyka do kterého se překládá. Generovaná slova se vyberou buď jednoduchým argmaxem, tedy vybere se vždycky slovo s největší vycházející pravděpodobností a nebo nějakou pokročilejší metodou, jako je beam search.
-
+\chapter{Implementace}
+Naprogramoval jsem.
+Posbíral jsem data.
+Pustil jsem to.
+Výsledky jsou takové.
+Je to tak a tak rychlé.
 
 \section{Baseline systém v Moses}
 \todo{Jak rozlišit návrh a realizaci?}
@@ -185,19 +223,17 @@ Jejich struktura, jak je zpracuji a použiji
 \end{figure}
 
 
-\chapter{Implementace, experimenty, vyhodnocení}
-Naprogramoval jsem.
-Posbíral jsem data.
-Pustil jsem to.
-Výsledky jsou takové.
-Je to tak a tak rychlé.
-
 \subsection{Bucketing}
 A padding. Rozdělení sekvencí na skupiny podle délky, abych nepaddingoval zbytečně a tím neplýtval výkon.
 
+\section{popis fungování systému a jednotlivých tříd}
+
+\chapter{Experimenty a vyhodnocení}
 \section{skóre BLEU}
 \blind{1}
 \todo{vysazet hezky vzorce}
+
+
 
 \chapter{Závěr}
 \begin{itemize}
@@ -206,7 +242,7 @@ A padding. Rozdělení sekvencí na skupiny podle délky, abych nepaddingoval zb
   \item Autor (ve vlastním zájmu) rekapituluje, jak bylo naplněno zadání práce.
 \end{itemize}
 
-\subsection{Plány do budoucna}
+\textbf{Plány do budoucna}
 \begin{itemize}
     \item použití bidirectional první vrstvy encoderu, pro lepší zachování contextu \cite{googleBridgingGap} na místo použití obrácených vstupů
     \item použití wordpieces \cite{googleBridgingGap} místo celých slov pro lepší handling rare words

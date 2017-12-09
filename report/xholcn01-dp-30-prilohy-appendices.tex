@@ -28,6 +28,11 @@ wmt vysledky http://www.statmt.org/wmt17/results.html ? BLEU
 
 \section{Pseudo zadani}
 
+Vyberu a použiju nějký dataset, který obsahuje zarovnané věty se stejným významem ve dvou různých jazycích. Tyto věty za pomocí nějakého tokenizeru rozdělím na jednotlivé tokeny (slova/značky jako vykřičník) a to bude vstup pro překládací model.
+
+Model bude sestavený z Embedding části, která převádí slova do vektorů s nějakým významem -- tedy z toho může neuronová síť něco použít, narozdíl od toho kdyby slova reprezentoval jen index. Pro tento účel použiju přednaučené embeddings od Facebooku (fasttext). Dále v modelu Encoder, který se sestává z vrstvy/vrstev rekurentní neuronové sítě (LSTM). Tímto Encoderem projde celá sekvence embeddings a vznikne tak "thought vector", což je význam dané věty převedený do nějakého velkého vektoru (latent dimension?). Z tohoto vektoru/prostoru pak Dekodér, což je také vrstva/vrstvy LSTM postupně generuje překlad po jednotlivých slovech. Na vstup nejdříve dostane startovací značku a jeho vnitřní stav (memory cell) se inicializuje stavem encoderu. Po každém vygenerovaném slovu dostane toto slovo na vstup a takto generuje tak dlouho, dokud nevygeneruje značku konec sekvence. Výstup z dekoderu je vrstva softmax o velikosti slovníku jazyka do kterého se překládá. Generovaná slova se vyberou buď jednoduchým argmaxem, tedy vybere se vždycky slovo s největší vycházející pravděpodobností a nebo nějakou pokročilejší metodou, jako je beam search.
+
+-----
 chapu to tak, ze: nejdriv projedu kazde slovo na vstupu skrz prepripraveny nauceny veci od facebooku do embeddings a to pak teprve posilam do encoderu. Ten mi z toho pak vyhodi context (thought) vector\\
 pouziju bidirectional LSTM (RNN) + attention + beam search\\
 kazdej vstup (veta) je zarovnana (padding) na nejakou delku (bud se to doplni nebo naopak oreze), potom se z toho udela embeddings s pouzitim pretrained, potom se prozene encoderem, ziskam context, ten se prozedene dekoderem (s pomoci attention)\\
@@ -507,4 +512,4 @@ indexing and slicing \url{https://stackoverflow.com/questions/2725750/slicing-ar
   \item pozor na pomlcky a spojovnik. pomlcka je misto carky a je dlouha (--), spojovnik je napr rikam-li, takze vetsinou chci dve carky za sebou
   \item kazda veta ma sloveso
   \item nezapomenout na uvody kapitol, kde se popisuje strucne a jasne o cem bude
-\end{itemize}
+\end{itemize} 
