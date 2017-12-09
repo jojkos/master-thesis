@@ -18,7 +18,7 @@ fi
 cd ${TMP_FOLDER}
 
 python "${HOME_FOLDER}/main.py" \
-    --training_dataset "${HOME_FOLDER}/data/news-commentary-v9.cs-en" \
+    --training_dataset "${HOME_FOLDER}/data/europarl-v7.cs-en" \
     --test_dataset "${HOME_FOLDER}/data/anki_ces-eng" \
     --model_folder ${TMP_FOLDER} --model_file ${MODEL_FILE} \
     --log_folder "${TMP_FOLDER}/logs" \
@@ -27,7 +27,8 @@ python "${HOME_FOLDER}/main.py" \
     --max_embedding_num 20000 \
     --latent_dim 300 --validation_split 0.1 \
     --max_source_vocab_size 20000 --max_target_vocab_size 20000\
-    --epochs 1 \
+    --epochs 1\
+    --batch_size 1\
     --num_samples -1
 
 cp "${TMP_FOLDER}/translation.out" "${HOME_FOLDER}/translation.out"

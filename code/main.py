@@ -50,7 +50,7 @@ def add_arguments(parser):
                         help="Whether to delete old weights and logs before running")
 
 
-# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/news-commentary-v9.cs-en" --source_lang "cs" --target_lang "en" --latent_dim 100 --num_samples 100 --clear True
+# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/europarl-v7.cs-en" --source_lang "cs" --target_lang "en" --latent_dim 100 --num_samples 100 --clear True
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the Translator class')
     add_arguments(parser)
@@ -72,9 +72,11 @@ def main():
         clear=args.clear
     )
     translator.fit()
-    translator.evaluate()
+    evaluation = translator.evaluate()
 
-    translator.translate()
+    logger.info("model evaluation: {}".format(evaluation))
+
+    # translator.translate()
     translator.translate("kočka chodí dírou")
 
     # TODO refactor methods in translator to use self instead of parameters
