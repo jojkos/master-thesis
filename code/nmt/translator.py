@@ -32,10 +32,10 @@ class Translator(object):
     """
 
     def __init__(self, batch_size, bucketing, bucket_range, embedding_dim, embedding_path,
-                 max_embedding_num, epochs, eval_translation,
+                 max_embedding_num, epochs,
                  source_lang, latent_dim,
-                 log_folder, max_source_vocab_size, max_target_vocab_size, model_file, model_folder, num_samples,
-                 reverse_input,
+                 log_folder, max_source_vocab_size, max_target_vocab_size, model_file, model_folder,
+                 num_training_samples, num_test_samples, reverse_input,
                  target_lang, test_dataset, training_dataset, validaton_split, clear):
         self.batch_size = batch_size
         self.bucketing = bucketing
@@ -44,7 +44,6 @@ class Translator(object):
         self.embedding_path = embedding_path
         self.max_embedding_num = max_embedding_num
         self.epochs = epochs
-        self.eval_translation = eval_translation
         self.source_lang = source_lang
         self.latent_dim = latent_dim
         self.log_folder = log_folder
@@ -53,7 +52,8 @@ class Translator(object):
         # self.model_file = model_file
         self.model_folder = model_folder
         self.model_weights_path = "{}".format(os.path.join(model_folder, model_file))
-        self.num_samples = num_samples
+        self.num_training_samples = num_training_samples
+        self.num_test_samples = num_test_samples
         self.reverse_input = reverse_input
         self.target_lang = target_lang
         self.test_dataset_path = test_dataset
@@ -64,13 +64,14 @@ class Translator(object):
         utils.prepare_folders([self.log_folder, self.model_folder], clear)
 
         self.training_dataset = Dataset(self.training_dataset_path, self.source_lang, self.target_lang,
-                                        self.num_samples,
+                                        self.num_training_samples,
                                         True)  # TODO probably create parameter for it (tokenize), Moses tokenization will be used later on
         self.test_dataset = Dataset(self.test_dataset_path, self.source_lang, self.target_lang,
-                                    self.num_samples,
+                                    self.num_test_samples,
                                     True)  # TODO probably create parameter for it (tokenize), Moses tokenization will be used later on
 
-        logger.info("There are {} samples in datasets".format(self.training_dataset.num_samples))
+        logger.info("There are {} samples in training dataset".format(self.training_dataset.num_samples))
+        logger.info("There are {} samples in test dataset".format(self.test_dataset.num_samples))
 
         self.source_vocab = Vocabulary(self.training_dataset.x_word_seq, self.max_source_vocab_size)
         self.target_vocab = Vocabulary(self.training_dataset.y_word_seq, self.max_target_vocab_size)
@@ -98,27 +99,6 @@ class Translator(object):
         if os.path.isfile(self.model_weights_path):
             logger.info("Loading model weights from file..")
             self.model.load_weights(self.model_weights_path)
-
-    def _encoded_seq_generator(self):
-        """
-
-        because for even small datasets it can be hard to fit the large numpy arrays into memory
-        it is necessary to process the dataset by smaller chunks
-
-        Yields: x inputs, y inputs
-
-        """
-        yield Translator.encode_sequences(
-            x_word_seq=self.training_dataset.x_word_seq,
-            y_word_seq=self.training_dataset.y_word_seq,
-            x_max_seq_len=self.training_dataset.x_max_seq_len,
-            y_max_seq_len=self.training_dataset.y_max_seq_len,
-            x_word_to_ix=self.source_vocab.word_to_ix,
-            y_word_to_ix=self.target_vocab.word_to_ix,
-            reverse_input=self.reverse_input
-        )
-
-        logger.info("Whole dataset was processed by generator")
 
     def _training_data_gen(self, infinite=True):
         i = 0
@@ -197,6 +177,16 @@ class Translator(object):
             if i >= self.test_dataset.num_samples:
                 once_through = True
                 i = 0
+
+    def _get_all_test_data(self):
+        encoder_input_data, decoder_input_data, decoder_target_data = Translator.encode_sequences(
+            self.test_dataset.x_word_seq,
+            self.test_dataset.y_word_seq,
+            self.test_dataset.x_max_seq_len, self.test_dataset.y_max_seq_len,
+            self.source_vocab.word_to_ix, self.target_vocab.word_to_ix, self.reverse_input
+        )
+
+        return ([encoder_input_data, decoder_input_data], decoder_target_data)
 
     @staticmethod
     def encode_sequences(x_word_seq, y_word_seq,
@@ -409,6 +399,7 @@ class Translator(object):
                                          steps_per_epoch=steps,
                                          epochs=1,
                                          callbacks=[self.tensorboard_callback])
+                # validation_data=self._get_all_test_data()
 
             self.model.save_weights(self.model_weights_path)
 
@@ -431,26 +422,26 @@ class Translator(object):
 
         # test_data_gen gets called more then steps times,
         # probably because of the workers caching the values for optimization
-        # eval_values = self.model.evaluate_generator(self._test_data_gen(),
-        #                                             steps=steps)
+        eval_data = self._test_data_gen()  # cannot be generator if want to use histograms in tensorboard callback
+        eval_values = self.model.evaluate_generator(eval_data,
+                                                    steps=steps)
 
-        if self.eval_translation:
-            logger.info("Translating test dataset for BLEU evaluation...")
-            path_original = self.test_dataset_path + "." + self.target_lang
-            path = path_original + ".translated"
+        logger.info("Translating test dataset for BLEU evaluation...")
+        path_original = self.test_dataset_path + "." + self.target_lang
+        path = path_original + ".translated"
 
-            step = 1
-            with open(path, "w", encoding="utf-8") as out_file:
-                for inputs, targets in self._test_data_gen(infinite=False):
-                    print("\r step {} out of {}".format(step, steps), end="", flush=True)
-                    step += 1
-                    encoder_input_data = inputs[0]
-                    for seq in encoder_input_data:
-                        decoded_sentence = self.decode_sequence(seq)
+        step = 1
+        with open(path, "w", encoding="utf-8") as out_file:
+            for inputs, targets in self._test_data_gen(infinite=False):
+                print("\rstep {} out of {}".format(step, steps), end="", flush=True)
+                step += 1
+                encoder_input_data = inputs[0]
+                for seq in encoder_input_data:
+                    decoded_sentence = self.decode_sequence(seq)
 
-                        out_file.write(decoded_sentence + "\n")
+                    out_file.write(decoded_sentence + "\n")
 
-            utils.get_bleu(path_original, path)
+        utils.get_bleu(path_original, path)
 
         return eval_values
 
@@ -467,7 +458,6 @@ class Translator(object):
 
         encoded_seq = Translator.encode_text_to_input_seq(seq, self.source_vocab.word_to_ix)
         # else:
-        #     # TODO what about bucketing
         #     encoder_input_data = self.training_data["encoder_input_data"][0]
         #     i = random.randint(0, len(encoder_input_data) - 1)
         #     encoded_seq = encoder_input_data[i]

@@ -26,8 +26,10 @@ def add_arguments(parser):
     parser.add_argument("--batch_size", type=int, default=64, help="Size of one batch")
     parser.add_argument("--latent_dim", type=int, default=256,
                         help="TODO maybe num_units instead? size of each network layer")
-    parser.add_argument("--num_samples", type=int, default=-1,
-                        help="How many samples to take from the dataset, -1 for all of them")
+    parser.add_argument("--num_training_samples", type=int, default=-1,
+                        help="How many samples to take from the training dataset, -1 for all of them")
+    parser.add_argument("--num_test_samples", type=int, default=-1,
+                        help="How many samples to take from the test dataset, -1 for all of them")
     parser.add_argument("--max_source_vocab_size", type=int, default=15000,
                         help="Maximum size of source vocabulary")
     parser.add_argument("--max_target_vocab_size", type=int, default=15000,
@@ -44,13 +46,11 @@ def add_arguments(parser):
                         help="Range of different sequence lenghts in one bucket")
     parser.add_argument("--reverse_input", type=bool, default=True,
                         help="Whether to reverse source sequences (optimization for better learning)")
-    parser.add_argument("--eval_translation", type=bool, default=True,
-                        help="Whether to generate translation for the test dataset and then compute the BLEU score")
     parser.add_argument("--clear", type=bool, default=False,
                         help="Whether to delete old weights and logs before running")
 
 
-# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/europarl-v7.cs-en" --source_lang "cs" --target_lang "en" --latent_dim 100 --num_samples 100 --clear True
+# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --latent_dim 100 --num_training_samples 100 --num_test_samples 100 --clear True
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the Translator class')
     add_arguments(parser)
@@ -63,11 +63,11 @@ def main():
     translator = Translator(
         batch_size=args.batch_size, bucketing=args.bucketing, bucket_range=args.bucket_range,
         embedding_dim=args.embedding_dim, embedding_path=args.embedding_path,
-        max_embedding_num=args.max_embedding_num, epochs=args.epochs,
-        eval_translation=args.eval_translation, source_lang=args.source_lang,
+        max_embedding_num=args.max_embedding_num, epochs=args.epochs, source_lang=args.source_lang,
         latent_dim=args.latent_dim, log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
         max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
-        num_samples=args.num_samples, reverse_input=args.reverse_input, target_lang=args.target_lang,
+        num_training_samples=args.num_training_samples, num_test_samples=args.num_test_samples,
+        reverse_input=args.reverse_input, target_lang=args.target_lang,
         test_dataset=args.test_dataset, training_dataset=args.training_dataset, validaton_split=args.validation_split,
         clear=args.clear
     )
