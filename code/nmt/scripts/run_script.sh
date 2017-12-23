@@ -1,7 +1,7 @@
 #!/bin/bash
-#$ -N translation
-#$ -o /tmp/xholcn01/translation.out
-#$ -e /tmp/xholcn01/translation.err
+#$ -N neural machine translation
+#$ -o /pub/tmp/xholcn01/translation.out
+#$ -e /pub/tmp/xholcn01/translation.err
 #$ -q long.q@@gpu
 #$ -l gpu=1,ram_free=2GB,tmp_free=2GB
 
@@ -17,7 +17,10 @@ then
     mkdir ${TMP_FOLDER}
 fi
 
-cd ${TMP_FOLDER}
+cd ${TMP_FOLDER} || {
+  echo Not able to cd to ${TMP_FOLDER}
+  exit 1
+}
 
 python "${HOME_FOLDER}/main.py" \
     --training_dataset "${HOME_FOLDER}/data/anki_ces-eng" \

@@ -18,7 +18,6 @@ from keras.preprocessing.text import text_to_word_sequence
 from nltk import FreqDist
 import random
 
-# TODO how to properly log
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -32,11 +31,41 @@ class Translator(object):
     """
 
     def __init__(self, batch_size, bucketing, bucket_range, embedding_dim, embedding_path,
-                 max_embedding_num, epochs,
-                 source_lang, latent_dim,
+                 max_embedding_num, epochs, use_fit_generator,
+                 source_lang, num_units, optimizer,
                  log_folder, max_source_vocab_size, max_target_vocab_size, model_file, model_folder,
-                 num_training_samples, num_test_samples, reverse_input,
-                 target_lang, test_dataset, training_dataset, validaton_split, clear):
+                 reverse_input, target_lang, test_dataset, training_dataset, validaton_split, clear,
+                 tokenize, num_training_samples=-1, num_test_samples=-1):
+        """
+
+        Args:
+            batch_size (int): Size of one batch
+            bucketing (bool): Whether to bucket sequences according their size to optimize padding
+            bucket_range (int): Range of different sequence lenghts in one bucket
+            embedding_dim (int): Dimension of embeddings
+            embedding_path (str): Path to pretrained fastText embeddings file
+            max_embedding_num (int): how many first lines from embedding file should be loaded, None means all of them(irony)
+            epochs (int): Number of epochs
+            source_lang (str): Source language (dataset file extension)
+            num_units (str): Size of each network layer
+            optimizer (str): Keras optimizer name
+            log_folder (str): Path where the result logs will be stored
+            max_source_vocab_size (int): Maximum size of source vocabulary
+            max_target_vocab_size (int): Maximum size of target vocabulary
+            model_file (str): Model file name. Either will be created or loaded.
+            model_folder (str): Path where the result model will be stored
+            num_training_samples (int, optional): How many samples to take from the training dataset, -1 for all of them (default)
+            num_test_samples (int, optional): How many samples to take from the test dataset, -1 for all of them (default)
+            reverse_input (bool): Whether to reverse source sequences (optimization for better learning)
+            target_lang (str): Target language (dataset file extension)
+            test_dataset (str): Path to the test set. Dataset are two files (one source one target language)
+            training_dataset (str): Path to the training set
+            validaton_split (float): How big proportion of a development dataset should be used for validation during fiting
+            clear (bool): Whether to delete old weights and logs before running
+            tokenize (bool): Whether to tokenize the sequences or not (they are already tokenizes e.g. using Moses tokenizer)
+            use_fit_generator (bool): Prevent memory crash by only load part of the dataset at once each time when fitting"
+        """
+
         self.batch_size = batch_size
         self.bucketing = bucketing
         self.bucket_range = bucket_range
@@ -44,12 +73,13 @@ class Translator(object):
         self.embedding_path = embedding_path
         self.max_embedding_num = max_embedding_num
         self.epochs = epochs
+        self.use_fit_generator = use_fit_generator
         self.source_lang = source_lang
-        self.latent_dim = latent_dim
+        self.num_units = num_units
+        self.optimizer = optimizer
         self.log_folder = log_folder
         self.max_source_vocab_size = max_source_vocab_size
         self.max_target_vocab_size = max_target_vocab_size
-        # self.model_file = model_file
         self.model_folder = model_folder
         self.model_weights_path = "{}".format(os.path.join(model_folder, model_file))
         self.num_training_samples = num_training_samples
@@ -60,15 +90,16 @@ class Translator(object):
         self.training_dataset_path = training_dataset
         self.validation_split = validaton_split
         self.clear = clear
+        self.tokenize = tokenize
 
         utils.prepare_folders([self.log_folder, self.model_folder], clear)
 
         self.training_dataset = Dataset(self.training_dataset_path, self.source_lang, self.target_lang,
                                         self.num_training_samples,
-                                        True)  # TODO probably create parameter for it (tokenize), Moses tokenization will be used later on
+                                        self.tokenize)
         self.test_dataset = Dataset(self.test_dataset_path, self.source_lang, self.target_lang,
                                     self.num_test_samples,
-                                    True)  # TODO probably create parameter for it (tokenize), Moses tokenization will be used later on
+                                    self.tokenize)
 
         logger.info("There are {} samples in training dataset".format(self.training_dataset.num_samples))
         logger.info("There are {} samples in test dataset".format(self.test_dataset.num_samples))
@@ -93,7 +124,7 @@ class Translator(object):
 
         logger.info("compiling model...")
         # Run training
-        self.model.compile(optimizer='rmsprop', loss='categorical_crossentropy',
+        self.model.compile(optimizer=self.optimizer, loss='categorical_crossentropy',
                            metrics=['acc'])
 
         if os.path.isfile(self.model_weights_path):
@@ -101,6 +132,20 @@ class Translator(object):
             self.model.load_weights(self.model_weights_path)
 
     def _training_data_gen(self, infinite=True):
+        """
+
+        Args:
+            infinite: whether to yield data infinitely or stop after one walkthrough the dataset
+
+        Returns: dict with encoder_input_data, decoder_input_data and decoder_target_data of self.batch_size size
+
+        """
+        # TODO what about shuffling?
+        # maybe use keras.sequence instead of generator?
+        # https://keras.io/utils/#sequence
+        # https://stackoverflow.com/questions/46570172/how-to-fit-generator-in-keras
+        # https://github.com/keras-team/keras/issues/2389 probably don't need to use sequence but have to shuffle data HERE manually
+
         i = 0
         once_through = False
 
@@ -142,9 +187,52 @@ class Translator(object):
 
             i += self.batch_size
 
-            if i >= self.test_dataset.num_samples:
+            if i >= self.training_dataset.num_samples:
                 once_through = True
                 i = 0
+
+    def _get_all_training_data(self):
+        """
+
+        Returns: dict with encoder_input_data, decoder_input_data and decoder_target_data of whole dataset size
+
+        """
+        if self.bucketing:
+            encoder_input_data = []
+            decoder_input_data = []
+            decoder_target_data = []
+
+            buckets = utils.split_to_buckets(self.training_dataset.x_word_seq, self.training_dataset.y_word_seq,
+                                             self.bucket_range,
+                                             self.training_dataset.x_max_seq_len,
+                                             self.training_dataset.y_max_seq_len)
+
+            for ix, bucket in buckets.items():
+                enc_in, dec_in, dec_tar = Translator.encode_sequences(
+                    bucket["x_word_seq"], bucket["y_word_seq"],
+                    bucket["x_max_seq_len"], bucket["y_max_seq_len"],
+                    self.source_vocab.word_to_ix, self.target_vocab.word_to_ix, self.reverse_input
+                )
+
+                encoder_input_data.append(enc_in)
+                decoder_input_data.append(dec_in)
+                decoder_target_data.append(dec_tar)
+        else:
+            encoder_input_data, decoder_input_data, decoder_target_data = Translator.encode_sequences(
+                self.training_dataset.x_word_seq, self.training_dataset.y_word_seq,
+                self.training_dataset.x_max_seq_len, self.training_dataset.y_max_seq_len,
+                self.source_vocab.word_to_ix, self.target_vocab.word_to_ix, self.reverse_input
+            )
+
+            encoder_input_data = [encoder_input_data]
+            decoder_input_data = [decoder_input_data]
+            decoder_target_data = [decoder_target_data]
+
+        return {
+            "encoder_input_data": encoder_input_data,
+            "decoder_input_data": decoder_input_data,
+            "decoder_target_data": decoder_target_data
+        }
 
     def _test_data_gen(self, infinite=True):
         """
@@ -238,6 +326,7 @@ class Translator(object):
         return encoder_input_data, decoder_input_data, decoder_target_data
 
     def _define_models(self):
+        # model based on https://blog.keras.io/a-ten-minute-introduction-to-sequence-to-sequence-learning-in-keras.html
         logger.info("Creating models...")
         # Define an input sequence and process it.
         encoder_inputs = Input(shape=(None,))
@@ -245,13 +334,13 @@ class Translator(object):
         if self.embedding_weights is not None:
             self.embedding_weights = [self.embedding_weights]  # Embedding layer wantes list as parameter
         # TODO trainable False or True?
-        # TODO according to https://keras.io/layers/embeddings/
+        # according to https://keras.io/layers/embeddings/
         # input dim should be +1 when used with mask_zero..is it correctly set here?
         embedding = Embedding(self.source_vocab.vocab_len, self.embedding_dim,
-                              weights=self.embedding_weights, mask_zero=True)
+                              weights=self.embedding_weights, mask_zero=True, trainable=True)
         embedding_outputs = embedding(encoder_inputs)
 
-        encoder = LSTM(self.latent_dim, return_state=True)
+        encoder = LSTM(self.num_units, return_state=True)
         encoder_outputs, state_h, state_c = encoder(embedding_outputs)
         # We discard `encoder_outputs` and only keep the states.
         encoder_states = [state_h, state_c]
@@ -261,7 +350,7 @@ class Translator(object):
         # We set up our decoder to return full output sequences,
         # and to return internal states as well. We don't use the
         # return states in the training model, but we will use them in inference.
-        decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
+        decoder_lstm = LSTM(self.num_units, return_sequences=True, return_state=True)
         decoder_outputs, _, _ = decoder_lstm(decoder_inputs,
                                              initial_state=encoder_states)
         decoder_dense = Dense(self.target_vocab.vocab_len, activation='softmax')
@@ -282,8 +371,8 @@ class Translator(object):
         # Define sampling models
         encoder_model = Model(encoder_inputs, encoder_states)
 
-        decoder_state_input_h = Input(shape=(self.latent_dim,))
-        decoder_state_input_c = Input(shape=(self.latent_dim,))
+        decoder_state_input_h = Input(shape=(self.num_units,))
+        decoder_state_input_c = Input(shape=(self.num_units,))
         decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
         decoder_outputs, state_h, state_c = decoder_lstm(
             decoder_inputs, initial_state=decoder_states_inputs)
@@ -371,35 +460,54 @@ class Translator(object):
         for i in range(self.epochs):
             logger.info("Epoch {}".format(i + 1))
 
-            # to prevent memory error, only loads parts of dataset at once
-            if self.bucketing:
-                for training_data in self._training_data_gen(infinite=False):
+            if self.use_fit_generator:
+                # to prevent memory error, only loads parts of dataset at once
+                if self.bucketing:
+                    for training_data in self._training_data_gen(infinite=False):
 
-                    for j in range(len(training_data["encoder_input_data"])):
-                        if self.bucketing:
+                        for j in range(len(training_data["encoder_input_data"])):
                             logger.info(
                                 "Bucket {} size of {}".format(j, len(training_data["encoder_input_data"][j][0])))
 
-                        self.model.fit(
-                            [
-                                training_data["encoder_input_data"][j],
-                                training_data["decoder_input_data"][j]
-                            ],
-                            training_data["decoder_target_data"][j],
-                            batch_size=self.batch_size,
-                            epochs=1,
-                            validation_split=self.validation_split,
-                            callbacks=[self.tensorboard_callback]
-                        )
+                            self.model.fit(
+                                [
+                                    training_data["encoder_input_data"][j],
+                                    training_data["decoder_input_data"][j]
+                                ],
+                                training_data["decoder_target_data"][j],
+                                batch_size=self.batch_size,
+                                epochs=1,
+                                validation_split=self.validation_split,
+                                callbacks=[self.tensorboard_callback]
+                            )
+                else:
+                    steps = self.get_gen_steps(self.training_dataset)
+                    logger.info("traning generator will make {} steps".format(steps))
+                    # TODO why is there no validation split
+                    self.model.fit_generator(self._training_data_gen(),
+                                             steps_per_epoch=steps,
+                                             epochs=1,
+                                             callbacks=[self.tensorboard_callback])
+                    # validation_data=self._get_all_test_data()
             else:
-                steps = self.get_gen_steps(self.training_dataset)
-                logger.info("traning generator will make {} steps".format(steps))
-                # TODO why is there no validation split
-                self.model.fit_generator(self._training_data_gen(),
-                                         steps_per_epoch=steps,
-                                         epochs=1,
-                                         callbacks=[self.tensorboard_callback])
-                # validation_data=self._get_all_test_data()
+                training_data = self._get_all_training_data()
+
+                for j in range(len(training_data["encoder_input_data"])):
+                    if self.bucketing:
+                        logger.info(
+                            "Bucket {} size of {}".format(j, len(training_data["encoder_input_data"][j][0])))
+
+                    self.model.fit(
+                        [
+                            training_data["encoder_input_data"][j],
+                            training_data["decoder_input_data"][j]
+                        ],
+                        training_data["decoder_target_data"][j],
+                        batch_size=self.batch_size,
+                        epochs=1,
+                        validation_split=self.validation_split,
+                        callbacks=[self.tensorboard_callback]
+                    )
 
             self.model.save_weights(self.model_weights_path)
 

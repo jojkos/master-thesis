@@ -6,7 +6,19 @@ logger = logging.getLogger(__name__)
 
 
 class Dataset(object):
+    """
+        Class encapsuling loading of the dataset from file
+    """
     def __init__(self, dataset_path, source_lang, target_lang, num_samples, tokenize):
+        """
+
+        Args:
+            dataset_path (str):
+            source_lang (str):
+            target_lang (str):
+            num_samples (str):
+            tokenize (bool):
+        """
         self.dataset_path = dataset_path
         self.source_lang = source_lang
         self.target_lang = target_lang
@@ -21,6 +33,14 @@ class Dataset(object):
             dataset_path, len(self.x_word_seq), len(self.y_word_seq))
 
     def _prepare_dataset(self, tokenize):
+        """
+
+        Loads both dataset files and stores them as sequences. Stores max seq lens as well.
+
+        Args:
+            tokenize (bool):
+
+        """
         x_file_path = "{}.{}".format(self.dataset_path, self.source_lang)
         x_lines = utils.read_file_to_lines(x_file_path, self.num_samples)
 
