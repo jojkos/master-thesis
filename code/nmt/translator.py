@@ -107,6 +107,9 @@ class Translator(object):
         self.source_vocab = Vocabulary(self.training_dataset.x_word_seq, self.max_source_vocab_size)
         self.target_vocab = Vocabulary(self.training_dataset.y_word_seq, self.max_target_vocab_size)
 
+        logger.info("Source vocabulary has {} symbols".format(self.source_vocab.vocab_len))
+        logger.info("Target vocabulary has {} symbols".format(self.target_vocab.vocab_len))
+
         self.embedding_weights = None
         if not os.path.isfile(self.model_weights_path) and self.embedding_path:
             # load pretrained embeddings
@@ -345,6 +348,8 @@ class Translator(object):
         # We discard `encoder_outputs` and only keep the states.
         encoder_states = [state_h, state_c]
 
+        # TODO EMBEDDINGS FOR DECODER
+
         # Set up the decoder, using `encoder_states` as initial state.
         decoder_inputs = Input(shape=(None, self.target_vocab.vocab_len))
         # We set up our decoder to return full output sequences,
@@ -410,8 +415,11 @@ class Translator(object):
                 break
 
             decoded_sentence += sampled_word + " "
+            decoded_len = len(decoded_sentence.strip().split(" "))
 
-            if len(decoded_sentence) > self.training_dataset.y_max_seq_len:
+            if decoded_len > self.training_dataset.y_max_seq_len \
+                    and decoded_len > self.test_dataset.y_max_seq_len:
+                # TODO change, test len can be longer than training max len
                 break
 
             # Update the target sequence (of length 1).
@@ -548,7 +556,7 @@ class Translator(object):
                     decoded_sentence = self.decode_sequence(seq)
 
                     out_file.write(decoded_sentence + "\n")
-
+        print("", end="\n")
         utils.get_bleu(path_original, path)
 
         return eval_values

@@ -16,13 +16,13 @@ class Dataset(object):
             dataset_path (str):
             source_lang (str):
             target_lang (str):
-            num_samples (str):
+            num_samples (int):
             tokenize (bool):
         """
         self.dataset_path = dataset_path
         self.source_lang = source_lang
         self.target_lang = target_lang
-        self.num_samples = num_samples
+        self.num_samples = num_samples if num_samples > 0 else None
 
         self._prepare_dataset(tokenize)
 

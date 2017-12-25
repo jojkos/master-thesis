@@ -50,7 +50,7 @@ Jazykový model udává pro každou větu $w$ jaká je její pravděpodobnost. R
 Pro každé slovo $w_i$ ze sekvence $w$ určí jaká je jeho podmíněná pravděpodobnost v případě, že se před ním nachází slova $w_{<i}$.
 
 \subsection{N-gram modely}\label{subsection:ngram}
-Ve výsledku je pro překladový systém potřeba získat model, který pro zdrojovou větu $E$ vrátí přeloženou větu $F$, tak že $P(F|E)$. N-gram model je však jazykový model, který udává jen pro pravděpodobnost věty P(F) (pro nějaký daný kontext nad kterým se model nacvičil). 
+Ve výsledku je pro překladový systém potřeba získat model, který pro zdrojovou větu $E$ vrátí přeloženou větu $F$, tak že $P(F|E)$. N-gram model je však jazykový model, který udává jen pro pravděpodobnost věty P(F) (pro nějaký daný kontext nad kterým se model nacvičil).
 
 Takovýto model umožní zhodnotit přirozenost věty a generovat text podobný tomu, na kterém byl model nacvičen \cite{nmtTutorial}.
 
@@ -122,7 +122,7 @@ V této kapitole je popsán základní koncept rekurentních neuronových sítí
 
 RNN (Elman \cite{rnn}) jsou známé již přes dvě desítky let. Úspěšně jsou však používány až v posledních letech. A to hlavně díky vyššímu výpočetnímu výkonu a většímu objemu trénovacích dat, který je v současné době dostupný a také zpracovatelný. Tento druh neuronových sítí je obzvlášť vhodný například pro rozpoznávání psaného písma, rozpoznávání řeči, v kombinaci s konvolučními neuronovými sítěmi pro generování popisků obrázků a co je nejvíce zajímavé pro tuto práci, pro tvorbu jazykových modelů, generátorů textu a tím pádem i pro překlad.
 
-Jejich hlavních výhodou oproti jednoduchým dopředným neuronovým sítím je jejich schopnost držet si vnitřní stav napříč časem. Dopředná neuronová síť pracuje vždy s aktuální hodnotou $x$ na vstupu, pro kterou pomocí vah $W$ získá výstup $y$ (rovnice \ref{figure:basic-nn}). 
+Jejich hlavních výhodou oproti jednoduchým dopředným neuronovým sítím je jejich schopnost držet si vnitřní stav napříč časem. Dopředná neuronová síť pracuje vždy s aktuální hodnotou $x$ na vstupu, pro kterou pomocí vah $W$ získá výstup $y$ (rovnice \ref{figure:basic-nn}).
 
 \begin{align}\label{figure:basic-nn}
   y = f (x, W)
@@ -183,7 +183,7 @@ Kde \ref{figure:lastContext} je aktuální kontext, \ref{figure:rnnSimple} je zj
             \tmpframe{\includegraphics[width=1.0\linewidth]{img/RNN-unrolled.png}}
     \end{center}
 	\caption{A recurrent neural network and the unfolding in time of the computation involved in its forward computation. \todo{vlastni obrázek nebo citace \url{http://colah.github.io/posts/2015-08-Understanding-LSTMs/} }}
-	\label{img:rnn}
+	\label{img:rnnUnrolled}
 \end{figure}
 
 Cílem jazykového modelu je předpovídat následující slovo ve větě. Aby model věděl kdy má začít a ukončit predikci, používají se speciální \textbf{počáteční a koncový symbol} (<s>, </s>). Vstupní věta (sekvence) $x$ by například mohla být $x$ = \{<s>, Venku, sedí, kočka\}. Věta $y$ generovaná modelem, by pak mohla být například tatáž věta, ale posunutá o jeden časový úsek dopředu -- $y$ = \{Venku, sedí, kočka, </s>\}. V ilustraci \todo{...} je názorná ukázka.
@@ -208,7 +208,7 @@ Protože vektor $m$ z rovnice \ref{lastContext} je konkatenací všech předchoz
 
 
 \subsection{Mizející a explodující gradient} \label{subsection:gradient}
-RNN jsou oproti základním neuronovým sítím schopné zachytit různé závislosti mezi slovy na delší vzdálenosti. I tato schopnost je však velmi limitovaná. Hlavními zdroji problémů jsou \textbf{mizející a explodující gradient} (článek \cite{gradientProblems}). 
+RNN jsou oproti základním neuronovým sítím schopné zachytit různé závislosti mezi slovy na delší vzdálenosti. I tato schopnost je však velmi limitovaná. Hlavními zdroji problémů jsou \textbf{mizející a explodující gradient} (článek \cite{gradientProblems}).
 
 \todo{patrne v nejake predchozi casti zhruba popsat LOSS, BACKPROPAGATION aby se tady na to pak dalo navazat}
 
@@ -222,23 +222,65 @@ Při průběhu učení RNN průběžně vznikají predikce a počítá se \emph{
 	\label{img:TODO}
 \end{figure}
 
-Jako možné řešení těchto problémů vznikla varianta rekurentní sítě LSTM \ref{section:LSTM}.
+Jako možné řešení těchto problémů vznikla varianta rekurentní sítě LSTM (sekce \ref{section:LSTM}).
 
 
 
 
 \subsection{LSTM}\label{section:LSTM}
-Long short term memory (článek \cite{LSTM}, dále LSTM) nebo-li dlouhá krátkodobá paměť, je varianta RNN řešící problém mizejícího gradientu a vzdálených závislostí \todo{lepší překlad pro long term dependencies?}.
+Long short term memory, dále LSTM, (původní článek \cite{LSTM} a varianta LSTM s forget gate \cite{forgetLSTM}) nebo-li dlouhá krátkodobá paměť, je varianta RNN navržená jako řešení problémů mizejícího/explodujícího gradientu a vzdálených závislostí.
+
+Stejně jako základní RNN (sekce \ref{section:rnn}), je LSTM opakující se modul v řetězové struktuře viz obrázek \ref{img:rnnUnrolled}. Rozdíl je ve vnitřku modulu $A$. Zatímco RNN používá pouze jednu nelineární funkci (rovnice \ref{figure:rnn} a obrázek \ref{img:functions}), struktura LSTM je složitější (obrázek \ref{img:LSTM}). Rovnice jsou následující:
 
 \begin{align}
-    f_{t}&=\sigma _{g}(W_{xf}x_{t}+W_{hf}h_{t-1}+b_{f})\\
-    i_{t}&=\sigma _{g}(W_{xi}x_{t}+W_{hi}h_{t-1}+b_{i})\\
-    o_{t}&=\sigma _{g}(W_{xo}x_{t}+W_{ho}h_{t-1}+b_{o})\\
-    c_{t}&=f_{t}\circ c_{t-1}+i_{t}\circ \sigma_{c}(W_{c}x_{t}+U_{c}h_{t-1}+b_{c})\\
-    h_{t}&=o_{t}\circ \sigma _{h}(c_{t})
+    u_{t}&=tanh(W_{xu}x_t + W_{hu}h_{t-1} + b_u) \label{figure:update} \\
+    f_{t}&=\sigma(W_{xf}x_{t}+W_{hf}h_{t-1}+b_{f}) \label{figure:forgetGate} \\
+    i_{t}&=\sigma(W_{xi}x_{t}+W_{hi}h_{t-1}+b_{i}) \label{figure:inputGate} \\
+    o_{t}&=\sigma(W_{xo}x_{t}+W_{ho}h_{t-1}+b_{o}) \label{figure:outputGate} \\
+    c_{t}&=i_{t}\circ u_{t}+f_{t}\circ c_{t-1}\label{figure:memoryCell} \\
+    h_{t}&=o_{t}\circ tanh(c_{t}) \label{figure:hiddenState}
 \end{align}
 
+\todo{asi nekde vysvetlit operaci kolecko \circ}
+
+RNN má pouze vnitřní stav $h$. LSTM má navíc ještě paměťovou buňku $c$ (rovnice \ref{figure:memoryCell}). Protože gradient této buňky je právě jedna, netrpí tak LSTM problémy ze sekce \ref{subsection:gradient} a mohou tak v ní být zachyceny i vzdálené závislosti.
+
+Rovnice \ref{figure:update} je update funkcí a je ekvivalentem rovnice \ref{figure:rnn} z RNN.
+Dále LSTM obsahuje tři různé \textbf{brány}. \textbf{Zapomínací}, \textbf{vstupní} a \textbf{výstupní} (\ref{figure:outputGate}). Tyto brány určují a kontrolují co se nachází v paměti $c_t$.
+
+Nejdříve se LSTM rozhodne, jaké informace se vyhodí z paměti. K tomuto slouží již zmíněna zapomínací brána nebo-li forget gate (rovnice \ref{figure:forgetGate}). Například v případě, že síť narazí na vstupu na podstatné jméno, mohla by chtít zapomenout rod posledního podstatného jména, který by si mohla uchovávat pro správné generování sloves v minulém čase.
+
+Dalším krokem je vyhodnocení toho co se má přidat do paměti. Nejdřív vstupní brána nebo-li input gate (rovnice \ref{figure:inputGate}) rozhodne, které hodnoty se změní nebo přidají. V návaznosti na minulý příklad by síť mohla chtít uložit aktuální rod nalezeného podstatného jména. Update funkce (rovnice \ref{figure:update}) vyhodnotí jaké hodnoty se mají přidat. 
+
+Následuje aktualizace paměti $c_t$ (rovnice \ref{figure:memoryCell}. V kontextu příkladu by se zahodil rod jak určila zapomínací brána a uložil se nový rod podle vstupní brány.
+
+Posledním krokem je určení toho co vydá LSTM na výstupu (vnitřní stav $h_t$). Výstupní brána určí co z paměti $c_t$ má projít (rovnice \ref{figure:outputGate} a v rovnici \ref{figure:hiddenState} se získá výsledek. 
+
+Pravděpodobnosti jazykového modelu se získají rovnicí:
+\begin{align}
+    p_t = softmax(W_{hs}h_{t} + b_{s})
+\end{align}
+
+
+\begin{figure}
+    \begin{center}
+            \tmpframe{\includegraphics[width=0.8\linewidth]{img/placeholder.pdf}}
+    \end{center}
+	\caption{\todo{nějakej cool obrázek jako je v tutorialu figure 17, strana 32}}
+	\label{img:LSTM}
+\end{figure}
+
+
+
 \subsection{GRU}\label{section:GRU}
+LSTM \ref{section:LSTM} je dobrým řešením pro problémy ze sekce \ref{subsection:gradient}. Její struktura je ale dosti komplikovaná a její pochopení tak není úplně intuitivní. To podnítilo vznik další varianty RNN -- GRU nebo-li gated recurrent unit (článek \cite{GRU}).
+
+\begin{align}    
+    r_{t}&=\sigma(W_{xr}x_{t}+W_{hr}h_{t-1}+b_{r}) \label{figure:resetGate} \\
+    z_{t}&=\sigma(W_{xz}x_{t}+W_{hz}h_{t-1}+b_{z}) \label{figure:updateGate} \\
+    \tilde{h}&=tanh(W_{xh}x_t + W_{hh}(r_t \circ h_{t-1}) + b_h) \label{figure:candidate} \\
+    h_{t}&=(1 - z_t)h_{t-1} + z_thVlnka_t) \label{figure:hiddenStateGru}
+\end{align}
 
 
 \subsection{Trénování}
@@ -285,11 +327,10 @@ Je to tak a tak rychlé.
 
 \section{Baseline systém v Moses}
 \todo{Jak rozlišit návrh a realizaci?}
-\blind{3}
 
 \section{Dataset/y}
 Jejich struktura, jak je zpracuji a použiji
-\blind{2}
+
 \begin{figure}
     \begin{center}
             \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
@@ -324,7 +365,9 @@ A padding. Rozdělení sekvencí na skupiny podle délky, abych nepaddingoval zb
 \textbf{Plány do budoucna}
 \begin{itemize}
     \item použití bidirectional první vrstvy encoderu, pro lepší zachování contextu \cite{googleBridgingGap} na místo použití obrácených vstupů
-    \item použití wordpieces \cite{googleBridgingGap} místo celých slov pro lepší handling rare words
+    \item použití wordpieces \cite{googleBridgingGap} místo celých slov pro lepší handling rare words (mozna)
     \item přidat attention \cite{attention}
     \item přidat beam search \cite{nmtTutorial}, sehnat původní článek co přinesl beam search
+    \item vyzkouset ruzny poctvy vrstev LSTM a velikosti vrstev
+    \item pridat early stopping
 \end{itemize}

@@ -27,6 +27,8 @@ def add_arguments(parser):
     parser.add_argument("--model_file", type=str, default="model_weights.h5",
                         help="Model file name. Either will be created or loaded.")
     parser.add_argument("--epochs", type=int, default=1, help="Number of epochs")
+    parser.add_argument("--num_encoder_layers", type=int, default=1, help="Number of layers in encoder")
+    parser.add_argument("--num_decoder_layers", type=int, default=1, help="Number of layers in decoder")
     parser.add_argument("--batch_size", type=int, default=64, help="Size of one batch")
     parser.add_argument("--num_units", type=int, default=256,
                         help="Size of each network layer")
@@ -43,7 +45,7 @@ def add_arguments(parser):
     parser.add_argument("--embedding_dim", type=int, default=300, help="Dimension of embeddings")
     parser.add_argument("--max_embedding_num", type=int, default=None,
                         help="how many first lines from embedding file should be loaded, None means all of them(irony)")
-    parser.add_argument("--validation_split", type=float, default=0.2,
+    parser.add_argument("--validation_split", type=float, default=0.0,
                         help="How big proportion of a development dataset should be used for validation during fiting")
     parser.add_argument("--bucketing", type=bool_arg, default=False,
                         help="Whether to bucket sequences according their size to optimize padding")

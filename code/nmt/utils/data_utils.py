@@ -48,7 +48,7 @@ def read_file_to_lines(path, max_lines):
 
     Args:
         path: path to the file
-        max_lines: maximum number of lines to be read from file
+        max_lines: maximum number of lines to be read from file, None means all of them
 
     Returns: list of string lines read from the file
 
