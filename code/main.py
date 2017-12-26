@@ -2,7 +2,6 @@
 
 import logging
 import argparse
-from nmt.translator import Translator
 
 # TODO how to properly log
 logging.basicConfig(level=logging.DEBUG,
@@ -41,17 +40,23 @@ def add_arguments(parser):
                         help="Maximum size of source vocabulary")
     parser.add_argument("--max_target_vocab_size", type=int, default=15000,
                         help="Maximum size of target vocabulary")
-    parser.add_argument("--embedding_path", type=str, default=None, help="Path to pretrained fastText embeddings file")
-    parser.add_argument("--embedding_dim", type=int, default=300, help="Dimension of embeddings")
-    parser.add_argument("--max_embedding_num", type=int, default=None,
-                        help="how many first lines from embedding file should be loaded, None means all of them(irony)")
+    parser.add_argument("--source_embedding_path", type=str, default=None,
+                        help="Path to pretrained fastText embeddings file for source langauge")
+    parser.add_argument("--target_embedding_path", type=str, default=None,
+                        help="Path to pretrained fastText embeddings file for target language")
+    parser.add_argument("--source_embedding_dim", type=int, default=300, help="Dimension of source embeddings")
+    parser.add_argument("--target_embedding_dim", type=int, default=300, help="Dimension of target embeddings")
+    parser.add_argument("--max_source_embedding_num", type=int, default=None,
+                        help="how many first lines from embedding file should be loaded, None means all of them")
+    parser.add_argument("--max_target_embedding_num", type=int, default=None,
+                        help="how many first lines from embedding file should be loaded, None means all of them")
     parser.add_argument("--validation_split", type=float, default=0.0,
                         help="How big proportion of a development dataset should be used for validation during fiting")
     parser.add_argument("--bucketing", type=bool_arg, default=False,
                         help="Whether to bucket sequences according their size to optimize padding")
     parser.add_argument("--bucket_range", type=int, default=10,
                         help="Range of different sequence lenghts in one bucket")
-    parser.add_argument("--use_fit_generator", type=bool_arg, default=True,
+    parser.add_argument("--use_fit_generator", type=bool_arg, default=False,
                         help="Prevent memory crash by only load part of the dataset at once each time when fitting")
     parser.add_argument("--reverse_input", type=bool_arg, default=True,
                         help="Whether to reverse source sequences (optimization for better learning)")
@@ -60,12 +65,18 @@ def add_arguments(parser):
     parser.add_argument("--clear", type=bool_arg, default=False,
                         help="Whether to delete old weights and logs before running")
 
+    mode_group = parser.add_mutually_exclusive_group(required=True)
+    mode_group.add_argument('--training_mode', action='store_true', default=False,
+                            help="Trains the model on the training dataset and evaluate on testing dataset")
+    mode_group.add_argument('--livetest_mode', action='store_true', default=False,
+                            help="Loads trained model and lets user try translation in promt")
+
 
 # TODO compare use_fit_generator speed True vs False
 
-# python main.py --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator True
+# python main.py --training_mode --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
 def main():
-    parser = argparse.ArgumentParser(description='Arguments for the Translator class')
+    parser = argparse.ArgumentParser(description='Arguments for the main.py that uses nmt module')
     add_arguments(parser)
 
     args, unparsed = parser.parse_known_args()
@@ -73,10 +84,16 @@ def main():
     if unparsed:
         logger.warning("some unexpected arguments: {}".format(unparsed))
 
+    # to speed up loading of parser help
+    # tensorflow takes quite some time to load
+    from nmt.translator import Translator
+
     translator = Translator(
         batch_size=args.batch_size, bucketing=args.bucketing, bucket_range=args.bucket_range,
-        embedding_dim=args.embedding_dim, embedding_path=args.embedding_path,
-        max_embedding_num=args.max_embedding_num, epochs=args.epochs, source_lang=args.source_lang,
+        source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,
+        source_embedding_path=args.source_embedding_path, target_embedding_path=args.target_embedding_path,
+        max_source_embedding_num=args.max_source_embedding_num, max_target_embedding_num=args.max_target_embedding_num,
+        epochs=args.epochs, source_lang=args.source_lang,
         num_units=args.num_units, optimizer=args.optimizer, use_fit_generator=args.use_fit_generator,
         log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
         max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
@@ -85,13 +102,17 @@ def main():
         test_dataset=args.test_dataset, training_dataset=args.training_dataset, validaton_split=args.validation_split,
         tokenize=args.tokenize, clear=args.clear
     )
-    translator.fit()
-    evaluation = translator.evaluate()
 
-    logger.info("model evaluation: {}".format(evaluation))
+    if args.training_mode:
+        translator.fit()
+        evaluation = translator.evaluate()
 
-    # translator.translate()
-    translator.translate("kočka chodí dírou")
+        print("model evaluation: {}".format(evaluation))
+
+    elif args.livetest_mode:
+        while True:
+            seq = input("Enter sequence: ")
+            translator.translate(seq)
 
     # TODO class for encoder/decoder
 

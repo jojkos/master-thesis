@@ -50,7 +50,7 @@ Jazykový model udává pro každou větu $w$ jaká je její pravděpodobnost. R
 Pro každé slovo $w_i$ ze sekvence $w$ určí jaká je jeho podmíněná pravděpodobnost v případě, že se před ním nachází slova $w_{<i}$.
 
 \subsection{N-gram modely}\label{subsection:ngram}
-Ve výsledku je pro překladový systém potřeba získat model, který pro zdrojovou větu $E$ vrátí přeloženou větu $F$, tak že $P(F|E)$. N-gram model je však jazykový model, který udává jen pro pravděpodobnost věty P(F) (pro nějaký daný kontext nad kterým se model nacvičil).
+Ve výsledku je pro překladový systém potřeba získat model, který pro zdrojovou větu $F$ vrátí přeloženou větu $E$, tak že $P(E|F)$. N-gram model je však jazykový model, který udává jen pro pravděpodobnost věty P(E) (pro nějaký daný kontext nad kterým se model nacvičil).
 
 Takovýto model umožní zhodnotit přirozenost věty a generovat text podobný tomu, na kterém byl model nacvičen \cite{nmtTutorial}.
 
@@ -241,9 +241,9 @@ Stejně jako základní RNN (sekce \ref{section:rnn}), je LSTM opakující se mo
     h_{t}&=o_{t}\circ tanh(c_{t}) \label{figure:hiddenState}
 \end{align}
 
-\todo{asi nekde vysvetlit operaci kolecko \circ}
+\todo{asi nekde vysvetlit operaci kolecko \\circ}
 
-RNN má pouze vnitřní stav $h$. LSTM má navíc ještě paměťovou buňku $c$ (rovnice \ref{figure:memoryCell}). Protože gradient této buňky je právě jedna, netrpí tak LSTM problémy ze sekce \ref{subsection:gradient} a mohou tak v ní být zachyceny i vzdálené závislosti.
+RNN má pouze skrytý stav $h$. LSTM má navíc ještě paměťovou buňku $c$ (rovnice \ref{figure:memoryCell}). Protože gradient této buňky je právě jedna, netrpí tak LSTM problémy ze sekce \ref{subsection:gradient} a mohou tak v ní být zachyceny i vzdálené závislosti.
 
 Rovnice \ref{figure:update} je update funkcí a je ekvivalentem rovnice \ref{figure:rnn} z RNN.
 Dále LSTM obsahuje tři různé \textbf{brány}. \textbf{Zapomínací}, \textbf{vstupní} a \textbf{výstupní} (\ref{figure:outputGate}). Tyto brány určují a kontrolují co se nachází v paměti $c_t$.
@@ -254,7 +254,7 @@ Dalším krokem je vyhodnocení toho co se má přidat do paměti. Nejdřív vst
 
 Následuje aktualizace paměti $c_t$ (rovnice \ref{figure:memoryCell}. V kontextu příkladu by se zahodil rod jak určila zapomínací brána a uložil se nový rod podle vstupní brány.
 
-Posledním krokem je určení toho co vydá LSTM na výstupu (vnitřní stav $h_t$). Výstupní brána určí co z paměti $c_t$ má projít (rovnice \ref{figure:outputGate} a v rovnici \ref{figure:hiddenState} se získá výsledek. 
+Posledním krokem je určení toho co vydá LSTM na výstupu (skrytý stav $h_t$). Výstupní brána určí co z paměti $c_t$ má projít (rovnice \ref{figure:outputGate} a v rovnici \ref{figure:hiddenState} se získá výsledek.
 
 Pravděpodobnosti jazykového modelu se získají rovnicí:
 \begin{align}
@@ -273,14 +273,16 @@ Pravděpodobnosti jazykového modelu se získají rovnicí:
 
 
 \subsection{GRU}\label{section:GRU}
-LSTM \ref{section:LSTM} je dobrým řešením pro problémy ze sekce \ref{subsection:gradient}. Její struktura je ale dosti komplikovaná a její pochopení tak není úplně intuitivní. To podnítilo vznik další varianty RNN -- GRU nebo-li gated recurrent unit (článek \cite{GRU}).
+LSTM (sekce \ref{section:LSTM}) je dobrým řešením pro problémy ze sekce \ref{subsection:gradient}. Její struktura je ale dosti komplikovaná a tím pádem i náročná na čas a výpočetní výkon. To podnítilo vznik další varianty RNN -- GRU nebo-li gated recurrent unit (článek \cite{GRU}), která je o něco jednodušší a proto je možné ji použít pro úsporu výkonu.
 
 \begin{align}    
     r_{t}&=\sigma(W_{xr}x_{t}+W_{hr}h_{t-1}+b_{r}) \label{figure:resetGate} \\
     z_{t}&=\sigma(W_{xz}x_{t}+W_{hz}h_{t-1}+b_{z}) \label{figure:updateGate} \\
-    \tilde{h}&=tanh(W_{xh}x_t + W_{hh}(r_t \circ h_{t-1}) + b_h) \label{figure:candidate} \\
-    h_{t}&=(1 - z_t)h_{t-1} + z_thVlnka_t) \label{figure:hiddenStateGru}
+    \tilde{h}_{t}&=tanh(W_{xh}x_t + W_{hh}(r_t \circ h_{t-1}) + b_h) \label{figure:candidate} \\
+    h_{t}&=(1 - z_t)h_{t-1} + z_{t}\tilde{h}_{t}) \label{figure:hiddenStateGru}
 \end{align}
+
+GRU má pouze dvě brány a skrytý stav $h$. Nový stav se počítá v rovnici \ref{figure:hiddenStateGru} interpolací mezi minulým stavem $h_{t-1}$ a kandidátem na nový stav $\tilde{h}_{t}$ upravený hodnotou \textbf{update} brány (rovnice \ref{figure:updateGate}. Kandidát se získá v rovnici \ref{figure:candidate}, která je podobná update funkci z RNN (rovnice \ref{figure:rnn}, ale je upravena hodnotou \textbf{resetovací} brány (rovnice \ref{figure:resetGate}).
 
 
 \subsection{Trénování}
@@ -288,15 +290,81 @@ LSTM \ref{section:LSTM} je dobrým řešením pro problémy ze sekce \ref{subsec
 \todo{loss computing}
 \todo{gradient computing}
 
-\subsection{Global optimization methods viz wiki on RNN}
+\subsection{Gradient descent methods}
+\url{http://ruder.io/optimizing-gradient-descent/index.html#stochasticgradientdescent}
+\todo{jak prelozit gradient descent? popsat co to je, ke cemu to je a pak vypsat ty jednotlivy metody a trochu je popsat}
+\url{https://arxiv.org/abs/1609.04747}
+
+
+\todo{z tutorialu, sekce 6.5 strana 35..nejak popsat batch, minibatch, online batch, sentence padding a masking}
+
+
+\section{Seq2seq model s architekturou encoder-decoder}
+V předchozích sekcích se práce zabývá rekurentními neuronovými sítěmi a jazykovými modely na nich postavených. V této sekci bude popsáno jak tyto sítě vzít a poskládat je vhodným způsobem pro překlad vět. Sekce vychází z práce \cite{nmtTutorial}.
+
+\textbf{Seq2seq} (článek \cite{seq2seq}) nebo-li sequence to sequence je způsob překladu po celých větách. Jde o modelování pravděpodobnosti $P(E|F)$ tedy pravděpodobnost výstupu $E$ na základě vstupu $F$ (obrázek \todo{obrázek s jednou větou přeloženou do jiné a znázornění pravděpodobností}).
+
+\begin{figure}
+    \begin{center}
+            \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
+    \end{center}
+	\caption{\todo{seq2seq a probability}}
+	\label{img:seq2seqProb}
+\end{figure}
+
+Pro tento druh překladu celých vět za pomocí rekurentních neuronových sítí se používá model s architekturou \textbf{encoder-decoder}. Enkodér i dekodér jsou RNN modely. Enkodér dostane na vstupu větu určenou pro překlad a převede ji (enkóduje) do vektoru reálných čísel (skrytý stav, takzvaný myšlenkový vektor). Dekodér inicializovaný tímto stavem generuje (dekóduje z myšlenkového vektoru) přeloženou větu. 
+
+
+\begin{align}
+    m^{(f)}_{t}&=M^{(f)}_{f_t}\label{figure:encoderEmb} \\
+    h^{f}_{t}&=\begin{cases}
+                    RNN^{(f)}(m^{(f)}_{t},h^{(f)}_{t-1}) & \mbox{pokud t $\geq$ 1},\label{figure:encoderState} \\
+                    0 & \mbox{jinak}.
+                \end{cases}\\
+    m^{(e)}_{t}&=M^{(e)}_{e_{t-1}}\label{figure:decoderEmb} \\
+    h^{e}_{t}&=\begin{cases}
+                    RNN^{(e)}(m^{(e)}_{t},h^{(e)}_{t-1}) & \mbox{pokud t $\geq$ 1},\\
+                    h^{f}_{|F|} & \mbox{jinak}.
+                \end{cases}\label{figure:decoderState} \\
+    p^{(e)}_{t}&=\mbox{softmax}(W_{hs}h^{(e)}_{t} + b_{s}) \label{figure:resultSoftmax}
+\end{align}
+
+
+Pro každé slovo v čase $t$ ze vstupní sequence $F$ se vyhledá jeho embedding (rovnice \ref{figure:encoderEmb}). Následně se v rovnici \ref{figure:encoderState} spočítá skrytý stav enkodéru. Po projití přes celou vstupní větu by měly uvnitř být uloženy všechny informace potřebné pro inicializaci dekodéru. I pro dekodér se nejprve vyhledá pro vstupní slovo jeho embedding (rovnice \ref{figure:decoderEmb}). Použité slovo není z času $t$, ale z času $t-1$, protože dekodér generuje následující slovo vždy na základě předchozího. V čase $t_0$ se jako vstupní slovo používá startovní token <s>. Rovnice pro výpočet skrytého stavu dekodéru (\ref{figure:decoderState}) je prakticky stejná jak u encodéru. Pouze v čase $t_0$ se použije koncový stav enkodéru jako inicializace ze které může dekodér vycházet při překladu -- ve vnitřním stavu je zachycen význam věty, kterou má přeložit. Pravděpodobnostní rozložení se pak jako u všech jazykových modelů spočítá pomocí funkce \emph{softmax} (rovnice \ref{figure:resultSoftmax}).
+
+
+\begin{figure}
+    \begin{center}
+            \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
+    \end{center}
+	\caption{\todo{pořádná ukázka seq2seq asi jako je v nmt thesi}}
+	\label{img:seq2seq}
+\end{figure}
 
 
 
+\subsection{Generování výstupu}
+Jak již bylo řečeno, dekodér je inicializovaný koncovým stavem enkodéru $h^{f}_{|F|}$. Jako první vstup obdrží dekodér startovní symbol <s> a předpoví první slovo na výstup. Vygenerované slovo se v dalším kroku $t$ použije jako aktuální vstup dekodéru. Takto probíhá generování dokud dekodér nedá na výstup další speciální symbol \textbf{<eos>} (end of sentence), který značí konec věty. Těmito symboly je při trénování sítě potřeba obalit každou větu, tak jak je vidět i na obrázku \ref{img:seq2seq}. Ve skutečnosti však výstupem dekodéru není přímo slovo, ale rozložení pravděpodobnosti přes všechna slova cílového slovníku získaného funkcí \emph{softmax} v rovnici \ref{figure:resultSoftmax}. Je několik možností jak z tohoto rozložení vybrat konkrétní slovo:
 
-\section{Modely seq2seq}
+\begin{description}
+  \item[Náhodný výběr:] Z rozložení pravděpodobnosti $P(E|F)$ se slovo vybere náhodně
+  \item[Chamtivý výběr:] Chamtivý (greedy) výběr spočívá ve vybrání slova, které získalo největší pravděpodobnost -- argmax($P(E|F)$)
+  \item[Paprskové prohledávání:] Z anglického beam search, paprskové prohledávání najde $n$ výstupů s největší pravděpodobností $P(E|F)$, které drží jako $n$ možných výsledků nebo-li hypotéz. V každém kroku $t$ se každá hypotéza rozšíří o další slovo a ze všech aktuálních hypotéz se zase vybere $n$ nejslibnějších. Až jsou všechny hypotézy ukončený koncovým symbolem <eos>, vybere se z nich ta s největší pravděpodobností, jako výsledek.
+\end{description}
 
+\todo{možnost obrázku vysvětlujícím jednotlivé způsoby výběru -- trojobrázek jako pro sigmoidy..?}
 
-\subsection{Encoder-decoder architektura}
+\todo{lépe popsat beam search, ale az v lete asi, viz tutorial}
+
+\subsection{Metody optimalizace}
+V této sekci jsou popsány způsoby jakými lze zlepšit výkon seq2seq modelu.
+
+\begin{description}
+  \item[Převrácení vstupu:] Článek \cite{seq2seq} udává, že výrazným způsobem pomůže, když se slova ve vstupní sekvenci převrátí a do enkodéru  se věta předává pozpátku (obrázek ..). \todo{stejnej obrázek jak u seq2seq, ale s obráceným vstupem nebo takovej jakej je v tutorialu figure 24} Pravděpodobně je to díky tomu, že závislosti co by běžně byly vzdálené -- typicky poslední slovo ve vstupní větě a jeho přeložená varianta v přeložené větě -- jsou si takhle blíž. Díky tomu se může model snáz a rychleji učit.
+  \item[Obousměrný encodér:] Zatímco převrácení vstupu pomůže jen pokud jsou slova ve větách překládaných jazyků na podobných místech (což není pravda napříč všemi jazyky), tato varianta je spolehlivější. Místo jednoho enkodéru se použijí dva a každý z nich projde větu jedním směrem. Jejich výsledky se pak spojí do jednoho skrytého stavu $h$, kterým se již běžně inicializuje dekodér.
+  \item[Hloubka sítí:] Enkodér i dekodér jsou RNN a mohou obsahovat více skrytých vrstev (ať již základní varianty, LSTM nebo GRU). Článek \cite{googleBridgingGap} udává, že více vrstev může do určité hloubky pomoci. V práci jich použili 8 jak pro enkodér tak dekodér. Při použití většího množství již má model problém se úspěšně učit.
+\end{description}
+
 \begin{figure}
     \begin{center}
             \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
@@ -307,6 +375,13 @@ LSTM \ref{section:LSTM} je dobrým řešením pro problémy ze sekce \ref{subsec
 
 
 
+\chapter{Implementace}
+Naprogramoval jsem.
+Posbíral jsem data.
+Pustil jsem to.
+Výsledky jsou takové.
+Je to tak a tak rychlé.
+
 
 Ne jako samostatná kapitola, ale v rámci nějaké (asi implementace) bych udělal itemize a nebo přinejmenším aspon zběžně popsal proč jsem zvolili Keras.
 \emph{Frameworky}
@@ -316,14 +391,6 @@ Ne jako samostatná kapitola, ale v rámci nějaké (asi implementace) bych udě
   \item CNTK
   \item Keras
 \end{itemize}
-
-
-\chapter{Implementace}
-Naprogramoval jsem.
-Posbíral jsem data.
-Pustil jsem to.
-Výsledky jsou takové.
-Je to tak a tak rychlé.
 
 \section{Baseline systém v Moses}
 \todo{Jak rozlišit návrh a realizaci?}

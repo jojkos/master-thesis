@@ -9,7 +9,6 @@ import shutil
 import numpy as np
 from gensim.models import KeyedVectors
 from keras.preprocessing.text import text_to_word_sequence
-from nmt import SpecialSymbols
 from gensim.models.wrappers import FastText
 
 random.seed(0)
@@ -17,6 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 def prepare_folder(path, clear):
+    """
+
+    Args:
+        path (str): path to the folder
+        clear (bool): whether to clear the folder if it already exists
+
+    """
     logger.debug("preparing folder {}".format(path))
 
     if clear:
@@ -37,6 +43,13 @@ def prepare_folder(path, clear):
 
 
 def prepare_folders(paths, clear):
+    """
+
+    Args:
+        paths (str[]): list of paths to the folders
+        clear (bool): whether to clear the folders if they already exists
+
+    """
     for path in paths:
         prepare_folder(path, clear)
 
@@ -217,33 +230,41 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
     return buckets
 
 
-def tokenize(x_lines, y_lines):
+def tokenize(lines):
+    """
+
+    Tokenizes lines using keras's text_to_word_sequence
+
+    Args:
+        lines (str[]): array of sequences
+
+    Returns: list of splitted word sequences
+
+    """
     logger.info("tokenizing lines...")
     # TODO use tokenization from Moses so its same as for Moses baseline model
-    x_word_seq = [text_to_word_sequence(x) for x in x_lines]
-    y_word_seq = [[SpecialSymbols.GO] + text_to_word_sequence(y) + [SpecialSymbols.EOS] for y in y_lines]
+    word_seq = [text_to_word_sequence(x) for x in lines]
 
-    # Retrieving max sequence length for both source and target
-    x_max_seq_len = max(len(seq) for seq in x_word_seq)
-    y_max_seq_len = max(len(seq) for seq in y_word_seq)
-
-    logger.info("Max sequence length for inputs: {}".format(x_max_seq_len))
-    logger.info("Max sequence length for targets: {}".format(y_max_seq_len))
-
-    return x_word_seq, y_word_seq, x_max_seq_len, y_max_seq_len
+    return word_seq
 
 
 def split_lines(lines):
+    """
+
+    Splits each line on ' ' character
+
+    Args:
+        lines (str[]): array of lines
+
+    Returns: returns array of splitted lines
+
+    """
     word_seq = []
-    max_seq_len = 0
 
     for line in lines:
         word_seq.append(line.split(" "))
 
-        if len(word_seq) > max_seq_len:
-            max_seq_len = len(word_seq)
-
-    return word_seq, max_seq_len
+    return word_seq
 
 
 if __name__ == "__main__":
