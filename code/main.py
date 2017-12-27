@@ -2,6 +2,8 @@
 
 import logging
 import argparse
+import os
+import sys
 
 # TODO how to properly log
 logging.basicConfig(level=logging.DEBUG,
@@ -75,6 +77,7 @@ def add_arguments(parser):
 # TODO compare use_fit_generator speed True vs False
 
 # python main.py --training_mode --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
+# python main.py --training_mode --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 1 --clear True
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the main.py that uses nmt module')
     add_arguments(parser)
@@ -86,10 +89,17 @@ def main():
 
     # to speed up loading of parser help
     # tensorflow takes quite some time to load
-    from nmt.translator import Translator
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'nmtPackage')))
+    from nmt import Translator
+
+    # this could be fix for the errors that are thrown sometimes
+    import tensorflow as tf
+    from keras.backend.tensorflow_backend import set_session
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    set_session(tf.Session(config=config))
 
     translator = Translator(
-        batch_size=args.batch_size, bucketing=args.bucketing, bucket_range=args.bucket_range,
         source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,
         source_embedding_path=args.source_embedding_path, target_embedding_path=args.target_embedding_path,
         max_source_embedding_num=args.max_source_embedding_num, max_target_embedding_num=args.max_target_embedding_num,
@@ -103,9 +113,11 @@ def main():
         tokenize=args.tokenize, clear=args.clear
     )
 
+    # TODO osamostatnit veci v modulu a vyndat je sem, z modulu udelat jen generic modul
+
     if args.training_mode:
-        translator.fit()
-        evaluation = translator.evaluate()
+        translator.fit(args.batch_size)
+        evaluation = translator.evaluate(args.batch_size)
 
         print("model evaluation: {}".format(evaluation))
 

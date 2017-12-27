@@ -236,7 +236,7 @@ def tokenize(lines):
     Tokenizes lines using keras's text_to_word_sequence
 
     Args:
-        lines (str[]): array of sequences
+        lines (str[]): array of lines
 
     Returns: list of splitted word sequences
 
@@ -256,7 +256,7 @@ def split_lines(lines):
     Args:
         lines (str[]): array of lines
 
-    Returns: returns array of splitted lines
+    Returns: returns array of splitted sequences
 
     """
     word_seq = []

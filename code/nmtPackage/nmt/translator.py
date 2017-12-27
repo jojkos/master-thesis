@@ -30,8 +30,7 @@ class Translator(object):
 
     """
 
-    def __init__(self, batch_size, bucketing, bucket_range,
-                 source_embedding_dim, target_embedding_dim, source_embedding_path, target_embedding_path,
+    def __init__(self, source_embedding_dim, target_embedding_dim, source_embedding_path, target_embedding_path,
                  max_source_embedding_num, max_target_embedding_num, epochs, use_fit_generator,
                  source_lang, num_units, optimizer,
                  log_folder, max_source_vocab_size, max_target_vocab_size, model_file, model_folder,
@@ -40,9 +39,6 @@ class Translator(object):
         """
 
         Args:
-            batch_size (int): Size of one batch
-            bucketing (bool): Whether to bucket sequences according their size to optimize padding
-            bucket_range (int): Range of different sequence lenghts in one bucket
             source_embedding_dim (int): Dimension of embeddings
             target_embedding_dim (int): Dimension of embeddings
             target_embedding_path (str): Path to pretrained fastText embeddings file
@@ -68,9 +64,6 @@ class Translator(object):
             use_fit_generator (bool): Prevent memory crash by only load part of the dataset at once each time when fitting"
         """
 
-        self.batch_size = batch_size
-        self.bucketing = bucketing
-        self.bucket_range = bucket_range
         self.source_embedding_dim = source_embedding_dim
         self.target_embedding_dim = target_embedding_dim
         self.source_embedding_path = source_embedding_path
@@ -147,20 +140,20 @@ class Translator(object):
             logger.info("Loading model weights from file..")
             self.model.load_weights(self.model_weights_path)
 
-    def _get_training_data(self, from_index=0, to_index=None):
+    def _get_training_data(self, from_index=0, to_index=None, bucketing=False, bucket_range=10):
         """
 
         Returns: dict with encoder_input_data, decoder_input_data and decoder_target_data of whole dataset size
 
         """
-        if self.bucketing:
+        if bucketing:
             encoder_input_data = []
             decoder_input_data = []
             decoder_target_data = []
 
             buckets = utils.split_to_buckets(self.training_dataset.x_word_seq[from_index: to_index],
                                              self.training_dataset.y_word_seq[from_index: to_index],
-                                             self.bucket_range,
+                                             bucket_range,
                                              self.training_dataset.x_max_seq_len,
                                              self.training_dataset.y_max_seq_len)
 
@@ -192,13 +185,13 @@ class Translator(object):
             "decoder_target_data": decoder_target_data
         }
 
-    def _training_data_gen(self, infinite=True):
+    def _training_data_gen(self, batch_size, infinite=True, bucketing=False, bucket_range=10):
         """
 
         Args:
             infinite: whether to yield data infinitely or stop after one walkthrough the dataset
 
-        Returns: dict with encoder_input_data, decoder_input_data and decoder_target_data of self.batch_size size
+        Returns: dict with encoder_input_data, decoder_input_data and decoder_target_data of batch_size size
 
         """
         # TODO what about shuffling?
@@ -211,9 +204,9 @@ class Translator(object):
         once_through = False
 
         while infinite or not once_through:
-            training_data = self._get_training_data(i, i + self.batch_size)
+            training_data = self._get_training_data(i, i + batch_size, bucketing, bucket_range)
 
-            if self.bucketing:
+            if bucketing:
                 yield training_data
             else:
                 yield (
@@ -221,7 +214,7 @@ class Translator(object):
                     training_data["decoder_target_data"]
                 )
 
-            i += self.batch_size
+            i += batch_size
 
             if i >= self.training_dataset.num_samples:
                 once_through = True
@@ -241,7 +234,7 @@ class Translator(object):
             "decoder_target_data": decoder_target_data
         }
 
-    def _test_data_gen(self, infinite=True):
+    def _test_data_gen(self, batch_size, infinite=True):
         """
         # vocabularies of test dataset has to be the same as of training set
         # otherwise embeddings would not correspond are use OOV
@@ -258,14 +251,14 @@ class Translator(object):
         once_through = False
 
         while infinite or not once_through:
-            test_data = self._get_test_data(i, i + self.batch_size)
+            test_data = self._get_test_data(i, i + batch_size)
 
             yield (
                 [test_data["encoder_input_data"], test_data["decoder_input_data"]],
                 test_data["decoder_target_data"]
             )
 
-            i += self.batch_size
+            i += batch_size
 
             if i >= self.test_dataset.num_samples:
                 once_through = True
@@ -441,33 +434,44 @@ class Translator(object):
 
         return x
 
-    def get_gen_steps(self, dataset):
+    @staticmethod
+    def get_gen_steps(dataset, batch_size):
         """
 
-        Returns how many steps are needed for the generator to go through the whole dataset with the self.batch_size
+        Returns how many steps are needed for the generator to go through the whole dataset with the batch_size
 
         Args:
             dataset: dataset that is beeing proccessed
+            batch_size
 
         Returns: number of steps for the generatorto go through whole dataset
 
         """
-        return math.ceil(dataset.num_samples / self.batch_size)
+        return math.ceil(dataset.num_samples / batch_size)
 
-    def fit(self):
+    def fit(self, batch_size=64, bucketing=False, bucket_range=10):
         """
 
         fits the model, according to the parameters passed in constructor
 
+        Args:
+            batch_size:
+            bucketing (bool): Whether to bucket sequences according their size to optimize padding
+            bucket_range (int): Range of different sequence lenghts in one bucket
+
+
         """
+
         logger.info("fitting the model...")
         for i in range(self.epochs):
             logger.info("Epoch {}".format(i + 1))
 
             if self.use_fit_generator:
                 # to prevent memory error, only loads parts of dataset at once
-                if self.bucketing:
-                    for training_data in self._training_data_gen(infinite=False):
+                if bucketing:
+                    for training_data in self._training_data_gen(batch_size=batch_size,
+                                                                 infinite=False, bucketing=bucketing,
+                                                                 bucket_range=bucket_range):
 
                         for j in range(len(training_data["encoder_input_data"])):
                             logger.info(
@@ -479,16 +483,16 @@ class Translator(object):
                                     training_data["decoder_input_data"][j]
                                 ],
                                 training_data["decoder_target_data"][j],
-                                batch_size=self.batch_size,
+                                batch_size=batch_size,
                                 epochs=1,
                                 validation_split=self.validation_split,
                                 # callbacks=[self.tensorboard_callback]
                             )
                 else:
-                    steps = self.get_gen_steps(self.training_dataset)
+                    steps = self.get_gen_steps(self.training_dataset, batch_size)
                     logger.info("traning generator will make {} steps".format(steps))
                     # TODO why is there no validation split
-                    self.model.fit_generator(self._training_data_gen(),
+                    self.model.fit_generator(self._training_data_gen(batch_size),
                                              steps_per_epoch=steps,
                                              epochs=1,
                                              # callbacks=[self.tensorboard_callback]
@@ -498,7 +502,7 @@ class Translator(object):
                 training_data = self._get_training_data()
 
                 for j in range(len(training_data["encoder_input_data"])):
-                    if self.bucketing:
+                    if bucketing:
                         logger.info(
                             "Bucket {} size of {}".format(j, len(training_data["encoder_input_data"][j][0])))
 
@@ -508,7 +512,7 @@ class Translator(object):
                             training_data["decoder_input_data"][j]
                         ],
                         training_data["decoder_target_data"][j],
-                        batch_size=self.batch_size,
+                        batch_size=batch_size,
                         epochs=1,
                         validation_split=self.validation_split,
                         # callbacks=[self.tensorboard_callback]
@@ -516,7 +520,7 @@ class Translator(object):
 
             self.model.save_weights(self.model_weights_path)
 
-    def evaluate(self):
+    def evaluate(self, batch_size=64):
         """
 
         performs evaluation on test dataset along with generating translations
@@ -530,12 +534,13 @@ class Translator(object):
         # TODO probably create 4th model without decoder_input_data for evaluation?
         # maybe not
 
-        steps = self.get_gen_steps(self.test_dataset)
+        steps = self.get_gen_steps(self.test_dataset, batch_size)
         logger.info("evaluation generator will make {} steps".format(steps))
 
         # test_data_gen gets called more then steps times,
         # probably because of the workers caching the values for optimization
-        eval_data = self._test_data_gen()  # cannot be generator if want to use histograms in tensorboard callback
+        eval_data = self._test_data_gen(
+            batch_size)  # cannot be generator if want to use histograms in tensorboard callback
         eval_values = self.model.evaluate_generator(eval_data,
                                                     steps=steps)
 
@@ -545,7 +550,7 @@ class Translator(object):
 
         step = 1
         with open(path, "w", encoding="utf-8") as out_file:
-            for inputs, targets in self._test_data_gen(infinite=False):
+            for inputs, targets in self._test_data_gen(batch_size, infinite=False):
                 print("\rstep {} out of {}".format(step, steps), end="", flush=True)
                 step += 1
                 encoder_input_data = inputs[0]
