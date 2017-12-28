@@ -9,6 +9,7 @@ import shutil
 import numpy as np
 from gensim.models import KeyedVectors
 from keras.preprocessing.text import text_to_word_sequence
+from bs4 import BeautifulSoup
 from gensim.models.wrappers import FastText
 
 random.seed(0)
@@ -265,6 +266,28 @@ def split_lines(lines):
         word_seq.append(line.split(" "))
 
     return word_seq
+
+
+def convert_xmlset_to_text(path):
+    """
+
+    Converts data sets in xml (e.g. http://www.statmt.org/wmt17/translation-task.html Development and Test sets
+    to text only format (one line, one sequence).
+    Creates new file with same name and .lines extension
+
+    Args:
+        path: path to the file
+
+    """
+    with open(path, encoding="utf-8") as f:
+        data = f.read()
+
+    soup = BeautifulSoup(data, "xml")
+
+    with open(path + ".lines", "w", encoding="utf-8") as f_out:
+        for doc in soup.find_all("doc"):
+            for seg in doc.find_all("seg"):
+                f_out.write(seg.text + "\n")
 
 
 if __name__ == "__main__":

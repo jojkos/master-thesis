@@ -1,20 +1,19 @@
 \chapter{Úvod}
-Přísloví praví \uv{Kolik řečí znáš, tolikrát jsi člověkem}. Schopnost dorozumět se s ostatními lidmi na planetě je nesmírně důležitá a přitom jazyková bariéra je překážkou v mezilidské komunikace už od pradávných let. Proto vznikaly a vznikají jednoduché tištěné a následně digitální slovníky a vědci od počátků vzniku výpočetní techniky zkoumají jak vytvořit funkční překladový systém. 
+Přísloví praví \uv{Kolik řečí znáš, tolikrát jsi člověkem}. Schopnost dorozumět se s ostatními lidmi na planetě je nesmírně důležitá a přitom jazyková bariéra je překážkou v mezilidské komunikace už od pradávných let. Proto vznikaly a vznikají jednoduché tištěné a následně digitální slovníky a vědci od počátků vzniku výpočetní techniky zkoumají jak vytvořit funkční překladový systém.
 
 Ideálem je překlad tak jak ho známe ze science fiction materiálů. Dvě osoby, mluvící kompletně jiným jazykem si navzájem rozumí v reálném čase. S rozvojem který nastal v posledních letech, tedy intenzivní rozvoj strojového učení a nástupem umělé inteligence používající hlubokých neuronových sítí se k tomuto ideálu blížíme mílovými kroky. Automatické rozpoznání mluvené řeči je již ve skvělé kvalitě dostupné v běžných spotřebitelských zařízeních a překlad se taky značně vylepšuje.
 
 Obsahem této práce je návrh a realizace překladového systému schopného naučit se, za pomocí datasetů v různých zdrojových a cílových jazycích, překládat věty mezi těmito jazyky. A to pomocí nejnovějších metod, objevených a široce nasazovaných v posledních letech, používajících rekurentní neuronové sítě s encoder-decoder architekturou.
 
-V kapitole \ref{chapter:draft} je naformálně nastíněn návrh a cíl této práce. V následující kapitole \ref{chapter:theory} jsou pak rozebrány důležité pojmy a teorie ze kterých je tato práce vystavěna.
+V kapitole \ref{chapter:draft} je naformálně nastíněn návrh a cíl této práce. V následující kapitole \ref{chapter:theory} jsou pak rozebrány důležité pojmy a teorie ze kterých je tato práce vystavěna. Kapitola \ref{chapter:results} podává výsledky experimentů.
 
 \chapter{Neformální návrh systému} \label{chapter:draft}
 Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné jako to co dělá Google Translator\footnote{translate.google.cz} -- blíže popsáno v článku \cite{googleBridgingGap}. Vezme se věta v původním jazyce a vytvoří se z ní co nejvěrnější překlad v jazyce cílovém a to za pomocí natrénované neuronové sítě. V této kapitole je vysvětleno jak by takový systém mohl vypadat a co za komponenty potřebuje k tomu aby fungoval.
 
 \begin{description}
-  \item[Dataset:] Aby bylo možné nacvičit neuronovnou síť pro překlad, je nejprve zapotřebí mít nějaký dataset. Jeden dataset obsahuje texty ve dvou jazycích mezi kterými se má překládat. Tyto texty musí být zarovnané, tak aby si jednotlivé věty v těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}). Ukázka datasetu je znázorněna na obrázku ... v kapitole ..
-      \todo{v kapitole o implementaci pak dát znázorňující obrázek}
+  \item[Dataset:] Aby bylo možné nacvičit neuronovnou síť pro překlad, je nejprve zapotřebí mít nějaký dataset. Jeden dataset obsahuje texty ve dvou jazycích mezi kterými se má překládat. Tyto texty musí být zarovnané, tak aby si jednotlivé věty v těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}). Ukázka datasetu je znázorněna na obrázku \ref{img:dataset}.
 
-  \item[Tokenizer:] Dataset a jeho jednotlivé věty před začátkem trénování sitě je nejprve potřeba připravit. Tokenizer rozdělí věty na jednotlivé tokeny (slova) \todo{obrázek ukázky tokenizace, taky asi v implementaci} a zahodí zvolené nepodstatné vlastnosti, které mohou být třeba velká písmena na počátku vět nebo interpunkce. To usnadňuje práci s datasety a také například snižuje velikost slovníků.
+  \item[Tokenizer:] Dataset a jeho jednotlivé věty před začátkem trénování sitě je nejprve potřeba připravit. Tokenizer rozdělí věty na jednotlivé tokeny (obrázek \ref{img:tokenization}) a zahodí zvolené nepodstatné vlastnosti, které mohou být třeba velká písmena na počátku vět nebo interpunkce. To usnadňuje práci s datasety a také například snižuje velikost slovníků.
 
   \item[Slovník:] Slovník se vytvoří jako seznam $n$ nejčastějších slov v datasetu ve vstupním a cílovém jazyce. Čím je slovník menší, tím se zmenší výpočetní požadavky, ale na druhou stranu je potřeba vyřešit při trénování a překladu problém se slovy nevyskytujícími se ve slovníku (popsáno v sekci \ref{subsection:oov}).
 
@@ -79,15 +78,15 @@ Stejně jako předchozí modely i NLM (neural language model) je trénován tak 
 Předchozí modely při použití většího datasetu a tím pádem většího slovníku čelí \uv{prokletí} dimenzionality. Jednotlivá slova jsou běžně reprezentována jako \textbf{one-hot vektor} (obrázek \ref{figure:oneHot}). Pro reprezentaci jednoho slova je tak použit rozsáhlý vektor $x_i \in \mathbb{R}^{V}$, kde $V$ je použitý slovník daného jazyka. Většina hodnot, až na hodnotu označující dané slovo, je nulová (řídký vektor nebo-li sparse vector).
 
 \begin{figure}[H]
-    \begin{center}        
-        $V$ = $[$farmář, jí, steak, kráva$]$ \quad         
+    \begin{center}
+        $V$ = $[$farmář, jí, steak, kráva$]$ \quad
         $
-        oneHot_{steak}=        
+        oneHot_{steak}=
         \begin{bmatrix}
             0 \\
             0 \\
             1 \\
-            0 \\ 
+            0 \\
         \end{bmatrix}
         $
     \end{center}
@@ -233,7 +232,7 @@ RNN jsou oproti základním neuronovým sítím schopné zachytit různé závis
 
 Při průběhu učení RNN průběžně vznikají predikce a počítá se \emph{loss} \todo{kde je popsaná} funkce. Následně je potřeba zpětně zpropagovat tuto hodnotu přes všechny (časové) kroky sítě (Back propagation over time -- BPTT). Pokud však není gradient rovný 1, tak se v každém zpětném kroku buďto zmenší a tím pádem se blíží k nule, nebo se naopak zvětší a blíží s k nekonečnu. Ve výsledku je tak gradient buďto příliš malý a nemá tak tak žádný efekt na úpravu vah nebo jimi pohne příliš a tak zaviní špatné učení se sítě.
 
-\begin{figure}
+\begin{figure}[h]
     \begin{center}
             \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
     \end{center}
@@ -279,7 +278,7 @@ Pravděpodobnosti jazykového modelu se získají rovnicí:
 \end{align}
 
 
-\begin{figure}
+\begin{figure}[h]
     \begin{center}
             \tmpframe{\includegraphics[width=0.8\linewidth]{img/LSTM.pdf}}
     \end{center}
@@ -346,7 +345,7 @@ Pro každé slovo v čase $t$ ze vstupní sequence $F$ se vyhledá jeho embeddin
 
 Cílem jazykového modelu je předpovídat následující slovo ve větě. Aby model věděl kdy má začít a ukončit predikci, používají se speciální \textbf{počáteční a koncový symbol} (<s>, </s>). Vstupní věta (sekvence) $x$ by například mohla být $x$ = \{<s>, Venku, sedí, kočka\}. Věta $y$ generovaná modelem, by pak mohla být například tatáž věta, ale posunutá o jeden časový úsek dopředu -- $y$ = \{Venku, sedí, kočka, </s>\}. V ilustraci \todo{...} je názorná ukázka.
 
-\begin{figure}
+\begin{figure}[h]
     \begin{center}
             \tmpframe{\includegraphics[width=1\linewidth]{img/graphs/seq2seq.pdf}}
     \end{center}
@@ -376,17 +375,107 @@ V této sekci jsou popsány způsoby jakými lze zlepšit výkon seq2seq modelu.
   \item[Hloubka sítí:] Enkodér i dekodér jsou RNN a mohou obsahovat více skrytých vrstev (ať již základní varianty, LSTM nebo GRU). Článek \cite{googleBridgingGap} udává, že více vrstev může do určité hloubky pomoci. V práci jich použili 8 jak pro enkodér tak dekodér. Při použití většího množství již má model problém se úspěšně učit.
 \end{description}
 
-\begin{figure}
+
+\chapter{Návrh/Implementace} \label{chapter:implementation}
+Tato kapitola popisuje všechny autorem vytvořené a použité části. Sekce \ref{section:datasets} je o výběru a předzpracování datasetů. Následující sekce \ref{section:baseline} se zabývá vytvořením baseline systému, vůči kterému se porovnávají výsledky v kapitole \ref{chapter:results}. Poslední sekce této kapitoly (\ref{section:nmtSystem}) popisuje vytvořený překladový systém.
+
+\section{Datasety}\label{section:datasets}
+Jako dataset (nebo korpus) se v této práci považují dva soubory. Každý ze souborů obsahuje věty v jednom jazyce. Na každém řádku souboru je jedna věta a ta svým významem odpovídá větě na stejném řádku v jazyce druhém. Dataset nese nějaký název (název souboru stejný pro oba jazykové soubory) a jako koncovku používá dvou písmenou zkratku jazyka. Pro lepší představu je přiložen obrázek \ref{img:dataset}.
+
+\begin{figure}[h]
     \begin{center}
-            \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
+        \begin{tabular}{|c|}
+          \hline
+          exampleDataset.cs\\
+          \hline
+          Ahoj světe. \\
+          Venku prší. \\
+          \vdots \\
+          Farmář jí steak. \\
+          \hline
+        \end{tabular}
+        $\Longleftrightarrow$
+        \begin{tabular}{|c|}
+          \hline
+          exampleDataset.en\\
+          \hline
+          Hello world. \\
+          It's raining outside. \\
+          \vdots \\
+          Farmer eats steak. \\
+          \hline
+        \end{tabular}
     \end{center}
-	\caption{One image. \todo{Napsat pořádný titulek}}
-	\label{img:TODO}
+	\caption{Ukázka datasetu. Dataset se jmenuje \uv{exampleDataset} a je rozdělen na český seznam vět (koncovka \uv{cs}) a anglický seznam vět (koncovka \uv{en}). Na každém řádku seznamu vět jednoho jazyka je jedna věta odpovídající si s větou na stejném řádku v jazyce druhém.}
+	\label{img:dataset}
+\end{figure}
+
+\subsection{Předzpracování} \label{subsection:preparing}
+\todo{pripadne ocitovat opus.nlpl.eu}
+
+Datasety obsahující zarovnané řádky vět v různých jazycích lze pořídit online\footnote{například na \url{statmt.org/wmt17/translation-task.html} a \url{opus.lingfil.uu.se}}. Před použitím na trénování a vyhodnocování překládacího systému je však potřeba je ještě vhodným způsobem předpřipravit. Všechny použíte skripty jsou dostupné na githubu programu Moses \footnote{\url{https://github.com/moses-smt/mosesdecoder}}. Cílem je snížit velikost výsledných slovníků a zbavit se nevhodných vět.
+
+\begin{description}
+  \item[Tokenizace:] Věty se rozdělí na jednotlivé tokeny oddělené mezerou. V případě běžných slov to znamená, že se nic nezmění. Oddělí se však například interpunkce. K tokenizaci se používá skript z nástroje Moses \emph{tokenizer.perl}. Každý jeden token je ve výsledku jedno slovo ze slovníku a musí tak pro něj existovat jeho embedding nebo se převede na <unk> symbol.
+\end{description}
+
+\begin{figure}[H]
+    \begin{center}
+     \setlength{\fboxsep}{8pt}
+        \fbox{Myslím,\textvisiblespace že\textvisiblespace venku\textvisiblespace prší!}
+        $\Longrightarrow$
+        \setlength{\fboxsep}{8pt}
+        \fbox{Myslím\textvisiblespace ,\textvisiblespace že\textvisiblespace venku\textvisiblespace prší\textvisiblespace  !}
+    \end{center}
+	\caption{Ukázka tokenizace. Věty se rozdělí po jednotlivých tokenech a každý z nich je oddělen mezerou. Pro lepší znázornění je v ukázce jako mezera použit znak \uv{\textvisiblespace}.}
+	\label{img:tokenization}
 \end{figure}
 
 
+\begin{description}
+  \item[Truecasing:] Velká písmena na začátku vět se převedou na malá nebo se zachovají podle toho v jaké formě se slovo nejčastěji vyskytuje v celém datasetu. Velká písmena tak zůstanou jen tam kde je to běžná podoba slova (například u jmen). Díky tomu se sníží počet slov ve slovníku. Pro truecasing se používají skripty z nástroje Moses \emph{train-truecaser.perl} a \emph{truecase.perl}.
+\end{description}
 
-\chapter{Implementace}
+
+\begin{description}
+  \item[Vyčištění:] Zahodí se prázdně či špatně zarovnané řádky. Dále se zkrátí věty na maximální délku 40 \todo{bude to napsany tady fakt? nekde jinde jeste?} tokenů. Příliš dlouhé sekvence by znamenaly značnou zátěž na paměť a rychlost trénování překladového systému. Pro vyčištění se používá skrpt z nástroje Moses \emph{clean-corpus-n.perl}.
+\end{description}
+
+\todo{Jak rozlišit návrh a realizaci?}
+
+
+\section{Baseline systém v Moses}\label{section:baseline}
+Moses \cite{moses} je nástroj na vytváření statistických strojových překladových systémů. Vzniklý model bude sloužit jako baseline vůči kterému se porovnají výsledky implementovaného překladového systému (sekce \ref{section:nmtSystem}). Kromě toho se také používají některé skripty z tohoto nástroje, pro přípravu datasetů (sekce \ref{subsection:preparing}). Baseline systém je nacvičen a otestován na stejných datech jako výsledný překladový systém. Konkrétní postup jeho přípravy je dostupný na stránkách Moses \footnote{\url{statmt.org/moses/?n=Moses.Baseline}}, byly použity výchozí nastavení.
+
+\section{Překladový systém}\label{section:nmtSystem}
+Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{python.org}} v jeho verzi 3.6. Na výběr bylo z několika vhodných knihoven/frameworků pro práci se strojovým učením:
+
+\begin{itemize}
+  \item Tensorflow -- je open source knihovna, která původně vznikla v rámci výzkumného týmu Google Brain uvnitř společnosti Google. Tensorflow používá pro výpočty graf, kde jednotlivé uzly reprezentují operace a hrany reprezentují datové struktury (tensory). Tensorflow se stala velice populární v oblasti vývoje neuronových sítí.
+  \item Theano -- knihovna pro efektivní práci s mnoho rozměrnými poli. Využívá pole z hojně používané pythoní knihovny Numpy. Nedávno se knihovna dostala na verzi 1.0 a naráz s tím se ukončil její vývoj. 
+  \item CNTK -- Cognitive Toolik je open-source nástroj deep learning od firmy Microsoft. Poskytuje API pro jazyky C\#, C++ i Python. Pro výpočty také používá graf, kde listy reprezentují vstupní hodnoty nebo parametry a ostatní uzly reprezentují maticové operace.
+  \item Keras -- je pythoní knihovna poskytující vysoko úrovňové API pro deep learning. Je vysoce modulární a určená pro snadné prototypování. Knihovna běží nad backendem, který používá pro výpočty. Backend může být jedna z předchozích knihovne -- Tensorflow, Theano nebo CNTK.
+\end{itemize}
+
+Zvolena byla knihovna Keras \cite{keras} pro svůj jednoduchý a více intuitivní přístup a také pro množství návodů, které pro tuto knihovnu vznikají. Jako backend je použita knihovna Tensorflow \cite{tensorflow}.
+
+\subsection{Balíček nmt}
+Překladový systém je naimplementován formou pythoního balíčku (knihovny) dostupného na githubu \footnote{https://github.com/jojkos/master-thesis/tree/master/code/nmtPackage}. S pomocí vyro
+
+\begin{description}
+  \item[Bucketing:] A padding. Rozdělení sekvencí na skupiny podle délky, abych nepaddingoval zbytečně a tím neplýtval výkon. \todo{porovnat čas jaký to běží a rozdíl v přesnosti překladu vůči bez bucketingu}
+  \item[Generování encoded vět aby se vešly do paměti:]
+\end{description}
+
+
+\section{popis fungování systému a jednotlivých tříd}
+\todo{zkusit nějak použit vygenerovanou dokumentaci? nebo aspon do příloh}
+
+\chapter{Experimenty a vyhodnocení} \label{chapter:results}
+\section{skóre BLEU}
+\todo{vysazet hezky vzorce}
+
+
 Naprogramoval jsem.
 Posbíral jsem data.
 Pustil jsem to.
@@ -394,46 +483,14 @@ Výsledky jsou takové.
 Je to tak a tak rychlé.
 
 
-Ne jako samostatná kapitola, ale v rámci nějaké (asi implementace) bych udělal itemize a nebo přinejmenším aspon zběžně popsal proč jsem zvolili Keras.
-\emph{Frameworky}
-\begin{itemize}
-  \item Tensorflow
-  \item Theano
-  \item CNTK
-  \item Keras
-\end{itemize}
-
-\todo{obrázek s datasetem viz neformalni navrh}
-
-\todo{obrázek s tokenizaci viz neformalni navrh}
-
-\section{Baseline systém v Moses}
-\todo{Jak rozlišit návrh a realizaci?}
-
-\section{Dataset/y}
-Jejich struktura, jak je zpracuji a použiji
-
-\begin{figure}
+\begin{figure}[h]
     \begin{center}
             \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
     \end{center}
-	\caption{One image. \todo{ukázka ze souborů různých jazyků z jednoho datasetu}}
+	\caption{One image. \todo{Napsat pořádný titulek}}
 	\label{img:TODO}
 \end{figure}
 
-
-\subsection{Bucketing}
-A padding. Rozdělení sekvencí na skupiny podle délky, abych nepaddingoval zbytečně a tím neplýtval výkon. \todo{porovnat čas jaký to běží a rozdíl v přenosti překladu vůči bez bucketingu}
-
-\section{Generování encoded vět aby se vešly do paměti}
-
-\section{popis fungování systému a jednotlivých tříd}
-\todo{zkusit nějak použit vygenerovanou dokumentaci? nebo aspon do příloh}
-
-\chapter{Experimenty a vyhodnocení}
-\section{skóre BLEU}
-\blind{1}
-\todo{vysazet hezky vzorce}
 
 
 

@@ -103,20 +103,21 @@ def main():
         source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,
         source_embedding_path=args.source_embedding_path, target_embedding_path=args.target_embedding_path,
         max_source_embedding_num=args.max_source_embedding_num, max_target_embedding_num=args.max_target_embedding_num,
-        epochs=args.epochs, source_lang=args.source_lang,
-        num_units=args.num_units, optimizer=args.optimizer, use_fit_generator=args.use_fit_generator,
+        source_lang=args.source_lang,
+        num_units=args.num_units, optimizer=args.optimizer,
         log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
         max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
         num_training_samples=args.num_training_samples, num_test_samples=args.num_test_samples,
         reverse_input=args.reverse_input, target_lang=args.target_lang,
-        test_dataset=args.test_dataset, training_dataset=args.training_dataset, validaton_split=args.validation_split,
+        test_dataset=args.test_dataset, training_dataset=args.training_dataset,
         tokenize=args.tokenize, clear=args.clear
     )
 
     # TODO osamostatnit veci v modulu a vyndat je sem, z modulu udelat jen generic modul
 
     if args.training_mode:
-        translator.fit(args.batch_size)
+        translator.fit(epochs=args.epochs, batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
+                       bucketing=args.bucketing, bucket_range=args.bucket_range)
         evaluation = translator.evaluate(args.batch_size)
 
         print("model evaluation: {}".format(evaluation))

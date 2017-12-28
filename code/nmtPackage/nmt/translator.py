@@ -30,12 +30,14 @@ class Translator(object):
 
     """
 
-    def __init__(self, source_embedding_dim, target_embedding_dim, source_embedding_path, target_embedding_path,
-                 max_source_embedding_num, max_target_embedding_num, epochs, use_fit_generator,
-                 source_lang, num_units, optimizer,
-                 log_folder, max_source_vocab_size, max_target_vocab_size, model_file, model_folder,
-                 reverse_input, target_lang, test_dataset, training_dataset, validaton_split, clear,
-                 tokenize, num_training_samples=-1, num_test_samples=-1):
+    def __init__(self, source_embedding_path, target_embedding_path,
+                 source_lang, max_source_vocab_size, max_target_vocab_size, model_file, model_folder,
+                 reverse_input, target_lang, test_dataset, training_dataset,
+                 clear=False,
+                 tokenize=True, log_folder="logs/", num_units=256, optimizer="rmsprop",
+                 source_embedding_dim=300, target_embedding_dim=300,
+                 max_source_embedding_num=None, max_target_embedding_num=None,
+                 num_training_samples=-1, num_test_samples=-1):
         """
 
         Args:
@@ -70,8 +72,6 @@ class Translator(object):
         self.target_embedding_path = target_embedding_path
         self.max_source_embedding_num = max_source_embedding_num
         self.max_target_embedding_num = max_target_embedding_num
-        self.epochs = epochs
-        self.use_fit_generator = use_fit_generator
         self.source_lang = source_lang
         self.num_units = num_units
         self.optimizer = optimizer
@@ -86,7 +86,6 @@ class Translator(object):
         self.target_lang = target_lang
         self.test_dataset_path = test_dataset
         self.training_dataset_path = training_dataset
-        self.validation_split = validaton_split
         self.clear = clear
         self.tokenize = tokenize
 
@@ -102,8 +101,8 @@ class Translator(object):
         logger.info("There are {} samples in training dataset".format(self.training_dataset.num_samples))
         logger.info("There are {} samples in test dataset".format(self.test_dataset.num_samples))
 
-        self.source_vocab = Vocabulary(self.training_dataset.x_word_seq, self.max_source_vocab_size, False)
-        self.target_vocab = Vocabulary(self.training_dataset.y_word_seq, self.max_target_vocab_size, True)
+        self.source_vocab = Vocabulary(self.training_dataset.x_word_seq, self.max_source_vocab_size)
+        self.target_vocab = Vocabulary(self.training_dataset.y_word_seq, self.max_target_vocab_size)
 
         logger.info("Source vocabulary has {} symbols".format(self.source_vocab.vocab_len))
         logger.info("Target vocabulary has {} symbols".format(self.target_vocab.vocab_len))
@@ -161,7 +160,7 @@ class Translator(object):
                 enc_in, dec_in, dec_tar = Translator.encode_sequences(
                     bucket["x_word_seq"], bucket["y_word_seq"],
                     bucket["x_max_seq_len"], bucket["y_max_seq_len"],
-                    self.source_vocab.word_to_ix, self.target_vocab.word_to_ix, self.reverse_input
+                    self.source_vocab, self.target_vocab, self.reverse_input
                 )
 
                 encoder_input_data.append(enc_in)
@@ -172,7 +171,7 @@ class Translator(object):
                 self.training_dataset.x_word_seq[from_index: to_index],
                 self.training_dataset.y_word_seq[from_index: to_index],
                 self.training_dataset.x_max_seq_len, self.training_dataset.y_max_seq_len,
-                self.source_vocab.word_to_ix, self.target_vocab.word_to_ix, self.reverse_input
+                self.source_vocab, self.target_vocab, self.reverse_input
             )
 
             encoder_input_data = [encoder_input_data]
@@ -225,7 +224,7 @@ class Translator(object):
             self.test_dataset.x_word_seq[from_index: to_index],
             self.test_dataset.y_word_seq[from_index: to_index],
             self.test_dataset.x_max_seq_len, self.test_dataset.y_max_seq_len,
-            self.source_vocab.word_to_ix, self.target_vocab.word_to_ix, self.reverse_input
+            self.source_vocab, self.target_vocab, self.reverse_input
         )
 
         return {
@@ -265,15 +264,26 @@ class Translator(object):
                 i = 0
 
     @staticmethod
-    def encode_sequences(x_word_seq, y_word_seq,
-                         x_max_seq_len, y_max_seq_len,
-                         x_word_to_ix, y_word_to_ix, reverse_input):
+    def encode_sequences(x_word_seq, y_word_seq, x_max_seq_len, y_max_seq_len,
+                         source_vocab, target_vocab, reverse_input=True):
         """
+
         Take word sequences and convert them so that the model can be fit with them.
         Input words are just converted to integer index
         Target words are encoded to one hot vectors of target vocabulary length
+
+        Args:
+            x_word_seq: input word sequences
+            y_word_seq: target word sequences
+            x_max_seq_len (int): max lengh of input word sequences
+            y_max_seq_len (int): max lengh of target word sequences
+            source_vocab (Vocabulary): source vocabulary object
+            target_vocab (Vocabulary): target vocabulary object
+            reverse_input (bool): whether to reverse input sequences
+
+        Returns: encoder_input_data, decoder_input_data, decoder_target_data
+
         """
-        y_vocab_len = len(y_word_to_ix)
 
         # if we try to allocate memory for whole dataset (even for not a big one), Memory Error is raised
         # always encode only a part of the dataset
@@ -282,7 +292,7 @@ class Translator(object):
         decoder_input_data = np.zeros(
             (len(x_word_seq), y_max_seq_len), dtype='float32')
         decoder_target_data = np.zeros(
-            (len(x_word_seq), y_max_seq_len, y_vocab_len),
+            (len(x_word_seq), y_max_seq_len, target_vocab.vocab_len),
             dtype='float32')
 
         # prepare source sentences for embedding layer (encode to indexes)
@@ -290,16 +300,16 @@ class Translator(object):
             if reverse_input:  # for better results according to paper Sequence to seq...
                 seq = seq[::-1]
             for t, word in enumerate(seq):
-                if word in x_word_to_ix:
-                    encoder_input_data[i, t] = x_word_to_ix[word]
+                if word in source_vocab.word_to_ix:
+                    encoder_input_data[i, t] = source_vocab.word_to_ix[word]
                 else:
                     encoder_input_data[i, t] = SpecialSymbols.UNK_IX
 
         # encode target sentences to one hot encoding
         for i, seq in enumerate(y_word_seq):
             for t, word in enumerate(seq):
-                if word in y_word_to_ix:
-                    index = y_word_to_ix[word]
+                if word in target_vocab.word_to_ix:
+                    index = target_vocab.word_to_ix[word]
                 else:
                     index = SpecialSymbols.UNK_IX
                 # decoder_target_data is ahead of decoder_input_data by one timestep
@@ -421,13 +431,23 @@ class Translator(object):
         return decoded_sentence
 
     @staticmethod
-    def encode_text_to_input_seq(text, word_to_ix):
+    def encode_text_seq_to_encoder_seq(text, vocab):
+        """
+        Encodes given text sequence to numpy array ready to be used as encoder_input for prediction
+
+        Args:
+            text (str): sequence to translate
+            vocab (Vocabulary): vocabulary object
+
+        Returns: encoded sequence ready to be used as encoder_inpout for prediction
+
+        """
         sequences = text_to_word_sequence(text)
-        x = np.zeros((1, len(text)), dtype='float32')
+        x = np.zeros((1, len(sequences)), dtype='float32')
 
         for i, seq in enumerate(sequences):
-            if seq in word_to_ix:
-                ix = word_to_ix[seq]
+            if seq in vocab.word_to_ix:
+                ix = vocab.word_to_ix[seq]
             else:
                 ix = SpecialSymbols.UNK_IX
             x[0][i] = ix
@@ -442,20 +462,27 @@ class Translator(object):
 
         Args:
             dataset: dataset that is beeing proccessed
-            batch_size
+            batch_size: size of the batch
 
         Returns: number of steps for the generatorto go through whole dataset
 
         """
+
+        assert batch_size > 0
+
         return math.ceil(dataset.num_samples / batch_size)
 
-    def fit(self, batch_size=64, bucketing=False, bucket_range=10):
+    def fit(self, epochs=1, batch_size=64, validation_split=0.0, use_fit_generator=False,
+            bucketing=False, bucket_range=10):
         """
 
         fits the model, according to the parameters passed in constructor
 
         Args:
+            epochs:
             batch_size:
+            validation_split:
+            use_fit_generator:
             bucketing (bool): Whether to bucket sequences according their size to optimize padding
             bucket_range (int): Range of different sequence lenghts in one bucket
 
@@ -463,10 +490,10 @@ class Translator(object):
         """
 
         logger.info("fitting the model...")
-        for i in range(self.epochs):
+        for i in range(epochs):
             logger.info("Epoch {}".format(i + 1))
 
-            if self.use_fit_generator:
+            if use_fit_generator:
                 # to prevent memory error, only loads parts of dataset at once
                 if bucketing:
                     for training_data in self._training_data_gen(batch_size=batch_size,
@@ -485,7 +512,7 @@ class Translator(object):
                                 training_data["decoder_target_data"][j],
                                 batch_size=batch_size,
                                 epochs=1,
-                                validation_split=self.validation_split,
+                                validation_split=validation_split,
                                 # callbacks=[self.tensorboard_callback]
                             )
                 else:
@@ -514,7 +541,7 @@ class Translator(object):
                         training_data["decoder_target_data"][j],
                         batch_size=batch_size,
                         epochs=1,
-                        validation_split=self.validation_split,
+                        validation_split=validation_split,
                         # callbacks=[self.tensorboard_callback]
                     )
 
@@ -575,7 +602,7 @@ class Translator(object):
 
         """
 
-        encoded_seq = Translator.encode_text_to_input_seq(seq, self.source_vocab.word_to_ix)
+        encoded_seq = Translator.encode_text_seq_to_encoder_seq(seq, self.source_vocab)
         # else:
         #     encoder_input_data = self.training_data["encoder_input_data"][0]
         #     i = random.randint(0, len(encoder_input_data) - 1)
