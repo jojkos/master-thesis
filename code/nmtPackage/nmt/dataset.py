@@ -69,7 +69,6 @@ class Dataset(object):
 
     # in folder code
 
-
 # python -m nmt.dataset
 if __name__ == "__main__":
     dataset = Dataset("data/news-commentary-v9.cs-en",

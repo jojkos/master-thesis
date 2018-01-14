@@ -1,6 +1,9 @@
 from nltk import FreqDist
 from nmt import SpecialSymbols
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Vocabulary(object):
@@ -10,6 +13,8 @@ class Vocabulary(object):
         # cannot use keras tokenizer, because we need to add our SpecialSymbols in the vocabuly and keras don't do that
         dist = FreqDist(np.concatenate(word_seq))
         vocab = dist.most_common(max_vocab_size)
+
+        logger.debug("Truncating {} different words to {} words".format(len(dist), max_vocab_size))
 
         # Creating an array of words from the vocabulary set,
         # we will use this array as index-to-word dictionary

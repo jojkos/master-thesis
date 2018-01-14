@@ -62,7 +62,7 @@ def add_arguments(parser):
                         help="Prevent memory crash by only load part of the dataset at once each time when fitting")
     parser.add_argument("--reverse_input", type=bool_arg, default=True,
                         help="Whether to reverse source sequences (optimization for better learning)")
-    parser.add_argument("--tokenize", type=bool_arg, default=True,
+    parser.add_argument("--tokenize", type=bool_arg, default=False,
                         help="Whether to tokenize the sequences or not (they are already tokenizes e.g. using Moses tokenizer)")
     parser.add_argument("--clear", type=bool_arg, default=False,
                         help="Whether to delete old weights and logs before running")
@@ -77,7 +77,10 @@ def add_arguments(parser):
 # TODO compare use_fit_generator speed True vs False
 
 # python main.py --training_mode --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
-# python main.py --training_mode --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 1 --clear True
+# python main.py --training_mode --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 1 --clear False
+
+# SMT pousteni
+# python main.py --training_mode --training_dataset "G:\Clouds\DPbigFiles\WMT17\newsCommentary\news-commentary-v12.cs-en-tokenized.truecased.cleaned" --test_dataset "G:\Clouds\DPbigFiles\WMT17\testSet\newstest2017-csen-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --model_folder "G:\Clouds\DPbigFiles\WMT17\newsCommentary" --model_file "newsCommentarySmtModel.h5" --batch_size 64 --num_units 256 --optimizer "rmsprop" --max_source_vocab_size 10000 --max_target_vocab_size 10000 --source_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.cs.vec" --target_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.en.vec"
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the main.py that uses nmt module')
     add_arguments(parser)
@@ -92,12 +95,8 @@ def main():
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'nmtPackage')))
     from nmt import Translator
 
-    # this could be fix for the errors that are thrown sometimes
-    import tensorflow as tf
-    from keras.backend.tensorflow_backend import set_session
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    set_session(tf.Session(config=config))
+    # TODO bucketing pravdepodobne nejede?
+    # bylo by potreba ho udelat PRED TIM nez se udela generator, aby se rozdelily vsechny vstupy a ne jen maly casti po batch size
 
     translator = Translator(
         source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,

@@ -1,22 +1,22 @@
 # coding: utf-8
-# model based on https://blog.keras.io/a-ten-minute-introduction-to-sequence-to-sequence-learning-in-keras.html
 
 import logging
 import os
 import math
-import argparse
 import pickle
+import random
 from time import time
+
+from keras.utils.vis_utils import model_to_dot
+from keras.utils import plot_model
 
 import numpy as np
 import nmt.utils as utils
 from nmt import SpecialSymbols, Dataset, Vocabulary
-from keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, ModelCheckpoint
 from keras.layers import LSTM, Dense, Embedding, Input
 from keras.models import Model
 from keras.preprocessing.text import text_to_word_sequence
-from nltk import FreqDist
-import random
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -30,11 +30,11 @@ class Translator(object):
 
     """
 
-    def __init__(self, source_embedding_path, target_embedding_path,
-                 source_lang, max_source_vocab_size, max_target_vocab_size, model_file, model_folder,
-                 reverse_input, target_lang, test_dataset, training_dataset,
-                 clear=False,
-                 tokenize=True, log_folder="logs/", num_units=256, optimizer="rmsprop",
+    def __init__(self, source_lang, model_file, model_folder,
+                 target_lang, test_dataset, training_dataset,
+                 reverse_input=True, max_source_vocab_size=10000, max_target_vocab_size=10000,
+                 source_embedding_path=None, target_embedding_path=None,
+                 clear=False, tokenize=True, log_folder="logs/", num_units=256, optimizer="rmsprop",
                  source_embedding_dim=300, target_embedding_dim=300,
                  max_source_embedding_num=None, max_target_embedding_num=None,
                  num_training_samples=-1, num_test_samples=-1):
@@ -89,6 +89,15 @@ class Translator(object):
         self.clear = clear
         self.tokenize = tokenize
 
+        # TODO what about this
+        # is this the place to configure what gpus (only one for vut cluster) to use as well?
+        # this is fix for the errors that are thrown sometimes (something was not able start wtf & shit..)
+        import tensorflow as tf
+        from keras.backend.tensorflow_backend import set_session
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        set_session(tf.Session(config=config))
+
         utils.prepare_folders([self.log_folder, self.model_folder], clear)
 
         self.training_dataset = Dataset(self.training_dataset_path, self.source_lang, self.target_lang,
@@ -117,7 +126,7 @@ class Translator(object):
         self.target_embedding_weights = None
         if not os.path.isfile(self.model_weights_path) and self.target_embedding_path:
             # load pretrained embeddings
-            self.source_embedding_weights = utils.load_embedding_weights(self.target_embedding_path,
+            self.target_embedding_weights = utils.load_embedding_weights(self.target_embedding_path,
                                                                          self.target_vocab.ix_to_word,
                                                                          limit=self.max_target_embedding_num)
 
@@ -125,10 +134,7 @@ class Translator(object):
 
         self.model.summary()
 
-        # TODO uncomment
-        # logging for tensorboard
-        # self.tensorboard_callback = TensorBoard(log_dir="{}".format(os.path.join(self.log_folder, str(time()))),
-        #                                         write_graph=False)  # quite SLOW LINE
+        # model_to_dot(self.model).write_pdf("model.pdf")
 
         logger.info("compiling model...")
         # Run training
@@ -184,40 +190,42 @@ class Translator(object):
             "decoder_target_data": decoder_target_data
         }
 
-    def _training_data_gen(self, batch_size, infinite=True, bucketing=False, bucket_range=10):
+    def _training_data_gen(self, batch_size, infinite=True, shuffle=True, bucketing=False, bucket_range=10):
         """
 
         Args:
             infinite: whether to yield data infinitely or stop after one walkthrough the dataset
+            shuffle: whether to shuffle the training data and return them in random order every epoch
+            bucketing: whetether to use bucketing
+            bucket_range: range of each bucket
 
         Returns: dict with encoder_input_data, decoder_input_data and decoder_target_data of batch_size size
 
         """
         # TODO what about shuffling?
-        # maybe use keras.sequence instead of generator?
-        # https://keras.io/utils/#sequence
         # https://stackoverflow.com/questions/46570172/how-to-fit-generator-in-keras
-        # https://github.com/keras-team/keras/issues/2389 probably don't need to use sequence but have to shuffle data HERE manually
+        # https://github.com/keras-team/keras/issues/2389
+        # probably don't need to use sequence but have to shuffle data HERE manually
 
-        i = 0
-        once_through = False
+        while True:
+            indices = list(range(0, self.training_dataset.num_samples, batch_size))
 
-        while infinite or not once_through:
-            training_data = self._get_training_data(i, i + batch_size, bucketing, bucket_range)
+            if shuffle:
+                random.shuffle(indices)
 
-            if bucketing:
-                yield training_data
-            else:
-                yield (
-                    [training_data["encoder_input_data"], training_data["decoder_input_data"]],
-                    training_data["decoder_target_data"]
-                )
+            for i in indices:
+                training_data = self._get_training_data(i, i + batch_size, bucketing, bucket_range)
 
-            i += batch_size
+                if bucketing:
+                    yield training_data
+                else:
+                    yield (
+                        [training_data["encoder_input_data"][0], training_data["decoder_input_data"][0]],
+                        training_data["decoder_target_data"][0]
+                    )
 
-            if i >= self.training_dataset.num_samples:
-                once_through = True
-                i = 0
+            if not infinite:
+                break
 
     def _get_test_data(self, from_index=0, to_index=None):
         encoder_input_data, decoder_input_data, decoder_target_data = Translator.encode_sequences(
@@ -290,9 +298,10 @@ class Translator(object):
         encoder_input_data = np.zeros(
             (len(x_word_seq), x_max_seq_len), dtype='float32')
         decoder_input_data = np.zeros(
-            (len(x_word_seq), y_max_seq_len), dtype='float32')
+            (len(x_word_seq), y_max_seq_len - 1), dtype='float32')
+        # - 1 because decder_input doesn't take last EOS and decoder_target doesn't take first GO symbol
         decoder_target_data = np.zeros(
-            (len(x_word_seq), y_max_seq_len, target_vocab.vocab_len),
+            (len(x_word_seq), y_max_seq_len - 1, target_vocab.vocab_len),
             dtype='float32')
 
         # prepare source sentences for embedding layer (encode to indexes)
@@ -313,7 +322,9 @@ class Translator(object):
                 else:
                     index = SpecialSymbols.UNK_IX
                 # decoder_target_data is ahead of decoder_input_data by one timestep
-                decoder_input_data[i, t] = index
+                # ignore EOS symbol at the end
+                if t < len(seq) - 1:
+                    decoder_input_data[i, t] = index
 
                 if t > 0:
                     # decoder_target_data will be ahead by one timestep
@@ -389,7 +400,17 @@ class Translator(object):
 
         return model, encoder_model, decoder_model
 
-    def decode_sequence(self, input_seq):
+    @staticmethod
+    def decode_encoded_seq(seq, vocab, one_hot=False):
+        decoded = []
+        for ix in seq:
+            if one_hot:
+                ix = np.argmax(ix)
+            decoded.append(vocab.ix_to_word[ix])
+
+        return decoded
+
+    def translate_sequence(self, input_seq):
         # Encode the input as state vectors.
         states_value = self.encoder_model.predict(input_seq)
 
@@ -489,9 +510,17 @@ class Translator(object):
 
         """
 
+        # logging for tensorboard
+        tensorboard_callback = TensorBoard(log_dir="{}".format(os.path.join(self.log_folder, str(time()))),
+                                           write_graph=False)  # quite SLOW LINE
+        # model saving after each epoch
+        checkpoint_callback = ModelCheckpoint(self.model_weights_path, save_weights_only=True)
+
+        callbacks = [tensorboard_callback, checkpoint_callback]
+
         logger.info("fitting the model...")
-        for i in range(epochs):
-            logger.info("Epoch {}".format(i + 1))
+        for i in range(1, epochs + 1):
+            logger.info("Epoch {}".format(i))
 
             if use_fit_generator:
                 # to prevent memory error, only loads parts of dataset at once
@@ -511,18 +540,23 @@ class Translator(object):
                                 ],
                                 training_data["decoder_target_data"][j],
                                 batch_size=batch_size,
-                                epochs=1,
+                                epochs=i,
+                                initial_epoch=i - 1,
                                 validation_split=validation_split,
-                                # callbacks=[self.tensorboard_callback]
+                                callbacks=callbacks
                             )
                 else:
                     steps = self.get_gen_steps(self.training_dataset, batch_size)
                     logger.info("traning generator will make {} steps".format(steps))
                     # TODO why is there no validation split
-                    self.model.fit_generator(self._training_data_gen(batch_size),
+
+                    generator = self._training_data_gen(batch_size)
+
+                    self.model.fit_generator(generator,
                                              steps_per_epoch=steps,
-                                             epochs=1,
-                                             # callbacks=[self.tensorboard_callback]
+                                             epochs=i,
+                                             initial_epoch=i - 1,
+                                             callbacks=callbacks
                                              )
                     # validation_data=self._get_all_test_data()
             else:
@@ -540,12 +574,11 @@ class Translator(object):
                         ],
                         training_data["decoder_target_data"][j],
                         batch_size=batch_size,
-                        epochs=1,
+                        epochs=i,
+                        initial_epoch=i - 1,
                         validation_split=validation_split,
-                        # callbacks=[self.tensorboard_callback]
+                        callbacks=callbacks
                     )
-
-            self.model.save_weights(self.model_weights_path)
 
     def evaluate(self, batch_size=64):
         """
@@ -583,7 +616,7 @@ class Translator(object):
                 encoder_input_data = inputs[0]
                 for i in range(len(encoder_input_data)):
                     # we need to keep the item in array ([i: i + 1])
-                    decoded_sentence = self.decode_sequence(encoder_input_data[i: i + 1])
+                    decoded_sentence = self.translate_sequence(encoder_input_data[i: i + 1])
 
                     out_file.write(decoded_sentence + "\n")
         print("", end="\n")
@@ -603,15 +636,8 @@ class Translator(object):
         """
 
         encoded_seq = Translator.encode_text_seq_to_encoder_seq(seq, self.source_vocab)
-        # else:
-        #     encoder_input_data = self.training_data["encoder_input_data"][0]
-        #     i = random.randint(0, len(encoder_input_data) - 1)
-        #     encoded_seq = encoder_input_data[i]
-        #     seq = " ".join(self.training_dataset.x_word_seq[i])
-        #     expected_seq = " ".join(self.training_dataset.y_word_seq[i][1:-1])
-        #     encoded_seq = encoded_seq.reshape((1, len(encoded_seq)))
 
-        decoded_sentence = self.decode_sequence(encoded_seq)
+        decoded_sentence = self.translate_sequence(encoded_seq)
 
         logger.info("Input sequence: {}".format(seq))
         logger.info("Expcected sentence: {}".format(expected_seq))

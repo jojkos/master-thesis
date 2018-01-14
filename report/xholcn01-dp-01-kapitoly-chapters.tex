@@ -1,14 +1,14 @@
 \chapter{Úvod}
 Přísloví praví \uv{Kolik řečí znáš, tolikrát jsi člověkem}. Schopnost dorozumět se s ostatními lidmi na planetě je nesmírně důležitá a přitom jazyková bariéra je překážkou v mezilidské komunikace už od pradávných let. Proto vznikaly a vznikají jednoduché tištěné a následně digitální slovníky a vědci od počátků vzniku výpočetní techniky zkoumají jak vytvořit funkční překladový systém.
 
-Ideálem je překlad tak jak ho známe ze science fiction materiálů. Dvě osoby, mluvící kompletně jiným jazykem si navzájem rozumí v reálném čase. S rozvojem který nastal v posledních letech, tedy intenzivní rozvoj strojového učení a nástupem umělé inteligence používající hlubokých neuronových sítí se k tomuto ideálu blížíme mílovými kroky. Automatické rozpoznání mluvené řeči je již ve skvělé kvalitě dostupné v běžných spotřebitelských zařízeních a překlad se taky značně vylepšuje.
+Ideálem je překlad tak jak ho známe ze science fiction materiálů. Dvě osoby, mluvící kompletně jiným jazykem si navzájem rozumí v reálném čase. S rozvojem který nastal v posledních letech, tedy intenzivní rozvoj strojového učení a s nástupem umělé inteligence používající hlubokých neuronových sítí se k tomuto ideálu blížíme mílovými kroky. Automatické rozpoznání mluvené řeči je již ve skvělé kvalitě dostupné v běžných spotřebitelských zařízeních a překlad se taky značně vylepšuje.
 
-Obsahem této práce je návrh a realizace překladového systému schopného naučit se, za pomocí datasetů v různých zdrojových a cílových jazycích, překládat věty mezi těmito jazyky. A to pomocí nejnovějších metod, objevených a široce nasazovaných v posledních letech, používajících rekurentní neuronové sítě s encoder-decoder architekturou.
+Obsahem této práce je návrh a realizace překladového systému schopného naučit se, za pomocí datasetů v různých zdrojových a cílových jazycích, překládat věty mezi těmito jazyky. A to pomocí nejnovějších metod, objevených a široce nasazovaných v posledních letech, používajících rekurentní neuronové sítě s architekturou enkodér-dekodér.
 
-V kapitole \ref{chapter:draft} je naformálně nastíněn návrh a cíl této práce. V následující kapitole \ref{chapter:theory} jsou pak rozebrány důležité pojmy a teorie ze kterých je tato práce vystavěna. Kapitola \ref{chapter:results} podává výsledky experimentů.
+V kapitole \ref{chapter:draft} je naformálně nastíněn návrh a cíl této práce. V následující kapitole \ref{chapter:theory} jsou pak rozebrány důležité pojmy a teorie ze kterých je tato práce vystavěna. Kapitole \ref{chapter:implementation} popisuje co bylo implementování a kapitola \ref{chapter:results} podává výsledky experimentů.
 
 \chapter{Neformální návrh systému} \label{chapter:draft}
-Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné jako to co dělá Google Translator\footnote{translate.google.cz} -- blíže popsáno v článku \cite{googleBridgingGap}. Vezme se věta v původním jazyce a vytvoří se z ní co nejvěrnější překlad v jazyce cílovém a to za pomocí natrénované neuronové sítě. V této kapitole je vysvětleno jak by takový systém mohl vypadat a co za komponenty potřebuje k tomu aby fungoval.
+Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné jako to co dělá Google Translator\footnote{translate.google.cz} -- blíže popsáno v článku \cite{googleBridgingGap}. Vezme se věta v původním jazyce a vytvoří se z ní co nejvěrnější překlad v jazyce cílovém a to za pomocí natrénované neuronové sítě. V této kapitole je vysvětleno, jak by takový systém mohl vypadat a co za komponenty potřebuje k tomu aby fungoval.
 
 \begin{description}
   \item[Dataset:] Aby bylo možné nacvičit neuronovnou síť pro překlad, je nejprve zapotřebí mít nějaký dataset. Jeden dataset obsahuje texty ve dvou jazycích mezi kterými se má překládat. Tyto texty musí být zarovnané, tak aby si jednotlivé věty v těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}). Ukázka datasetu je znázorněna na obrázku \ref{img:dataset}.
@@ -19,7 +19,7 @@ Cílem této práce práce je vytvořit systém pro strojový překlad textu pom
 
   \item[Word Embeddings:] Obecně je možné vytvářet jazykové modely, které generují text po písmenech, částech slov nebo po slovech \cite{mikolovSubwords}. V této práci se bude pracovat s celými slovy (tokeny). Word Embeddings je další forma předzpracování. Každý token ze vstupního slovníku se převede do vektoru reálných čísel, ve kterém jsou zakódovány některé syntaktické a sémantické vlastnosti daného tokenu, což umožní neuronové síti se učit lépe, než kdyby se použilo například jenom číslo označující pozici tokenu ve slovníku. Více v sekci \ref{subsection:neuralembeddings}.
 
-  \item[Model:] Pro překlad je nejvhodnějším způsobem sequence to sequence (dále seq2seq \cite{seq2seq}) s použitím encoder-decoder architektury. Na rozdíl od starších statistických metod překladu, kde se překládalo po frázích, moderní překlad pomocí neuronových sítí probíhá po celých sekvencích (větách). Nejprve enkodér vezme word embedding na vstupu a pomocí rekurentní neuronové sítě (sekce \ref{section:rnn}) převede větu na vstupu do velkého vektoru reprezentující její význam (tzv. myšlenkový vektor -- intuice je taková, že když člověk překládá větu, také nejprve pochopí její význam a poté ji až začne překládat). Dekodér -- taky rekurentní neuronová síť -- následně z tohoto vektoru slovo po slovu vygeneruje výslednou přeloženou větu. Dekodér tedy funguje jako jazykový model (sekce \ref{section:langmodel}), který je na inicializovaný na jednu konkrétní větu.
+  \item[Model:] Pro překlad je nejvhodnějším způsobem sequence to sequence (dále seq2seq \cite{seq2seq}) s použitím architektury enkodér-dekodér. Na rozdíl od starších statistických metod překladu, kde se překládalo po frázích, moderní překlad pomocí neuronových sítí probíhá po celých sekvencích (větách). Nejprve enkodér vezme word embedding na vstupu a pomocí rekurentní neuronové sítě (sekce \ref{section:rnn}) převede větu na vstupu do velkého vektoru reprezentující její význam (tzv. myšlenkový vektor -- intuice je taková, že když člověk překládá větu, také nejprve pochopí její význam a poté ji až začne překládat). Dekodér -- taky rekurentní neuronová síť -- následně z tohoto vektoru slovo po slovu vygeneruje výslednou přeloženou větu. Dekodér tedy funguje jako jazykový model (sekce \ref{section:langmodel}), který je na inicializovaný na jednu konkrétní větu.
 \end{description}
 
 
@@ -27,7 +27,7 @@ Cílem této práce práce je vytvořit systém pro strojový překlad textu pom
     \begin{center}
             \tmpframe{\includegraphics[width=0.62\linewidth]{img/graphs/draft.pdf}}
     \end{center}
-	\caption{Schéma návrhu systému pro překlad. Dataset se předzpracuje pomocí tokenizeru. Do enkodéru tokeny převedené na embeddings. Enkodér větu zakóduje do velkého "myšlenkového" vektoru ze kterého dekodér generuje překlad.}
+	\caption{Schéma návrhu systému pro překlad. Dataset se předzpracuje pomocí tokenizeru. Do enkodéru vstupují tokeny převedené na embeddings. Enkodér větu zakóduje do velkého "myšlenkového" vektoru ze kterého dekodér generuje překlad.}
 	\label{img:draft}
 \end{figure}
 
@@ -51,7 +51,7 @@ Pro každé slovo $w_i$ ze sekvence $w$ určí jaká je jeho podmíněná pravd�
 \subsection{N-gram modely}\label{subsection:ngram}
 Ve výsledku je pro překladový systém potřeba získat model, který pro zdrojovou větu $F$ vrátí přeloženou větu $E$, tak že $P(E|F)$. N-gram model je však jazykový model, který udává jen pro pravděpodobnost věty P(E) (pro nějaký daný kontext nad kterým se model nacvičil).
 
-Takovýto model umožní zhodnotit přirozenost věty a generovat text podobný tomu, na kterém byl model nacvičen \cite{nmtTutorial}.
+Takovýto model umožní zhodnotit přirozenost věty a generovat text podobný tomu, na kterém byl model nacvičen.
 
 \begin{description}
   \item[Zhodnocení přirozenosti:] Pomocí jazykového modelu je možné pro větu $w$ zhodnotit, jak moc je přirozená nebo-li jak moc je pravděpodobné, že by takováto věta mohla existovat v textu na kterém byl model nacvičen.
@@ -109,35 +109,18 @@ Nejznámější ukázkou vlastností word embeddings je ukázka \ref{figure:king
 \end{figure}
 
 
-\todo{taky dobrej popis nlm a embeddings (distributed representation) \url{http://www.scholarpedia.org/article/Neural_net_language_models}}
-
-\todo{popis toho že řeší problémy co má n-gram (jen pár dozadu, nevím jak přesně?) a log-linear (díky nečemu (embeddings?) to vyloučí špatný kombinace jako kráva žere krávu nebo co (viz tutorial)}
+Existuje několik variant výpočtů word embeddings -- word2vec \cite{word2vec}, glove \cite{glove} a fasttext \cite{fasttext}.
 
 
-Zmíním co existuje za druhy, lehce jejich rozdíly a vznik (co jsou zač) a pak se víc rozepíšu o fasttextu, protože to je ten co jsem použil (rovnice a kdesi cosi)
-
-
-bengio neural net language models\cite{Bengio:2008}
-
-
-Existuje několik moderních variant výpočtů word embeddings:
-\begin{itemize}
-  \item word2vec \cite{word2vec}
-  \item glove  \cite{glove}
-  \item fasttext \cite{fasttext}
-\end{itemize}
-
-\begin{description}
-  \item[Transfer learning:] Transfer learning je způsob využití znalostí získaných někde jinde pro jiný problém. Word embeddings je možné buďto získat v průběhu učení modelu nebo použít už připravené, předučené, které jsou k dispozici online od firem jako je Google nebo Facebook. Díky tomu může model získat více znalostí o jednotlivých slovech a celkový výsledek může být výrazně lepší.
-\end{description}
+Embbedings jsou vhodné pro \textbf{transfer learning}. To je způsob využití znalostí získaných někde jinde pro jiný problém. Word embeddings je možné buďto získat v průběhu učení modelu nebo použít už předtrénované, připravené pro tento účel. Díky tomu může model získat více znalostí o jednotlivých slovech a celkový výsledek může být výrazně lepší.
 
 \subsection{Zpracování neznámých slov} \label{subsection:oov}
-Existuje-li dataset $\varepsilon_{train}$ obsahující texty na kterých se model bude učit a dataset $\varepsilon_{test}$, který bude sloužit k ověření výkonosti a generalizace modelu, je více než pravděpodobně, že v testovacím setu se budou nacházet slova, která se v trénovacím nenacházela. Také může být vhodné omezit celkový počet slov se kterými se bude model trénovat pro zlepšení výkonu. Práce \cite{nmtTutorial} uvádí tři běžné způsoby jak se vypořádat s takovými \textbf{neznámými slovy}.
+Existuje-li dataset $\varepsilon_{train}$ obsahující texty na kterých se model bude učit a dataset $\varepsilon_{test}$, který bude sloužit k ověření výkonosti a generalizace modelu, je více než pravděpodobně, že v testovacím setu se budou nacházet slova, která se v trénovacím nenacházela. To znamená, že se v testovacím datasetu budou vyskytovat \textbf{neznámá slova}. Také může být vhodné omezit celkový počet slov se kterými se bude model trénovat pro zlepšení výkonu. Práce \cite{nmtTutorial} uvádí tři běžné způsoby jak se vypořádat s takovými neznámými slovy.
 
 \begin{description}
-  \item[Předpokládat že slovník je konečně velký:] V některých případech se dá počítat s tím, že slovník je omezený.Tím pádem se neznámá slova nebo znaky nemohou vyskytovat. Například, když by se trénoval model pouze na znacích ASCII, tak při dostatečně velkém vstupním datasetu by bylo rozumné předpokládat, že se v něm vyskytli a model se tedy mohl naučit všechny znaky.
+  \item[Předpokládat že slovník je konečně velký:] V některých případech se dá počítat s tím, že slovník je omezený. Tím pádem se neznámá slova nebo znaky nemohou vyskytovat. Například, když by se trénoval model pouze na znacích ASCII, tak při dostatečně velkém vstupním datasetu by bylo rozumné předpokládat, že se v něm vyskytly všechny znaky a model se je tedy mohl všechny naučit.
   \item[Interpolovat pravděpodobnost pro neznámá slova:] Je možné interpolovat rozložení pravděpodobnosti i přes neznámá slova. Lze natrénovat jazykový model co by po písmenech odhadoval neznámá slova nebo lze odhadnout celkový počet slov ve slovníku a pravděpodobnost $P_{unk}$ pak počítat jako $P_{unk}(e_t) = 1/|V_{all}|$.
-  \item[Přídáním speciálního slova <unk>:]\label{description:unk}V případě, že se v trénovacím setu $\varepsilon_{train}$ některá slova vyskytují málo nebo jenom jednou, mohou se nahradit speciálním slovem \emph{<unk>}. S tímto slovem se pak pracuje stejně jako s ostatními. Díky tomu se zredukuje počet slov ve slovníku a tedy náročnost výpočtu. Má však přiřazenou svoji pravděpodobnost a může se tak vyskytnout v předpovědi modelu při generování textu. \todo{odkázat se sem ze sekce kde bude napsaný že tohle je varianta co používám}
+  \item[Přídáním speciálního slova <unk>:]\label{description:unk}V případě, že se v trénovacím setu $\varepsilon_{train}$ některá slova vyskytují málo nebo jenom jednou, mohou se nahradit speciálním slovem \emph{<unk>}. S tímto slovem se pak pracuje stejně jako s ostatními. Díky tomu se zredukuje počet slov ve slovníku a tedy náročnost výpočtu. Má však přiřazenou svoji pravděpodobnost a může se tak vyskytnout v předpovědi modelu při generování textu.
 \end{description}
 
 \section{Rekurentní neuronové sítě}\label{section:rnn}
@@ -146,7 +129,7 @@ V této kapitole je popsán základní koncept rekurentních neuronových sítí
 
 RNN (článek \cite{rnn}) jsou známé již přes dvě desítky let. Úspěšně jsou však používány až v posledních letech. A to hlavně díky vyššímu výpočetnímu výkonu a většímu objemu trénovacích dat, který je v současné době dostupný a také zpracovatelný. Tento druh neuronových sítí je obzvlášť vhodný například pro rozpoznávání psaného písma, rozpoznávání řeči, v kombinaci s konvolučními neuronovými sítěmi pro generování popisků obrázků a co je nejvíce zajímavé pro tuto práci, pro tvorbu jazykových modelů, generátorů textu a tím pádem i pro překlad.
 
-Jejich hlavních výhodou oproti jednoduchým dopředným neuronovým sítím je jejich schopnost držet si vnitřní stav napříč časem. Dopředná neuronová síť pracuje vždy s aktuální hodnotou $x$ na vstupu, pro kterou pomocí vah $W$ získá výstup $y$ (rovnice \ref{figure:basic-nn}).
+Jejich hlavních výhodou oproti jednoduchým dopředným neuronovým sítím je jejich schopnost držet si vnitřní stav napříč časem. Základní neuronová síť pracuje vždy s aktuální hodnotou $x$ na vstupu, pro kterou pomocí vah $W$ získá výstup $y$ (rovnice \ref{figure:basic-nn}).
 
 \begin{align}\label{figure:basic-nn}
   y = f (x, W)
@@ -196,7 +179,7 @@ Rovnice pro RNN jazykový model jsou následující:
 \end{align}
 
 
-Kde \ref{figure:lastContext} je aktuální kontext, \ref{figure:rnnSimple} je zjednodušený přepis rovnice RNN \ref{figure:rnn} a rovnice \ref{figure:rnnSoftmax} je funkce softmax \ref{figure:softmax}, která vezme všechny hodnoty skóre pro jednotlivá slova a transformuje je do pravděpodobnostního rozložení $p_t$. Díky tomu pak lze již snadno určit, které slovo bude vygenerováno s největší pravděpodobností.
+Kde \ref{figure:lastContext} je aktuální kontext, \ref{figure:rnnSimple} je zjednodušený přepis rovnice RNN \ref{figure:rnn} a rovnice \ref{figure:rnnSoftmax} je funkce softmax (rovnice \ref{figure:softmax}), která vezme všechny hodnoty skóre pro jednotlivá slova a transformuje je do pravděpodobnostního rozložení $p_t$. Díky tomu pak lze již snadno určit, které slovo bude vygenerováno s největší pravděpodobností.
 
 
 \begin{align}\label{figure:softmax}
@@ -208,47 +191,50 @@ Kde \ref{figure:lastContext} je aktuální kontext, \ref{figure:rnnSimple} je zj
 Protože vektor $m$ z rovnice \ref{figure:lastContext} je konkatenací všech předchozích slov (a tedy je to aktuální kontext), model se může naučit kombinaci různých vlastností napříč několika různými slovy z kontextu. V sekci \ref{subsection:loglinear} byl jako problém uveden příklad \uv{Farmář jí maso} a \uv{Kráva jí maso}, kde druhá věta nedává smysl. Při použití RNN by se pro kontext $M_f$  \{farmář, jí\} mohla naučit jedna z jednotek skryté vrstvy $h$ rozpoznat vlastnost "věci které farmář jí" a správně se aktivovat a pak nabízet slova jako \uv{maso} nebo \uv{brambory}. Zatímco pro kontext $M_k$ \{kráva, jí\} by se naučila zase jiná jednotka. RNN je tedy schopná zachytit tyto vzdálenější závislosti. Základní verze RNN je však schopná zachytit závislosti jen do určité vzdálenosti viz \ref{subsection:gradient}.
 
 
-\todo{doplnit rovnice (patrne z tutorialu) a vysvětlení jak se to aplikuje dál, stejně tak obrázky s unrolled rnn a popisem toho jak zachovává nějakou informaci (třeba že podstatné jméno je mužské) skrze jednotlivé kroky (i když ne úplně přes vzdálené a tím se dostanu k long term dependencies)}
-
 \subsection{Trénování} \label{subsection:training}
-\todo{trénování rnn, back propagation through time, have difficulties (\url{http://proceedings.mlr.press/v28/pascanu13.pdf}) learning long term dependencies}
-\todo{loss computing}
-\todo{gradient computing}
-
-\subsection{Gradient descent methods}
-\url{http://ruder.io/optimizing-gradient-descent/index.html#stochasticgradientdescent}
-\todo{jak prelozit gradient descent? popsat co to je, ke cemu to je a pak vypsat ty jednotlivy metody a trochu je popsat}
-\url{https://arxiv.org/abs/1609.04747}
+Cílem trénování sítě je nalézt takové parametry $\theta$ (kombinace vah $W$ a biasu $b$) aby byla co nejmenší hodnota takzvané \emph{loss funkce}. Loss funkce vyjadřuje jak moc špatně výstupy sítě odpovídají datům na kterých se síť učí. Průchod sítí a následné vypočítání loss funkce se nazývá dopřednou propagací.
 
 
-\todo{z tutorialu, sekce 6.5 strana 35..nejak popsat batch, minibatch, online batch, sentence padding a masking}
+%\todo{jakej pouzit vzorec}
+%\begin{align}\label{figure:loss}
+%  a
+%\end{align}
 
+K optimalizaci parametrů pro najití minima loss funkce se používá zpětná propagace. Vypočte se přírůstek pro každý parametr, tak aby síť s novými váhy o něco lépe pracovala a loss funkce se snížila. Existuje více různých metod optimalizace pro tento výpočet, lépe popsaných v práci \cite{gradientDescent}.
+
+Úprava parametrů může probíhat po každém jednom průchodu dat (sekevence) sítí. Takovýto přístup se nazývá \textbf{online} učení. Dalším přístupem je \textbf{učení po dávkách}. V takovém to případě probíhá přepočet parametrů až po průchodu přes $n$ sekvencí. Toto číslo $n$ se názývá \textbf{batch size}, tedy počet dat v jedné dávce.
+
+%\todo{epoch, batchsize....loss, back propagation (over time)}
+%\todo{z tutorialu, sekce 6.5 strana 35..nejak popsat batch, minibatch, online batch, sentence padding a masking}
+%
+%\todo{trénování rnn, back propagation through time, have difficulties (\url{http://proceedings.mlr.press/v28/pascanu13.pdf}) learning long term dependencies}
+%\todo{loss computing}
+%\todo{gradient computing}
+%
+%Gradient descent methods
+%\begin{itemize}
+%  \item a
+%\end{itemize}
+%
+%\url{http://ruder.io/optimizing-gradient-descent/index.html#stochasticgradientdescent}
+%\todo{jak prelozit gradient descent? popsat co to je, ke cemu to je a pak vypsat ty jednotlivy metody a trochu je popsat}
+%\url{https://arxiv.org/abs/1609.04747}
 
 
 \subsection{Mizející a explodující gradient} \label{subsection:gradient}
 RNN jsou oproti základním neuronovým sítím schopné zachytit různé závislosti mezi slovy na delší vzdálenosti. I tato schopnost je však velmi limitovaná. Hlavními zdroji problémů jsou \textbf{mizející a explodující gradient} (článek \cite{gradientProblems}).
+%
+%\todo{patrne v nejake predchozi casti zhruba popsat LOSS, BACKPROPAGATION aby se tady na to pak dalo navazat} v sekci \ref{subsection:training}
 
-\todo{patrne v nejake predchozi casti zhruba popsat LOSS, BACKPROPAGATION aby se tady na to pak dalo navazat} v sekci \ref{subsection:training}
-
-Při průběhu učení RNN průběžně vznikají predikce a počítá se \emph{loss} \todo{kde je popsaná} funkce. Následně je potřeba zpětně zpropagovat tuto hodnotu přes všechny (časové) kroky sítě (Back propagation over time -- BPTT). Pokud však není gradient rovný 1, tak se v každém zpětném kroku buďto zmenší a tím pádem se blíží k nule, nebo se naopak zvětší a blíží s k nekonečnu. Ve výsledku je tak gradient buďto příliš malý a nemá tak tak žádný efekt na úpravu vah nebo jimi pohne příliš a tak zaviní špatné učení se sítě.
-
-\begin{figure}[h]
-    \begin{center}
-            \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
-    \end{center}
-	\caption{\todo{ukázka problémů s gradientem, něco jako figure 16 v 6.3 tutorialu}}
-	\label{img:TODO}
-\end{figure}
+Při průběhu učení RNN průběžně vznikají predikce a počítá se \emph{loss} funkce. Následně je potřeba zpětně zpropagovat tuto hodnotu přes všechny (časové) kroky sítě (Back propagation over time -- BPTT). Pokud však není gradient rovný 1, tak se v každém zpětném kroku buďto zmenší a tím pádem se blíží k nule, nebo se naopak zvětší a blíží s k nekonečnu. Ve výsledku je tak gradient buďto příliš malý a nemá tak tak žádný efekt na úpravu vah nebo jimi pohne příliš a tak zaviní špatné učení se sítě.
 
 Jako možné řešení těchto problémů vznikla varianta rekurentní sítě LSTM (sekce \ref{section:LSTM}).
-
-
 
 
 \subsection{LSTM}\label{section:LSTM}
 Long short term memory, dále LSTM, (původní článek \cite{LSTM} a varianta LSTM s forget gate, která se zde používá \cite{forgetLSTM}) nebo-li dlouhá krátkodobá paměť, je varianta RNN navržená jako řešení problémů mizejícího/explodujícího gradientu a vzdálených závislostí.
 
-Stejně jako základní RNN (sekce \ref{section:rnn}), se dá LSTM představut jako opakující se modul v řetězové struktuře viz obrázek \ref{img:rnn}. Rozdíl je ve vnitřku modulu $A$. Zatímco RNN používá pouze jednu nelineární funkci (rovnice \ref{figure:rnn}), struktura LSTM je složitější (obrázek \ref{img:LSTM}). Rovnice jsou následující:
+Stejně jako základní RNN (sekce \ref{section:rnn}), se dá LSTM představit jako opakující se modul v řetězové struktuře (viz obrázek \ref{img:rnn}). Rozdíl je ve vnitřku modulu $A$. Zatímco RNN používá pouze jednu nelineární funkci (rovnice \ref{figure:rnn}), struktura LSTM je složitější (obrázek \ref{img:LSTM} a následující rovnice).
 
 \begin{align}
     u_{t}&=tanh(W_{xu}x_t + W_{hu}h_{t-1} + b_u) \label{figure:update} \\
@@ -266,11 +252,11 @@ Dále LSTM obsahuje tři různé \textbf{brány}. \textbf{Zapomínací}, \textbf
 
 Nejdříve se LSTM rozhodne, jaké informace se vyhodí z paměti. K tomuto slouží již zmíněna zapomínací brána nebo-li forget gate (rovnice \ref{figure:forgetGate}). Například v případě, že síť narazí na vstupu na podstatné jméno, mohla by chtít zapomenout rod posledního podstatného jména, který by si mohla uchovávat pro správné generování sloves v minulém čase.
 
-Dalším krokem je vyhodnocení toho co se má přidat do paměti. Nejdřív vstupní brána nebo-li input gate (rovnice \ref{figure:inputGate}) rozhodne, které hodnoty se změní nebo přidají. V návaznosti na minulý příklad by síť mohla chtít uložit aktuální rod nalezeného podstatného jména. Update funkce (rovnice \ref{figure:update}) vyhodnotí jaké hodnoty se mají přidat.
+Dalším krokem je vyhodnocení toho co se má přidat do paměti. Nejdříve vstupní brána nebo-li input gate (rovnice \ref{figure:inputGate}) rozhodne, které hodnoty se změní nebo přidají. V návaznosti na minulý příklad by síť mohla chtít uložit aktuální rod nalezeného podstatného jména. Update funkce (rovnice \ref{figure:update}) vyhodnotí jaké hodnoty se mají přidat.
 
-Následuje aktualizace paměti $c_t$ (rovnice \ref{figure:memoryCell}. V kontextu příkladu by se zahodil rod jak určila zapomínací brána a uložil se nový rod podle vstupní brány.
+Následuje aktualizace paměti $c_t$ (rovnice \ref{figure:memoryCell}). V kontextu příkladu by se zahodil rod jak určila zapomínací brána a uložil se nový rod podle vstupní brány.
 
-Posledním krokem je určení toho co vydá LSTM na výstupu (skrytý stav $h_t$). Výstupní brána určí co z paměti $c_t$ má projít (rovnice \ref{figure:outputGate} a v rovnici \ref{figure:hiddenState} se získá výsledek.
+Posledním krokem je určení toho co vydá LSTM na výstupu (skrytý stav $h_t$). Výstupní brána určí co z paměti $c_t$ má projít (rovnice \ref{figure:outputGate}) a v rovnici \ref{figure:hiddenState} se získá výsledek.
 
 Pravděpodobnosti jazykového modelu se získají rovnicí:
 \begin{align}
@@ -289,7 +275,7 @@ Pravděpodobnosti jazykového modelu se získají rovnicí:
 
 
 \subsection{GRU}\label{section:GRU}
-LSTM (sekce \ref{section:LSTM}) je dobrým řešením pro problémy ze sekce \ref{subsection:gradient}. Její struktura je ale dosti komplikovaná a tím pádem i náročná na výpočetní výkon. To podnítilo vznik další varianty RNN -- GRU nebo-li gated recurrent unit (článek \cite{GRU}), která je o něco jednodušší a proto je možné ji použít pro úsporu výkonu.
+LSTM (sekce \ref{section:LSTM}) je dobrým řešením pro problémy ze sekce \ref{subsection:gradient}. Její struktura je ale dosti komplikovaná a tím pádem i náročná na výpočetní výkon. To podnítilo vznik další varianty RNN -- GRU, nebo-li gated recurrent unit (článek \cite{GRU}), která je o něco jednodušší a proto je možné ji použít pro úsporu výkonu.
 
 \begin{align}
     r_{t}&=\sigma(W_{xr}x_{t}+W_{hr}h_{t-1}+b_{r}) \label{figure:resetGate} \\
@@ -302,7 +288,7 @@ GRU má pouze dvě brány a skrytý stav $h$. Nový stav se počítá v rovnici 
 
 
 
-\section{Seq2seq model s architekturou enkodér-dekodér}
+\section{Seq2seq model s architekturou enkodér-dekodér} \label{section:encoderdecoder}
 V předchozích sekcích se práce zabývá rekurentními neuronovými sítěmi a jazykovými modely na nich postavených. V této sekci bude popsáno jak tyto sítě vzít a poskládat je vhodným způsobem pro překlad vět. Sekce vychází z práce \cite{nmtTutorial}.
 
 \textbf{Seq2seq} (článek \cite{seq2seq}) nebo-li sequence to sequence je způsob překladu po celých větách. Jde o modelování pravděpodobnosti $P(E|F)$ tedy pravděpodobnost výstupu $E$ na základě vstupu $F$ (obrázek \ref{figure:seqProbability}).
@@ -320,7 +306,7 @@ V předchozích sekcích se práce zabývá rekurentními neuronovými sítěmi 
 	\label{figure:seqProbability}
 \end{figure}
 
-Pro tento druh překladu celých vět za pomocí rekurentních neuronových sítí se používá model s architekturou \textbf{encoder-decoder}. Enkodér i dekodér jsou RNN modely. Enkodér dostane na vstupu větu určenou pro překlad a převede ji (enkóduje) do vektoru reálných čísel -- skrytý stav, takzvaný myšlenkový vektor, vyjadřující význam dané věty. Dekodér inicializovaný tímto stavem generuje (dekóduje z myšlenkového vektoru) přeloženou větu. Díky tomu, že dekodér generuje z významového vektoru, nemusí být vstupní věta stejně dlouhá jako výstupní. Generování skutečně neprobíhá po jednotlivých slovech, ale celých větách, jak udává název.
+Pro tento druh překladu celých vět za pomocí rekurentních neuronových sítí se používá model s architekturou \textbf{enkodér-dekodér}. Enkodér i dekodér jsou RNN modely. Enkodér dostane na vstupu větu určenou pro překlad a převede ji (enkóduje) do vektoru reálných čísel -- skrytý stav, takzvaný myšlenkový vektor, vyjadřující význam dané věty. Dekodér inicializovaný tímto stavem generuje (dekóduje z myšlenkového vektoru) přeloženou větu. Díky tomu, že dekodér generuje z významového vektoru, nemusí být vstupní věta stejně dlouhá jako výstupní.
 
 
 \begin{align}
@@ -338,45 +324,39 @@ Pro tento druh překladu celých vět za pomocí rekurentních neuronových sít
 \end{align}
 
 
-Pro každé slovo v čase $t$ ze vstupní sequence $F$ se vyhledá jeho embedding (rovnice \ref{figure:encoderEmb}). Následně se v rovnici \ref{figure:encoderState} spočítá skrytý stav enkodéru. Po projití přes celou vstupní větu by měly uvnitř být uloženy všechny informace potřebné pro inicializaci dekodéru. I pro dekodér se nejprve vyhledá pro vstupní slovo jeho embedding (rovnice \ref{figure:decoderEmb}). Použité slovo není z času $t$, ale z času $t-1$, protože dekodér generuje následující slovo vždy na základě předchozího. V čase $t_0$ se jako vstupní slovo používá \textbf{startovní} token <s>. Rovnice pro výpočet skrytého stavu dekodéru (\ref{figure:decoderState}) je prakticky stejná jak u encodéru. Pouze v čase $t_0$ se použije koncový stav enkodéru jako inicializace ze které může dekodér vycházet při překladu -- ve vnitřním stavu je zachycen význam věty, kterou má přeložit. Pravděpodobnostní rozložení se pak jako u všech jazykových modelů spočítá pomocí funkce \emph{softmax} (rovnice \ref{figure:resultSoftmax}).
+Pro každé slovo v čase $t$ ze vstupní sequence $F$ se vyhledá jeho embedding (rovnice \ref{figure:encoderEmb}). Následně se v rovnici \ref{figure:encoderState} spočítá skrytý stav enkodéru. Po projití přes celou vstupní větu by měly uvnitř být uloženy všechny informace potřebné pro inicializaci dekodéru. I pro dekodér se nejprve vyhledá pro vstupní slovo jeho embedding (rovnice \ref{figure:decoderEmb}). Použité slovo není z času $t$, ale z času $t-1$, protože dekodér generuje následující slovo vždy na základě předchozího. V čase $t_0$ se jako vstupní slovo používá \textbf{startovací} symbol <s>. Rovnice pro výpočet skrytého stavu dekodéru (\ref{figure:decoderState}) je prakticky stejná jak u encodéru. Pouze v čase $t_0$ se použije koncový stav enkodéru jako inicializace ze které může dekodér vycházet při překladu -- ve vnitřním stavu je zachycen význam věty, kterou má přeložit. Pravděpodobnostní rozložení se pak jako u všech jazykových modelů spočítá pomocí funkce \emph{softmax} (rovnice \ref{figure:resultSoftmax}).
 
 
-\subsection{Generování výstupu}
+\subsection{Průběh trénování a generování}
 
-Cílem jazykového modelu je předpovídat následující slovo ve větě. Aby model věděl kdy má začít a ukončit predikci, používají se speciální \textbf{počáteční a koncový symbol} (<s>, </s>). Vstupní věta (sekvence) $x$ by například mohla být $x$ = \{<s>, Venku, sedí, kočka\}. Věta $y$ generovaná modelem, by pak mohla být například tatáž věta, ale posunutá o jeden časový úsek dopředu -- $y$ = \{Venku, sedí, kočka, </s>\}. V ilustraci \todo{...} je názorná ukázka.
+Cílem jazykového modelu je předpovídat následující slovo ve větě. Při trénování se nejprve do enkodéru pošle výchozí věta, aby se získal inicializační stav pro dekodér. Do dekodéru, inicializovaného získaným stavem, se po jednotlivých slovech pošle správně přeložená věta, které předchází \textbf{startovací} symbol. Startovací symbol dekodéru říká, že má začít překládat. Při trénování se mu pak následně posílají korektní další slova, aby se zrychlilo učení. Tato metoda se nazývá \uv{teacher forcing}. Po naučení modelu, ve fázi generování, se pak do dekodéru posílají slova, která již sam vygeneroval. Proces je znázorněný na obrázku \ref{img:seq2seq}. Dekodér generuje tak dlouho, dokud nenarazí na \textbf{koncový} symbol, kterým je v době trénování zakončená každá očekávaná věta. Ve skutečnosti však výstupem dekodéru není přímo slovo, ale rozložení pravděpodobnosti přes všechna slova cílového slovníku získaného funkcí \emph{softmax} v rovnici \ref{figure:resultSoftmax}. Je několik možností jak z tohoto rozložení vybrat konkrétní slovo:
+
+\begin{description}
+  \item[Náhodný výběr:] Z rozložení pravděpodobnosti $P(E|F)$ se slovo vybere náhodně.
+  \item[Chamtivý výběr:] Chamtivý (greedy) výběr spočívá ve vybrání slova, které získalo největší pravděpodobnost -- argmax($P(E|F)$).
+  \item[Paprskové prohledávání:] Z anglického beam search, paprskové prohledávání najde $n$ výstupů s největší pravděpodobností $P(E|F)$, které drží jako $n$ možných výsledků nebo-li hypotéz. V každém kroku $t$ se každá hypotéza rozšíří o další slovo a ze všech aktuálních hypotéz se zase vybere $n$ nejslibnějších. Až jsou všechny hypotézy ukončeny koncovým symbolem <eos>, vybere se z nich ta s největší pravděpodobností, jako výsledek.
+\end{description}
+
 
 \begin{figure}[h]
     \begin{center}
             \tmpframe{\includegraphics[width=1\linewidth]{img/graphs/seq2seq.pdf}}
     \end{center}
-	\caption{\todo{Obrázek jako je v nmt thesis strana 19, figure 2.3, VYSVĚTLIT ROZDÍL MEZI TRÉNOVÁNÍM (techer forced learning nebo jak se to jmenuje) A INFERENCI}}
-	\label{img:TODO}
+	\caption{Enkodér-dekodér architektura. Enkodér obdrží větu na vstupu a vytvoří inicializační stav pro dekodér. Ten v době trénování dostává na vstupu správně přeloženou větu. V době generování na vstup dostává po jednom slova co sám vygeneroval a tím tak získává výslednou větu, dokud nenarazí na koncový symbol </s>.}
+	\label{img:seq2seq}
 \end{figure}
 
 
-Jak již bylo řečeno, dekodér je inicializovaný koncovým stavem enkodéru $h^{f}_{|F|}$. Jako první vstup obdrží dekodér startovní symbol <s> a předpoví první slovo na výstup. Vygenerované slovo se v dalším kroku $t$ použije jako aktuální vstup dekodéru. Takto probíhá generování dokud dekodér nedá na výstup další speciální symbol \textbf{<eos>} (end of sentence), který značí konec věty. Těmito symboly je při trénování sítě potřeba obalit každou větu, tak jak je vidět i na obrázku \ref{img:seq2seq}. Ve skutečnosti však výstupem dekodéru není přímo slovo, ale rozložení pravděpodobnosti přes všechna slova cílového slovníku získaného funkcí \emph{softmax} v rovnici \ref{figure:resultSoftmax}. Je několik možností jak z tohoto rozložení vybrat konkrétní slovo:
+\subsection{Metody optimalizace} \label{subsection:optimization} V této sekci jsou popsány způsoby jakými lze zlepšit výkon seq2seq modelu.
 
 \begin{description}
-  \item[Náhodný výběr:] Z rozložení pravděpodobnosti $P(E|F)$ se slovo vybere náhodně
-  \item[Chamtivý výběr:] Chamtivý (greedy) výběr spočívá ve vybrání slova, které získalo největší pravděpodobnost -- argmax($P(E|F)$)
-  \item[Paprskové prohledávání:] Z anglického beam search, paprskové prohledávání najde $n$ výstupů s největší pravděpodobností $P(E|F)$, které drží jako $n$ možných výsledků nebo-li hypotéz. V každém kroku $t$ se každá hypotéza rozšíří o další slovo a ze všech aktuálních hypotéz se zase vybere $n$ nejslibnějších. Až jsou všechny hypotézy ukončený koncovým symbolem <eos>, vybere se z nich ta s největší pravděpodobností, jako výsledek.
-\end{description}
-
-\todo{možnost obrázku vysvětlujícím jednotlivé způsoby výběru -- trojobrázek jako pro sigmoidy..?}
-
-\todo{lépe popsat beam search, ale az v lete asi, viz tutorial}
-
-\subsection{Metody optimalizace}
-V této sekci jsou popsány způsoby jakými lze zlepšit výkon seq2seq modelu.
-
-\begin{description}
-  \item[Převrácení vstupu:] Článek \cite{seq2seq} udává, že výrazným způsobem pomůže, když se slova ve vstupní sekvenci převrátí a do enkodéru  se věta předává pozpátku (obrázek ..). \todo{stejnej obrázek jak u seq2seq, ale s obráceným vstupem nebo takovej jakej je v tutorialu figure 24} Pravděpodobně je to díky tomu, že závislosti co by běžně byly vzdálené -- typicky poslední slovo ve vstupní větě a jeho přeložená varianta v přeložené větě -- jsou si takhle blíž. Díky tomu se může model snáz a rychleji učit.
+  \item[Převrácení vstupu:] \label{desc:revert} Článek \cite{seq2seq} udává, že výrazným způsobem pomůže, když se slova ve vstupní sekvenci převrátí a do enkodéru  se věta předává pozpátku. Pravděpodobně je to díky tomu, že závislosti co by běžně byly vzdálené -- typicky poslední slovo ve vstupní větě a jeho přeložená varianta v přeložené větě -- jsou si takhle blíž. Díky tomu se může model snáz a rychleji učit.
   \item[Obousměrný encodér:] Zatímco převrácení vstupu pomůže jen pokud jsou slova ve větách překládaných jazyků na podobných místech (což není pravda napříč všemi jazyky), tato varianta je spolehlivější. Místo jednoho enkodéru se použijí dva a každý z nich projde větu jedním směrem. Jejich výsledky se pak spojí do jednoho skrytého stavu $h$, kterým se již běžně inicializuje dekodér.
   \item[Hloubka sítí:] Enkodér i dekodér jsou RNN a mohou obsahovat více skrytých vrstev (ať již základní varianty, LSTM nebo GRU). Článek \cite{googleBridgingGap} udává, že více vrstev může do určité hloubky pomoci. V práci jich použili 8 jak pro enkodér tak dekodér. Při použití většího množství již má model problém se úspěšně učit.
 \end{description}
 
 
-\chapter{Návrh/Implementace} \label{chapter:implementation}
+\chapter{Implementace} \label{chapter:implementation}
 Tato kapitola popisuje všechny autorem vytvořené a použité části. Sekce \ref{section:datasets} je o výběru a předzpracování datasetů. Následující sekce \ref{section:baseline} se zabývá vytvořením baseline systému, vůči kterému se porovnávají výsledky v kapitole \ref{chapter:results}. Poslední sekce této kapitoly (\ref{section:nmtSystem}) popisuje vytvořený překladový systém.
 
 \section{Datasety}\label{section:datasets}
@@ -411,8 +391,6 @@ Jako dataset (nebo korpus) se v této práci považují dva soubory. Každý ze 
 \end{figure}
 
 \subsection{Předzpracování} \label{subsection:preparing}
-\todo{pripadne ocitovat opus.nlpl.eu}
-
 Datasety obsahující zarovnané řádky vět v různých jazycích lze pořídit online\footnote{například na \url{statmt.org/wmt17/translation-task.html} a \url{opus.lingfil.uu.se}}. Před použitím na trénování a vyhodnocování překládacího systému je však potřeba je ještě vhodným způsobem předpřipravit. Všechny použíte skripty jsou dostupné na githubu programu Moses \footnote{\url{https://github.com/moses-smt/mosesdecoder}}. Cílem je snížit velikost výsledných slovníků a zbavit se nevhodných vět.
 
 \begin{description}
@@ -436,23 +414,20 @@ Datasety obsahující zarovnané řádky vět v různých jazycích lze pořídi
   \item[Truecasing:] Velká písmena na začátku vět se převedou na malá nebo se zachovají podle toho v jaké formě se slovo nejčastěji vyskytuje v celém datasetu. Velká písmena tak zůstanou jen tam kde je to běžná podoba slova (například u jmen). Díky tomu se sníží počet slov ve slovníku. Pro truecasing se používají skripty z nástroje Moses \emph{train-truecaser.perl} a \emph{truecase.perl}.
 \end{description}
 
-
 \begin{description}
-  \item[Vyčištění:] Zahodí se prázdně či špatně zarovnané řádky. Dále se zkrátí věty na maximální délku 40 \todo{bude to napsany tady fakt? nekde jinde jeste?} tokenů. Příliš dlouhé sekvence by znamenaly značnou zátěž na paměť a rychlost trénování překladového systému. Pro vyčištění se používá skrpt z nástroje Moses \emph{clean-corpus-n.perl}.
+  \item[Vyčištění:] Zahodí se prázdně či špatně zarovnané řádky. Dále se zkrátí věty na maximální délku 40 tokenů. Příliš dlouhé sekvence by znamenaly značnou zátěž na paměť a rychlost trénování překladového systému. Pro vyčištění je použit skript z nástroje Moses \emph{clean-corpus-n.perl}.
 \end{description}
-
-\todo{Jak rozlišit návrh a realizaci?}
 
 
 \section{Baseline systém v Moses}\label{section:baseline}
-Moses \cite{moses} je nástroj na vytváření statistických strojových překladových systémů. Vzniklý model bude sloužit jako baseline vůči kterému se porovnají výsledky implementovaného překladového systému (sekce \ref{section:nmtSystem}). Kromě toho se také používají některé skripty z tohoto nástroje, pro přípravu datasetů (sekce \ref{subsection:preparing}). Baseline systém je nacvičen a otestován na stejných datech jako výsledný překladový systém. Konkrétní postup jeho přípravy je dostupný na stránkách Moses \footnote{\url{statmt.org/moses/?n=Moses.Baseline}}, byly použity výchozí nastavení.
+Moses \cite{moses} je nástroj na vytváření statistických strojových překladových systémů. Vzniklý model bude sloužit jako baseline vůči kterému se porovnají výsledky implementovaného překladového systému (sekce \ref{section:nmtSystem}). Kromě toho se také používají některé skripty z tohoto nástroje pro přípravu datasetů (sekce \ref{subsection:preparing}). Baseline systém je nacvičen a otestován na stejných datech jako výsledný překladový systém. Konkrétní postup jeho přípravy je dostupný na stránkách Moses \footnote{\url{statmt.org/moses/?n=Moses.Baseline}}, byly použity výchozí nastavení.
 
 \section{Překladový systém}\label{section:nmtSystem}
 Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{python.org}} v jeho verzi 3.6. Na výběr bylo z několika vhodných knihoven/frameworků pro práci se strojovým učením:
 
 \begin{itemize}
   \item Tensorflow -- je open source knihovna, která původně vznikla v rámci výzkumného týmu Google Brain uvnitř společnosti Google. Tensorflow používá pro výpočty graf, kde jednotlivé uzly reprezentují operace a hrany reprezentují datové struktury (tensory). Tensorflow se stala velice populární v oblasti vývoje neuronových sítí.
-  \item Theano -- knihovna pro efektivní práci s mnoho rozměrnými poli. Využívá pole z hojně používané pythoní knihovny Numpy. Nedávno se knihovna dostala na verzi 1.0 a naráz s tím se ukončil její vývoj. 
+  \item Theano -- knihovna pro efektivní práci s mnoho rozměrnými poli. Využívá pole z hojně používané pythoní knihovny Numpy. Nedávno se knihovna dostala na verzi 1.0 a naráz s tím se ukončil její vývoj.
   \item CNTK -- Cognitive Toolik je open-source nástroj deep learning od firmy Microsoft. Poskytuje API pro jazyky C\#, C++ i Python. Pro výpočty také používá graf, kde listy reprezentují vstupní hodnoty nebo parametry a ostatní uzly reprezentují maticové operace.
   \item Keras -- je pythoní knihovna poskytující vysoko úrovňové API pro deep learning. Je vysoce modulární a určená pro snadné prototypování. Knihovna běží nad backendem, který používá pro výpočty. Backend může být jedna z předchozích knihovne -- Tensorflow, Theano nebo CNTK.
 \end{itemize}
@@ -460,53 +435,52 @@ Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{p
 Zvolena byla knihovna Keras \cite{keras} pro svůj jednoduchý a více intuitivní přístup a také pro množství návodů, které pro tuto knihovnu vznikají. Jako backend je použita knihovna Tensorflow \cite{tensorflow}.
 
 \subsection{Balíček nmt}
-Překladový systém je naimplementován formou pythoního balíčku (knihovny) dostupného na githubu \footnote{https://github.com/jojkos/master-thesis/tree/master/code/nmtPackage}. S pomocí vyro
+Překladový systém je naimplementován formou pythoního balíčku (knihovny), který byl zveřejněn na githubu \footnote{https://github.com/jojkos/master-thesis/tree/master/code/nmtPackage}. Hlavní třidou je \emph{Translator}. Tato třída implementuje za pomocí knihovny Keras enkodér-dekodér architekturu (sekce \ref{section:encoderdecoder}). Enkodér i dekodér jsou vytvořeny z jedné vrstvy LSTM. Všechny vrstvy modelu jsou zachyceny na obrázku \ref{img:model}. Sekvence vstupující do enkodéru jsou převráceny podle \ref{desc:revert}. Slovníky výchozího a cílového jazyku se omezují na zvolenou maximální velikost a neznámá slova jsou nahrazeny symbolem <unk> (viz sekce \ref{subsection:oov}).
 
-\begin{description}
-  \item[Bucketing:] A padding. Rozdělení sekvencí na skupiny podle délky, abych nepaddingoval zbytečně a tím neplýtval výkon. \todo{porovnat čas jaký to běží a rozdíl v přesnosti překladu vůči bez bucketingu}
-  \item[Generování encoded vět aby se vešly do paměti:]
-\end{description}
-
-
-\section{popis fungování systému a jednotlivých tříd}
-\todo{zkusit nějak použit vygenerovanou dokumentaci? nebo aspon do příloh}
-
-\chapter{Experimenty a vyhodnocení} \label{chapter:results}
-\section{skóre BLEU}
-\todo{vysazet hezky vzorce}
-
-
-Naprogramoval jsem.
-Posbíral jsem data.
-Pustil jsem to.
-Výsledky jsou takové.
-Je to tak a tak rychlé.
+%Metodou \emph{fit} se spustí trénování modelu \todo{nekde vysvetlit pojmy jako epocha, batch size a vsechny tyhle dalsi veci..kde a jak?}
 
 
 \begin{figure}[h]
     \begin{center}
-            \tmpframe{\includegraphics[width=0.5\linewidth]{img/placeholder.pdf}}
+            \tmpframe{\includegraphics[width=0.55\linewidth]{img/model.pdf}}
     \end{center}
-	\caption{One image. \todo{Napsat pořádný titulek}}
-	\label{img:TODO}
+	\caption{Struktura modelu. Enkodér je vrstva \emph{lstm\_1}, dekodér je vrtva \emph{lstm\_2}. Poslední vrstva \emph{dense\_1} s aktivační funkcí \emph{softmax} vyhodnotí pravděpodobnost pro všechny slova z cílového slovníku.}
+	\label{img:model}
+\end{figure}
+
+
+%
+%\begin{description}
+%  \item[Bucketing:] A padding. Rozdělení sekvencí na skupiny podle délky, abych nepaddingoval zbytečně a tím neplýtval výkon. \todo{porovnat čas jaký to běží a rozdíl v přesnosti překladu vůči bez bucketingu}
+%  \item[Generování encoded vět aby se vešly do paměti:]
+%\end{description}
+
+
+\chapter{Experimenty a vyhodnocení} \label{chapter:results}
+V této sekci jsou prezentovány experimenty provedené s překladovým systémem. Systém byl natrénován pro překlad z češtiny (cs) do angličtiny (en). Jako trénovací dataset byl použit \uv{news-commentary-v12.cs-en}\footnote{http://data.statmt.org/wmt17/translation-task/training-parallel-nc-v12.tgz}. Po vyčištění provedeném podle \ref{subsection:preparing} obsahuje 132114 párů vět. Jako testovací dataset byl použit \uv{newstest2017-csen}\footnote{http://data.statmt.org/wmt17/translation-task/test.tgz}, který po vyčištění obsahuje 2841 párů vět. Oba tyto sety pochází z každoročně publikovaného překládacího úkolu konference WMT. Jak baseline systém vytvořený v nástroji Moses (sekce \ref{section:baseline}), tak systém prezentovaný v této práci (sekce \ref{section:nmtSystem}) byly natrénovány a otestovány na těchto dvou datasetech.
+
+Trénink probíhal 23 epoch. Jak enkodér, tak dekodér je jednovrsté LSTM s 256 jednotkami. Zvolený optimalizátor je RMSprop. Maximální počet různých tokenů ve výstupním jazyce je 30000 a ve výstupním 15000. Byly použity předučené word embeddings (varianta fastText), jak pro vstupní, tak výstupní jazyk, poskytnuté firmou Facebook \footnote{\url{https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md}}.
+
+Hodnotící metrikou je standardní skore BLEU. Pro jeho výpočet byl použit skript \emph{multi-blue.pl} dodávaný s nástrojem Moses. Výsledky jsou zaznamenány v tabulce \ref{table:results}.
+
+
+\begin{figure}[h]
+    \begin{center}
+        \begin{tabular}{c|c|c}
+          & baseline systém & prezentovaný systém \\
+          \hline
+          BLEU skóre & 14.0 & 2.03\\
+          \hline
+        \end{tabular}
+    \end{center}
+	\caption{Porovnání výsledků baseline systému vytvořeném v nástroji Moses a překladového systému, který je výsledkem této práce.}
+	\label{table:results}
 \end{figure}
 
 
 
-
 \chapter{Závěr}
-\begin{itemize}
-  \item Autor se ohlíží za tím, co udělal: „V práci je. Hlavní úspěchy jsou. Důležitými výsledky jsou. Podařilo se.“
-  \item Autor uvede nápady, které nestihl realizovat v podobě možností pokračování: „Ještě by šlo zkusit. Kdybych byl na začátku věděl, co vím teď, dělal bych.“
-  \item Autor (ve vlastním zájmu) rekapituluje, jak bylo naplněno zadání práce.
-\end{itemize}
+Práce popisuje komponenty potřebné pro vytvoření překladového systému s pomocí neuronových sítí. Za pomocí těchto komponent byl vytvořen systém realizovaný pythoním balíčkem \emph{nmt}. Byly zvoleny trénovací a testovací data s kterými byl tento systém otestován. Hodnotícím kritériem je skore BLEU, které pro testovací dataset newtest2017 vyšlo 2.03. V porovnání se skóre 14.0, které vyšlo pro systém natrénovaný nástrojem Moses to není velmi úspěšný výsledek. Systém bude potřeba rozšířit a vylepšit, tak aby fungoval výrazně lépe.
 
-\textbf{Plány do budoucna}
-\begin{itemize}
-    \item použití bidirectional první vrstvy encoderu, pro lepší zachování contextu \cite{googleBridgingGap} na místo použití obrácených vstupů
-    \item použití wordpieces \cite{googleBridgingGap} místo celých slov pro lepší handling rare words (mozna)
-    \item přidat attention \cite{attention}
-    \item přidat beam search \cite{nmtTutorial}, sehnat původní článek co přinesl beam search
-    \item vyzkouset ruzny poctvy vrstev LSTM a velikosti vrstev
-    \item pridat early stopping
-\end{itemize}
+Je několik vhodných rozšíření systému, které by mohly pomoci dosáhnout lepších výsledků. Použití více, případně i větších, vrstev LSTM. Na místo invertování vstupů enkodéru, je možné první vrstvu enkodéru udělat obousměrnou (viz \ref{subsection:optimization}). Dále by bylo vhodné přidat paprskové vyhledávání na místo hladového pro určování slov při generování. Dosavadní implementace systému vykazuje velký problém s neznámými (\emph{UNK}) slovy. Tento problém by se mohl vyřešit pomocí tzv. \emph{attention} mechanismu a přenášení neznámých slov v nezměněné podobě do výsledného překladu.
+
