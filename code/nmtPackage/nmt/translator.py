@@ -3,6 +3,7 @@
 import logging
 import os
 import math
+import re
 import pickle
 import random
 from time import time
@@ -179,7 +180,6 @@ class Translator(object):
                 self.training_dataset.x_max_seq_len, self.training_dataset.y_max_seq_len,
                 self.source_vocab, self.target_vocab, self.reverse_input
             )
-
             encoder_input_data = [encoder_input_data]
             decoder_input_data = [decoder_input_data]
             decoder_target_data = [decoder_target_data]
@@ -214,7 +214,6 @@ class Translator(object):
 
             for i in indices:
                 training_data = self._get_training_data(i, i + batch_size, bucketing, bucket_range)
-
                 if bucketing:
                     yield training_data
                 else:
@@ -447,6 +446,9 @@ class Translator(object):
 
             # Update states
             states_value = [h, c]
+
+        # for BPE encoded
+        # decoded_sentence = re.sub(r"(@@ )|(@@ ?$)", "", decoded_sentence)
 
         return decoded_sentence
 

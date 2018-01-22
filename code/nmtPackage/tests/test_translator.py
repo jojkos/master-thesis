@@ -2,6 +2,15 @@ from nmt import Translator, Vocabulary, SpecialSymbols
 import numpy as np
 import os
 import random
+import shutil
+
+
+def teardown_module(module):
+    """ teardown any state that was previously setup with a setup_module
+    method.
+    """
+
+    shutil.rmtree('logs')
 
 
 def test_encode_sequences():
