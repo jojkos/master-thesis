@@ -28,6 +28,7 @@ def add_arguments(parser):
     parser.add_argument("--model_file", type=str, default="model_weights.h5",
                         help="Model file name. Either will be created or loaded.")
     parser.add_argument("--epochs", type=int, default=1, help="Number of epochs")
+    parser.add_argument("--initial_epoch", type=int, default=0, help="Epoch number from which to start")
     parser.add_argument("--num_encoder_layers", type=int, default=1, help="Number of layers in encoder")
     parser.add_argument("--num_decoder_layers", type=int, default=1, help="Number of layers in decoder")
     parser.add_argument("--batch_size", type=int, default=64, help="Size of one batch")
@@ -77,7 +78,7 @@ def add_arguments(parser):
 # TODO compare use_fit_generator speed True vs False
 
 # python main.py --training_mode --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
-# python main.py --training_mode --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 1 --clear False
+# python main.py --training_mode --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 5 --log_folder "logs/smallTest"
 
 # SMT pousteni
 # python main.py --training_mode --training_dataset "G:\Clouds\DPbigFiles\WMT17\newsCommentary\news-commentary-v12.cs-en-tokenized.truecased.cleaned" --test_dataset "G:\Clouds\DPbigFiles\WMT17\testSet\newstest2017-csen-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --model_folder "G:\Clouds\DPbigFiles\WMT17\newsCommentary" --model_file "newsCommentarySmtModel.h5" --batch_size 64 --num_units 256 --optimizer "rmsprop" --max_source_vocab_size 10000 --max_target_vocab_size 10000 --source_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.cs.vec" --target_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.en.vec"
@@ -115,7 +116,8 @@ def main():
     # TODO osamostatnit veci v modulu a vyndat je sem, z modulu udelat jen generic modul
 
     if args.training_mode:
-        translator.fit(epochs=args.epochs, batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
+        translator.fit(epochs=args.epochs, initial_epoch=args.initial_epoch,
+                       batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
                        bucketing=args.bucketing, bucket_range=args.bucket_range)
         evaluation = translator.evaluate(args.batch_size)
 
@@ -126,7 +128,7 @@ def main():
             seq = input("Enter sequence: ")
             translator.translate(seq)
 
-    # TODO class for encoder/decoder
+    # TODO class for encoder/decoder (model)
 
 
 # autogenerate docs

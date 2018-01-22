@@ -202,10 +202,9 @@ class Translator(object):
         Returns: dict with encoder_input_data, decoder_input_data and decoder_target_data of batch_size size
 
         """
-        # TODO what about shuffling?
+        # shuffling
         # https://stackoverflow.com/questions/46570172/how-to-fit-generator-in-keras
         # https://github.com/keras-team/keras/issues/2389
-        # probably don't need to use sequence but have to shuffle data HERE manually
 
         while True:
             indices = list(range(0, self.training_dataset.num_samples, batch_size))
@@ -493,7 +492,7 @@ class Translator(object):
 
         return math.ceil(dataset.num_samples / batch_size)
 
-    def fit(self, epochs=1, batch_size=64, validation_split=0.0, use_fit_generator=False,
+    def fit(self, epochs=1, initial_epoch=0, batch_size=64, validation_split=0.0, use_fit_generator=False,
             bucketing=False, bucket_range=10):
         """
 
@@ -501,6 +500,7 @@ class Translator(object):
 
         Args:
             epochs:
+            initial_epoch:
             batch_size:
             validation_split:
             use_fit_generator:
@@ -511,7 +511,7 @@ class Translator(object):
         """
 
         # logging for tensorboard
-        tensorboard_callback = TensorBoard(log_dir="{}".format(os.path.join(self.log_folder, str(time()))),
+        tensorboard_callback = TensorBoard(log_dir="{}".format(self.log_folder),
                                            write_graph=False)  # quite SLOW LINE
         # model saving after each epoch
         checkpoint_callback = ModelCheckpoint(self.model_weights_path, save_weights_only=True)
@@ -519,8 +519,9 @@ class Translator(object):
         callbacks = [tensorboard_callback, checkpoint_callback]
 
         logger.info("fitting the model...")
-        for i in range(1, epochs + 1):
-            logger.info("Epoch {}".format(i))
+        for i in range(initial_epoch, epochs):
+            epoch = i + 1
+            logger.info("Epoch {}".format(epoch))
 
             if use_fit_generator:
                 # to prevent memory error, only loads parts of dataset at once
@@ -540,8 +541,8 @@ class Translator(object):
                                 ],
                                 training_data["decoder_target_data"][j],
                                 batch_size=batch_size,
-                                epochs=i,
-                                initial_epoch=i - 1,
+                                epochs=epoch,
+                                initial_epoch=i,
                                 validation_split=validation_split,
                                 callbacks=callbacks
                             )
@@ -554,8 +555,8 @@ class Translator(object):
 
                     self.model.fit_generator(generator,
                                              steps_per_epoch=steps,
-                                             epochs=i,
-                                             initial_epoch=i - 1,
+                                             epochs=epoch,
+                                             initial_epoch=i,
                                              callbacks=callbacks
                                              )
                     # validation_data=self._get_all_test_data()
@@ -574,8 +575,8 @@ class Translator(object):
                         ],
                         training_data["decoder_target_data"][j],
                         batch_size=batch_size,
-                        epochs=i,
-                        initial_epoch=i - 1,
+                        epochs=epoch,
+                        initial_epoch=i,
                         validation_split=validation_split,
                         callbacks=callbacks
                     )
