@@ -167,6 +167,27 @@ def test_translating_small_dataset_use_generator():
     assert translated_data == test_data
 
 
+def test_translating_small_dataset_bucketing():
+    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+                            source_lang="cs", target_lang="en", log_folder="logs",
+                            model_folder="data", model_file="model.h5")
+
+    translator.fit(epochs=100, bucketing=True, bucket_range=2, bucket_min_size=2)
+
+    translator.evaluate()
+
+    os.remove("data/model.h5")
+
+    with open("data/smallTest.en.test.translated", encoding="utf-8") as test_file:
+        test_data = test_file.read()
+    with open("data/smallTest.en.translated", encoding="utf-8") as translated_file:
+        translated_data = translated_file.read()
+
+    os.remove("data/smallTest.en.translated")
+
+    assert translated_data == test_data
+
+
 def test_get_training_data():
     translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
@@ -174,17 +195,17 @@ def test_get_training_data():
 
     training_data = translator._get_training_data()
 
-    decoded_data = Translator.decode_encoded_seq(training_data["encoder_input_data"][0][0], translator.source_vocab)
+    decoded_data = Translator.decode_encoded_seq(training_data["encoder_input_data"][0], translator.source_vocab)
     test_decoded_data = ["se", "rozzlobila", SpecialSymbols.PAD, SpecialSymbols.PAD, SpecialSymbols.PAD,
                          SpecialSymbols.PAD, SpecialSymbols.PAD, SpecialSymbols.PAD, SpecialSymbols.PAD]
     np.testing.assert_array_equal(decoded_data, test_decoded_data)
 
-    decoded_data = Translator.decode_encoded_seq(training_data["decoder_input_data"][0][0], translator.target_vocab)
+    decoded_data = Translator.decode_encoded_seq(training_data["decoder_input_data"][0], translator.target_vocab)
     test_decoded_data = [SpecialSymbols.GO, "she", "got", "angry", SpecialSymbols.PAD, SpecialSymbols.PAD,
                          SpecialSymbols.PAD, SpecialSymbols.PAD, SpecialSymbols.PAD]
     np.testing.assert_array_equal(decoded_data, test_decoded_data)
 
-    decoded_data = Translator.decode_encoded_seq(training_data["decoder_target_data"][0][0], translator.target_vocab,
+    decoded_data = Translator.decode_encoded_seq(training_data["decoder_target_data"][0], translator.target_vocab,
                                                  one_hot=True)
     test_decoded_data = ["she", "got", "angry", SpecialSymbols.EOS, SpecialSymbols.PAD, SpecialSymbols.PAD,
                          SpecialSymbols.PAD, SpecialSymbols.PAD, SpecialSymbols.PAD]
@@ -197,6 +218,9 @@ def test_training_data_gen():
                             model_folder="data", model_file="model.h5")
 
     generator = translator._training_data_gen(batch_size=4, shuffle=False)
+
+    # to remove first returned value
+    steps = next(generator)
 
     training_data = next(generator)
     encoder_input_data = training_data[0][0]
@@ -240,6 +264,9 @@ def test_training_data_gen_shuffling():
     random.seed(1)  # seed chosen to switch the indeces in data generator
     generator = translator._training_data_gen(batch_size=4, shuffle=True)
 
+    # to remove first returned value
+    steps = next(generator)
+
     training_data = next(generator)
     encoder_input_data = training_data[0][0]
     decoder_input_data = training_data[0][1]
@@ -274,4 +301,47 @@ def test_training_data_gen_shuffling():
                          SpecialSymbols.PAD, SpecialSymbols.PAD, SpecialSymbols.PAD]
     np.testing.assert_array_equal(decoded_data, test_decoded_data)
 
-# TODO bucketing tests
+
+def test_training_data_gen_bucketing():
+    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+                            source_lang="cs", target_lang="en", log_folder="logs",
+                            model_folder="data", model_file="model.h5")
+    generator = translator._training_data_gen(batch_size=2, infinite=True,
+                                              shuffle=False, bucketing=True,
+                                              bucket_range=1, bucket_min_size=1)
+
+    # to remove first returned value
+    steps = next(generator)
+
+    training_data = next(generator)
+    encoder_input_data = training_data[0][0]
+    decoder_input_data = training_data[0][1]
+    decoder_target_data = training_data[1]
+
+    assert len(encoder_input_data) == 1
+    assert len(decoder_input_data) == 1
+    assert len(decoder_target_data) == 1
+
+    training_data = next(generator)
+    encoder_input_data = training_data[0][0]
+    decoder_input_data = training_data[0][1]
+    decoder_target_data = training_data[1]
+
+    assert len(encoder_input_data) == 2
+    assert len(decoder_input_data) == 2
+    assert len(decoder_target_data) == 2
+
+    decoded_data = Translator.decode_encoded_seq(encoder_input_data[0], translator.source_vocab)
+    test_decoded_data = ["se", "rozzlobila", SpecialSymbols.PAD]
+    np.testing.assert_array_equal(decoded_data, test_decoded_data)
+
+    decoded_data = Translator.decode_encoded_seq(decoder_input_data[0], translator.target_vocab)
+    test_decoded_data = [SpecialSymbols.GO, "she", "got", "angry"]
+    np.testing.assert_array_equal(decoded_data, test_decoded_data)
+
+    decoded_data = Translator.decode_encoded_seq(decoder_target_data[0], translator.target_vocab,
+                                                 one_hot=True)
+    test_decoded_data = ["she", "got", "angry", SpecialSymbols.EOS]
+    np.testing.assert_array_equal(decoded_data, test_decoded_data)
+
+# TODO kompletni test, ze se to spravne nauci s bucketingem a vyzkouset jestli je to rychlejsi nez bez nej!!!!

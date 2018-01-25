@@ -107,6 +107,7 @@ def load_embedding_weights(path, words, limit=None):
 
     logger.info("getting embedding weights for each word")
     weights = []
+    oov_words = 0
     for index, word in words.items():
         if index == 0:
             # Set zero weight for padding symbol
@@ -117,8 +118,8 @@ def load_embedding_weights(path, words, limit=None):
             # For words with all ngrams absent, a KeyError is raised.
             weight = model[word]
         else:
-            logging.warning("out of vocabulary word: {}".format(word))
-
+            # logging.warning("out of vocabulary word: {}".format(word))
+            oov_words += 1
             # Init random weights for out of vocabulary word        
             # TODO are the values in range (-1, 1)?
             weight = np.random.uniform(low=-1.0, high=1.0, size=dim)
@@ -129,6 +130,7 @@ def load_embedding_weights(path, words, limit=None):
 
         weights.append(weight)
 
+    logging.warning("{} oov words".format(oov_words))
     logging.info("weights loaded")
     return np.asarray(weights)
 
@@ -184,7 +186,7 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
 
     buckets = {}
 
-    logger.debug("num buckets = {}".format(num_buckets))
+    logger.debug("max num buckets = {}".format(num_buckets))
 
     for i in range(len(x_sequences)):
         x_seq = x_sequences[i]
@@ -227,6 +229,8 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
 
     for ix in delete_ixs:
         del buckets[ix]
+
+    logger.debug("created {} buckets".format(len(buckets)))
 
     return buckets
 

@@ -52,9 +52,9 @@ def create_bpe_dataset(paths, symbols):
         args = ["python", get_script_path("subword-nmt\\apply_bpe.py"), "-c", "codes_file",
                 "--vocabulary", path + ".vocab", "--input", path, "--output", path + ".BPE"]
         subprocess.run(args)
-        os.remove(path + ".vocab")
+        # os.remove(path + ".vocab")
 
-    os.remove("codes_file")
+    # os.remove("codes_file")
 
 
 if __name__ == "__main__":

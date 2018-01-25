@@ -76,6 +76,7 @@ def add_arguments(parser):
 
 
 # TODO compare use_fit_generator speed True vs False
+# TODO compare bucketing speed
 
 # python main.py --training_mode --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
 # python main.py --training_mode --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 5 --log_folder "logs/smallTest"
