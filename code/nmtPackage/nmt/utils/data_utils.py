@@ -209,23 +209,24 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
     # so we don't run fit method over really small input lists
     logger.debug("bucket_min_size={}".format(bucket_min_size))
     delete_ixs = []
-    merge_ix = 0
-    for ix in buckets.keys():
-        bucket = buckets[ix]
+    bucket_ixs = sorted(buckets.keys())
+    merge_bucket_ix = 0
+    for ix, bucket_ix in enumerate(bucket_ixs):
+        bucket = buckets[bucket_ix]
         if len(bucket["x_word_seq"]) < bucket_min_size:
-            if ix < len(buckets.keys()):
-                merge_ix = ix + 1
-            elif ix > 1:
-                merge_ix = ix - 1
-                buckets[merge_ix]["x_max_seq_len"] = bucket["x_max_seq_len"]
-                buckets[merge_ix]["y_max_seq_len"] = bucket["y_max_seq_len"]
+            if ix < len(bucket_ixs) - 1:
+                merge_bucket_ix = bucket_ixs[ix + 1]
+            elif ix > 1:  # if last bucket, then it has to be merged to the lower one
+                merge_bucket_ix = bucket_ixs[ix - 1]
+                buckets[merge_bucket_ix]["x_max_seq_len"] = bucket["x_max_seq_len"]
+                buckets[merge_bucket_ix]["y_max_seq_len"] = bucket["y_max_seq_len"]
 
-            if merge_ix > 0:
-                logger.info("bucket {} is too small, merging with bucket {}".format(ix, merge_ix))
-                delete_ixs.append(ix)
+            if merge_bucket_ix > 0:
+                logger.info("bucket {} is too small, merging with bucket {}".format(bucket_ix, merge_bucket_ix))
+                delete_ixs.append(bucket_ix)
 
-                buckets[merge_ix]["x_word_seq"] += bucket["x_word_seq"]
-                buckets[merge_ix]["y_word_seq"] += bucket["y_word_seq"]
+                buckets[merge_bucket_ix]["x_word_seq"] += bucket["x_word_seq"]
+                buckets[merge_bucket_ix]["y_word_seq"] += bucket["y_word_seq"]
 
     for ix in delete_ixs:
         del buckets[ix]

@@ -57,7 +57,7 @@ def add_arguments(parser):
                         help="How big proportion of a development dataset should be used for validation during fiting")
     parser.add_argument("--bucketing", type=bool_arg, default=False,
                         help="Whether to bucket sequences according their size to optimize padding")
-    parser.add_argument("--bucket_range", type=int, default=10,
+    parser.add_argument("--bucket_range", type=int, default=3,
                         help="Range of different sequence lenghts in one bucket")
     parser.add_argument("--use_fit_generator", type=bool_arg, default=False,
                         help="Prevent memory crash by only load part of the dataset at once each time when fitting")
