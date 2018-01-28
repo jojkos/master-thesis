@@ -35,6 +35,7 @@ def add_arguments(parser):
     parser.add_argument("--num_units", type=int, default=256,
                         help="Size of each network layer")
     parser.add_argument("--optimizer", type=str, default="rmsprop", help="Keras optimizer name")
+    parser.add_argument("--dropout", type=int, default=0.2, help="Dropout size")
     parser.add_argument("--num_training_samples", type=int, default=-1,
                         help="How many samples to take from the training dataset, -1 for all of them")
     parser.add_argument("--num_test_samples", type=int, default=-1,
@@ -104,7 +105,7 @@ def main():
         source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,
         source_embedding_path=args.source_embedding_path, target_embedding_path=args.target_embedding_path,
         max_source_embedding_num=args.max_source_embedding_num, max_target_embedding_num=args.max_target_embedding_num,
-        source_lang=args.source_lang,
+        source_lang=args.source_lang, dropout=args.dropout,
         num_units=args.num_units, optimizer=args.optimizer,
         log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
         max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file, model_folder=args.model_folder,

@@ -15,7 +15,7 @@ import numpy as np
 import nmt.utils as utils
 from nmt import SpecialSymbols, Dataset, Vocabulary
 from keras.callbacks import TensorBoard, ModelCheckpoint
-from keras.layers import LSTM, Dense, Embedding, Input, Bidirectional, Concatenate, Average
+from keras.layers import LSTM, Dense, Embedding, Input, Bidirectional, Concatenate, Average, Dropout
 from keras.models import Model
 from keras.preprocessing.text import text_to_word_sequence
 
@@ -35,7 +35,8 @@ class Translator(object):
                  target_lang, test_dataset, training_dataset,
                  reverse_input=True, max_source_vocab_size=10000, max_target_vocab_size=10000,
                  source_embedding_path=None, target_embedding_path=None,
-                 clear=False, tokenize=True, log_folder="logs/", num_units=256, optimizer="rmsprop",
+                 clear=False, tokenize=True, log_folder="logs/", num_units=256, dropout=0.2,
+                 optimizer="rmsprop",
                  source_embedding_dim=300, target_embedding_dim=300,
                  max_source_embedding_num=None, max_target_embedding_num=None,
                  num_training_samples=-1, num_test_samples=-1):
@@ -49,6 +50,7 @@ class Translator(object):
             epochs (int): Number of epochs
             source_lang (str): Source language (dataset file extension)
             num_units (str): Size of each network layer
+            dropout (int): Size of dropout
             optimizer (str): Keras optimizer name
             log_folder (str): Path where the result logs will be stored
             max_source_vocab_size (int): Maximum size of source vocabulary
@@ -74,6 +76,7 @@ class Translator(object):
         self.max_target_embedding_num = max_target_embedding_num
         self.source_lang = source_lang
         self.num_units = num_units
+        self.dropout = dropout
         self.optimizer = optimizer
         self.log_folder = log_folder
         self.max_source_vocab_size = max_source_vocab_size
@@ -346,13 +349,16 @@ class Translator(object):
 
         if self.source_embedding_weights is not None:
             self.source_embedding_weights = [self.source_embedding_weights]  # Embedding layer wantes list as parameter
-        # TODO trainable False or True?
+
         # according to https://keras.io/layers/embeddings/
         # input dim should be +1 when used with mask_zero..is it correctly set here?
         # i think that input dim is already +1 because padding symbol is part of the vocabulary
         source_embeddings = Embedding(self.source_vocab.vocab_len, self.source_embedding_dim,
                                       weights=self.source_embedding_weights, mask_zero=True, trainable=True)
         source_embedding_outputs = source_embeddings(encoder_inputs)
+        # dropout around lstm layers as in paper Recurrent neural network regularization
+        # TODO what about dropout
+        # source_embedding_outputs = Dropout(self.dropout)(source_embedding_outputs)
 
         # use bi-directional encoder with concatenation as in Google neural machine translation paper
         # https://stackoverflow.com/questions/47923370/keras-bidirectional-lstm-seq2seq
