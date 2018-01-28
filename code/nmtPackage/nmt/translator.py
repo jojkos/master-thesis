@@ -172,14 +172,17 @@ class Translator(object):
     def _training_data_gen(self, batch_size, infinite=True, shuffle=True, bucketing=False, bucket_range=3,
                            bucket_min_size=10):
         """
+        Creates generator for keras fit_generator. First yielded value is number of steps needed for whole epoch.
 
         Args:
             infinite: whether to yield data infinitely or stop after one walkthrough the dataset
             shuffle: whether to shuffle the training data and return them in random order every epoch
             bucketing: whetether to use bucketing
             bucket_range: range of each bucket
+            bucket_min_size: minimum count of sequences in one bucket (otherwise bucket merges with other bucket)
 
-        Returns: dict with encoder_input_data, decoder_input_data and decoder_target_data of batch_size size
+        Returns: First yielded value is number of steps needed for whole epoch.
+            Then yields ([encoder_input_data, decoder_input_data], decoder_target_data)
 
         """
         # shuffling
@@ -529,45 +532,41 @@ class Translator(object):
         callbacks = [tensorboard_callback, checkpoint_callback]
 
         logger.info("fitting the model...")
-        for i in range(initial_epoch, epochs):
-            epoch = i + 1
-            logger.info("Epoch {}".format(epoch))
 
-            if use_fit_generator:
-                # to prevent memory error, only loads parts of dataset at once
-                # or when using bucketing
+        if use_fit_generator:
+            # to prevent memory error, only loads parts of dataset at once
+            # or when using bucketing
 
-                generator = self._training_data_gen(batch_size, infinite=True,
-                                                    shuffle=True, bucketing=bucketing,
-                                                    bucket_range=bucket_range, bucket_min_size=bucket_min_size)
+            generator = self._training_data_gen(batch_size, infinite=True,
+                                                shuffle=True, bucketing=bucketing,
+                                                bucket_range=bucket_range, bucket_min_size=bucket_min_size)
 
-                # steps = self.get_gen_steps(self.training_dataset, batch_size)
-                steps = next(generator)
+            # first returned value from the generator is number of steps for one epoch
+            steps = next(generator)
 
-                logger.info("traning generator will make {} steps".format(steps))
-                # TODO why is there no validation split
+            logger.info("traning generator will make {} steps".format(steps))
+            # TODO why is there no validation split
+            self.model.fit_generator(generator,
+                                     steps_per_epoch=steps,
+                                     epochs=epochs,
+                                     initial_epoch=initial_epoch,
+                                     callbacks=callbacks
+                                     )
+        else:
+            training_data = self._get_training_data()
 
-                self.model.fit_generator(generator,
-                                         steps_per_epoch=steps,
-                                         epochs=epoch,
-                                         initial_epoch=i,
-                                         callbacks=callbacks
-                                         )
-            else:
-                training_data = self._get_training_data()
-
-                self.model.fit(
-                    [
-                        training_data["encoder_input_data"],
-                        training_data["decoder_input_data"]
-                    ],
-                    training_data["decoder_target_data"],
-                    batch_size=batch_size,
-                    epochs=epoch,
-                    initial_epoch=i,
-                    validation_split=validation_split,
-                    callbacks=callbacks
-                )
+            self.model.fit(
+                [
+                    training_data["encoder_input_data"],
+                    training_data["decoder_input_data"]
+                ],
+                training_data["decoder_target_data"],
+                batch_size=batch_size,
+                epochs=epochs,
+                initial_epoch=initial_epoch,
+                validation_split=validation_split,
+                callbacks=callbacks
+            )
 
     def evaluate(self, batch_size=64):
         """

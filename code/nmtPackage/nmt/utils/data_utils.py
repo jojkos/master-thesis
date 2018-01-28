@@ -221,7 +221,7 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
                 buckets[merge_bucket_ix]["x_max_seq_len"] = bucket["x_max_seq_len"]
                 buckets[merge_bucket_ix]["y_max_seq_len"] = bucket["y_max_seq_len"]
 
-            if merge_bucket_ix > 0:
+            if merge_bucket_ix > 0 and merge_bucket_ix not in delete_ixs:
                 logger.info("bucket {} is too small, merging with bucket {}".format(bucket_ix, merge_bucket_ix))
                 delete_ixs.append(bucket_ix)
 
