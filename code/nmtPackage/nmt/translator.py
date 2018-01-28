@@ -15,7 +15,7 @@ import numpy as np
 import nmt.utils as utils
 from nmt import SpecialSymbols, Dataset, Vocabulary
 from keras.callbacks import TensorBoard, ModelCheckpoint
-from keras.layers import LSTM, Dense, Embedding, Input
+from keras.layers import LSTM, Dense, Embedding, Input, Bidirectional, Concatenate, Average
 from keras.models import Model
 from keras.preprocessing.text import text_to_word_sequence
 
@@ -354,8 +354,14 @@ class Translator(object):
                                       weights=self.source_embedding_weights, mask_zero=True, trainable=True)
         source_embedding_outputs = source_embeddings(encoder_inputs)
 
-        encoder = LSTM(self.num_units, return_state=True)
-        encoder_outputs, state_h, state_c = encoder(source_embedding_outputs)
+        # use bi-directional encoder with concatenation as in Google neural machine translation paper
+        # https://stackoverflow.com/questions/47923370/keras-bidirectional-lstm-seq2seq
+        # TODO concatenation would require decoder to be twice encoder size, using avg instead - IS IT OK?
+        encoder = Bidirectional(LSTM(self.num_units, return_state=True))
+        # h is inner(output) state, c i memory cell
+        encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(source_embedding_outputs)
+        state_h = Average()([forward_h, backward_h])
+        state_c = Average()([forward_c, backward_c])
         # We discard `encoder_outputs` and only keep the states.
         encoder_states = [state_h, state_c]
 
