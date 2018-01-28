@@ -172,8 +172,7 @@ class Translator(object):
 
         return self._get_encoded_data(self.training_dataset, from_index, to_index)
 
-    def _training_data_gen(self, batch_size, infinite=True, shuffle=True, bucketing=False, bucket_range=3,
-                           bucket_min_size=10):
+    def _training_data_gen(self, batch_size, infinite=True, shuffle=True, bucketing=False, bucket_range=3):
         """
         Creates generator for keras fit_generator. First yielded value is number of steps needed for whole epoch.
 
@@ -182,7 +181,6 @@ class Translator(object):
             shuffle: whether to shuffle the training data and return them in random order every epoch
             bucketing: whetether to use bucketing
             bucket_range: range of each bucket
-            bucket_min_size: minimum count of sequences in one bucket (otherwise bucket merges with other bucket)
 
         Returns: First yielded value is number of steps needed for whole epoch.
             Then yields ([encoder_input_data, decoder_input_data], decoder_target_data)
@@ -201,7 +199,7 @@ class Translator(object):
                                              bucket_range,
                                              self.training_dataset.x_max_seq_len,
                                              self.training_dataset.y_max_seq_len,
-                                             bucket_min_size)
+                                             batch_size)
 
         while True:
             if bucketing:
@@ -514,7 +512,7 @@ class Translator(object):
         return math.ceil(dataset.num_samples / batch_size)
 
     def fit(self, epochs=1, initial_epoch=0, batch_size=64, validation_split=0.0, use_fit_generator=False,
-            bucketing=False, bucket_range=3, bucket_min_size=10):
+            bucketing=False, bucket_range=3):
         """
 
         fits the model, according to the parameters passed in constructor
@@ -528,7 +526,6 @@ class Translator(object):
             bucketing (bool): Whether to bucket sequences according their size to optimize padding
                 automatically switches use_fit_generator to True
             bucket_range (int): Range of different sequence lenghts in one bucket
-            bucket_min_size (int):
 
         """
 
@@ -551,7 +548,7 @@ class Translator(object):
 
             generator = self._training_data_gen(batch_size, infinite=True,
                                                 shuffle=True, bucketing=bucketing,
-                                                bucket_range=bucket_range, bucket_min_size=bucket_min_size)
+                                                bucket_range=bucket_range)
 
             # first returned value from the generator is number of steps for one epoch
             steps = next(generator)

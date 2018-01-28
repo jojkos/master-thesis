@@ -12,6 +12,7 @@ from keras.preprocessing.text import text_to_word_sequence
 from bs4 import BeautifulSoup
 from gensim.models.wrappers import FastText
 
+# TODO warning, there is used random seed, which means buckets are the same each time. Correct or not?
 random.seed(0)
 logger = logging.getLogger(__name__)
 
@@ -218,13 +219,15 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
                 merge_bucket_ix = bucket_ixs[ix + 1]
             elif ix > 1:  # if last bucket, then it has to be merged to the lower one
                 merge_bucket_ix = bucket_ixs[ix - 1]
-                buckets[merge_bucket_ix]["x_max_seq_len"] = bucket["x_max_seq_len"]
-                buckets[merge_bucket_ix]["y_max_seq_len"] = bucket["y_max_seq_len"]
 
             if merge_bucket_ix > 0 and merge_bucket_ix not in delete_ixs:
                 logger.info("bucket {} is too small, merging with bucket {}".format(bucket_ix, merge_bucket_ix))
                 delete_ixs.append(bucket_ix)
 
+                buckets[merge_bucket_ix]["x_max_seq_len"] = max(buckets[merge_bucket_ix]["x_max_seq_len"],
+                                                                bucket["x_max_seq_len"])
+                buckets[merge_bucket_ix]["y_max_seq_len"] = max(buckets[merge_bucket_ix]["y_max_seq_len"],
+                                                                bucket["y_max_seq_len"])
                 buckets[merge_bucket_ix]["x_word_seq"] += bucket["x_word_seq"]
                 buckets[merge_bucket_ix]["y_word_seq"] += bucket["y_word_seq"]
 
