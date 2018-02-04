@@ -13,7 +13,7 @@ from keras.utils import plot_model
 
 import numpy as np
 import nmt.utils as utils
-from nmt import SpecialSymbols, Dataset, Vocabulary
+from nmt import SpecialSymbols, Dataset, Vocabulary, Candidate
 from keras.callbacks import TensorBoard, ModelCheckpoint
 from keras.layers import LSTM, Dense, Embedding, Input, Bidirectional, Concatenate, Average, Dropout
 from keras.models import Model
@@ -357,6 +357,7 @@ class Translator(object):
         # dropout around lstm layers as in paper Recurrent neural network regularization
         # TODO what about dropout
         # source_embedding_outputs = Dropout(self.dropout)(source_embedding_outputs)
+        # muzu se inspirovat tady https://github.com/farizrahman4u/seq2seq/blob/master/seq2seq/models.py
 
         # use bi-directional encoder with concatenation as in Google neural machine translation paper
         # https://stackoverflow.com/questions/47923370/keras-bidirectional-lstm-seq2seq
@@ -474,26 +475,18 @@ class Translator(object):
         # Encode the input as state vectors.
         states_value = self.encoder_model.predict(input_seq)
 
-        # Generate empty target sequence of length 1.
-        target_seq = np.zeros((1, 1))
-        # Populate the first character of target sequence with the start character.
-        target_seq[0, 0] = SpecialSymbols.GO_IX
-
-        candidates = [{
-            "target_seq": target_seq,
-            "states_value": states_value,
-            "score": 1,
-            "decoded_sentence": "",
-            "finalised": False  # EOS has been generated for this sequence
-        }]
+        # only one candidate at the begining
+        candidates = [
+            Candidate(last_prediction=SpecialSymbols.GO_IX, states_value=states_value, score=0, decoded_sentence="")
+        ]
 
         while True:
             should_stop = True
             new_candidates = []
             for candidate in candidates:
-                if not candidate["finalised"]:
+                if not candidate.finalised:
                     output_tokens, h, c = self.decoder_model.predict(
-                        [candidate["target_seq"]] + candidate["states_value"])
+                        [candidate.last_prediction] + candidate.states_value)
                     should_stop = False
 
                     output_tokens = output_tokens[0, -1, :]
@@ -502,49 +495,45 @@ class Translator(object):
                     indices = np.argpartition(output_tokens, -beam_size)[-beam_size:]
 
                     for sampled_token_index in indices:
-                        new_candidate = {
-                            "states_value": [h, c],
-                            "decoded_sentence": candidate["decoded_sentence"],
-                            "finalised": False,
-                            # TODO can there be + instead of *? Multipling computes probabilty of the whole sequence
-                            # but the numbers would be too high to early
-                            # TODO correct normalization so that longer sequences are not penalized
-                            "score": -math.log(output_tokens[sampled_token_index]) + candidate["score"]
-                        }
-                        new_candidates.append(new_candidate)
+                        score = -math.log(output_tokens[sampled_token_index])
+                        # how long is the sentence, to compute average score
+                        step = candidate.get_sentence_length() + 1
+
+                        # i believe scores should be summed together because log prob is used https://stats.stackexchange.com/questions/121257/log-probability-vs-product-of-probabilities
+                        # score is average of all probabilities (normalization so that longer sequences are not penalized)
+                        # incremental average https://math.stackexchange.com/questions/106700/incremental-averageing
+                        avg_score = utils.incremental_average(candidate.score, score, step)
+
                         sampled_word = self.target_vocab.ix_to_word[sampled_token_index]
+
+                        new_candidate = Candidate(states_value=[h, c], decoded_sentence=candidate.decoded_sentence,
+                                                  score=avg_score,
+                                                  sampled_word=sampled_word, last_prediction=sampled_token_index)
+                        new_candidates.append(new_candidate)
 
                         # Exit condition: either hit max length
                         # or find stop character.
                         if sampled_word == SpecialSymbols.EOS:
-                            new_candidate["decoded_sentence"] = new_candidate["decoded_sentence"].strip()
-                            new_candidate["finalised"] = True
                             continue
 
-                        new_candidate["decoded_sentence"] += sampled_word + " "
-                        decoded_len = len(new_candidate["decoded_sentence"].strip().split(" "))
+                        decoded_len = new_candidate.get_sentence_length()
 
                         if decoded_len > self.training_dataset.y_max_seq_len \
                                 and decoded_len > self.test_dataset.y_max_seq_len:  # TODO maybe change to arbitrary long?
-                            new_candidate["decoded_sentence"] = new_candidate["decoded_sentence"].strip()
-                            new_candidate["finalised"] = True
+                            new_candidate.finalise()
                             continue
 
-                        # Update the target sequence (of length 1).
-                        target_seq = np.zeros((1, 1))
-                        target_seq[0, 0] = sampled_token_index
-                        new_candidate["target_seq"] = target_seq
                 # finished candidates are transfered to new_candidates automatically
                 else:
                     new_candidates.append(candidate)
 
             # take n (beam_size) best candidates
-            candidates = sorted(new_candidates, key=lambda can: can["score"])[:beam_size]
+            candidates = sorted(new_candidates, key=lambda can: can.score)[:beam_size]
 
             if should_stop:
                 break
 
-        return candidates[0]["decoded_sentence"]
+        return candidates[0].decoded_sentence
 
     @staticmethod
     def encode_text_seq_to_encoder_seq(text, vocab):

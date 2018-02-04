@@ -4,6 +4,10 @@ import logging
 import argparse
 import os
 import sys
+import random
+
+# seed to keep the results same every time TODO correct?
+random.seed(0)
 
 # TODO how to properly log
 logging.basicConfig(level=logging.DEBUG,

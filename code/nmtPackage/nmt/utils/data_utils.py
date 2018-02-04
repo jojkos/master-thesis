@@ -12,8 +12,6 @@ from keras.preprocessing.text import text_to_word_sequence
 from bs4 import BeautifulSoup
 from gensim.models.wrappers import FastText
 
-# TODO warning, there is used random seed, which means buckets are the same each time. Correct or not?
-random.seed(0)
 logger = logging.getLogger(__name__)
 
 
@@ -279,7 +277,7 @@ def split_lines(lines):
 def convert_xmlset_to_text(path):
     """
 
-    Converts data sets in xml (e.g. http://www.statmt.org/wmt17/translation-task.html Development and Test sets
+    Converts data sets in xml (sgm) (e.g. http://www.statmt.org/wmt17/translation-task.html Development and Test sets
     to text only format (one line, one sequence).
     Creates new file with same name and .lines extension
 

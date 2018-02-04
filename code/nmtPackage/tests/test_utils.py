@@ -125,3 +125,18 @@ def test_split_lines():
     lines = ["first sentence", "second sentence"]
     tokenized = utils.split_lines(lines)
     assert tokenized == [["first", "sentence"], ["second", "sentence"]]
+
+
+def test_incremental_average():
+    avg = 0
+    avg = utils.incremental_average(avg, 1, 1)
+    assert avg == 1
+
+    avg = utils.incremental_average(avg, 1, 2)
+    assert avg == 1
+
+    avg = utils.incremental_average(avg, 2, 3)
+    assert round(avg, 2) == 1.33
+
+    avg = utils.incremental_average(avg, 4, 4)
+    assert avg == 2
