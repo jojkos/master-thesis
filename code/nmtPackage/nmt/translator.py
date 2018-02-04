@@ -469,6 +469,83 @@ class Translator(object):
 
         return decoded_sentence
 
+    def translate_sequence_beam(self, input_seq, beam_size=1):
+        # https://machinelearningmastery.com/beam-search-decoder-natural-language-processing/
+        # Encode the input as state vectors.
+        states_value = self.encoder_model.predict(input_seq)
+
+        # Generate empty target sequence of length 1.
+        target_seq = np.zeros((1, 1))
+        # Populate the first character of target sequence with the start character.
+        target_seq[0, 0] = SpecialSymbols.GO_IX
+
+        candidates = [{
+            "target_seq": target_seq,
+            "states_value": states_value,
+            "score": 1,
+            "decoded_sentence": "",
+            "finalised": False  # EOS has been generated for this sequence
+        }]
+
+        while True:
+            should_stop = True
+            new_candidates = []
+            for candidate in candidates:
+                if not candidate["finalised"]:
+                    output_tokens, h, c = self.decoder_model.predict(
+                        [candidate["target_seq"]] + candidate["states_value"])
+                    should_stop = False
+
+                    output_tokens = output_tokens[0, -1, :]
+
+                    # find n (beam_size) best predictions
+                    indices = np.argpartition(output_tokens, -beam_size)[-beam_size:]
+
+                    for sampled_token_index in indices:
+                        new_candidate = {
+                            "states_value": [h, c],
+                            "decoded_sentence": candidate["decoded_sentence"],
+                            "finalised": False,
+                            # TODO can there be + instead of *? Multipling computes probabilty of the whole sequence
+                            # but the numbers would be too high to early
+                            # TODO correct normalization so that longer sequences are not penalized
+                            "score": -math.log(output_tokens[sampled_token_index]) + candidate["score"]
+                        }
+                        new_candidates.append(new_candidate)
+                        sampled_word = self.target_vocab.ix_to_word[sampled_token_index]
+
+                        # Exit condition: either hit max length
+                        # or find stop character.
+                        if sampled_word == SpecialSymbols.EOS:
+                            new_candidate["decoded_sentence"] = new_candidate["decoded_sentence"].strip()
+                            new_candidate["finalised"] = True
+                            continue
+
+                        new_candidate["decoded_sentence"] += sampled_word + " "
+                        decoded_len = len(new_candidate["decoded_sentence"].strip().split(" "))
+
+                        if decoded_len > self.training_dataset.y_max_seq_len \
+                                and decoded_len > self.test_dataset.y_max_seq_len:  # TODO maybe change to arbitrary long?
+                            new_candidate["decoded_sentence"] = new_candidate["decoded_sentence"].strip()
+                            new_candidate["finalised"] = True
+                            continue
+
+                        # Update the target sequence (of length 1).
+                        target_seq = np.zeros((1, 1))
+                        target_seq[0, 0] = sampled_token_index
+                        new_candidate["target_seq"] = target_seq
+                # finished candidates are transfered to new_candidates automatically
+                else:
+                    new_candidates.append(candidate)
+
+            # take n (beam_size) best candidates
+            candidates = sorted(new_candidates, key=lambda can: can["score"])[:beam_size]
+
+            if should_stop:
+                break
+
+        return candidates[0]["decoded_sentence"]
+
     @staticmethod
     def encode_text_seq_to_encoder_seq(text, vocab):
         """
@@ -577,7 +654,7 @@ class Translator(object):
                 callbacks=callbacks
             )
 
-    def evaluate(self, batch_size=64):
+    def evaluate(self, batch_size=64, beam_size=1):
         """
 
         performs evaluation on test dataset along with generating translations
@@ -613,7 +690,7 @@ class Translator(object):
                 encoder_input_data = inputs[0]
                 for i in range(len(encoder_input_data)):
                     # we need to keep the item in array ([i: i + 1])
-                    decoded_sentence = self.translate_sequence(encoder_input_data[i: i + 1])
+                    decoded_sentence = self.translate_sequence_beam(encoder_input_data[i: i + 1], beam_size)
 
                     out_file.write(decoded_sentence + "\n")
         print("", end="\n")
@@ -621,7 +698,7 @@ class Translator(object):
 
         return eval_values
 
-    def translate(self, seq=None, expected_seq=None):
+    def translate(self, seq=None, expected_seq=None, beam_size=1):
         """
 
         Translates given sequence
@@ -634,7 +711,7 @@ class Translator(object):
 
         encoded_seq = Translator.encode_text_seq_to_encoder_seq(seq, self.source_vocab)
 
-        decoded_sentence = self.translate_sequence(encoded_seq)
+        decoded_sentence = self.translate_sequence_beam(encoded_seq, beam_size)
 
         logger.info("Input sequence: {}".format(seq))
         logger.info("Expcected sentence: {}".format(expected_seq))

@@ -133,7 +133,7 @@ def test_translating_small_dataset():
                             model_folder="data", model_file="model.h5")
 
     translator.fit(epochs=100)
-    translator.evaluate()
+    translator.evaluate(beam_size=5)
 
     os.remove("data/model.h5")
 
@@ -172,7 +172,7 @@ def test_translating_small_dataset_bucketing():
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
 
-    translator.fit(epochs=100, bucketing=True, bucket_range=2, bucket_min_size=2)
+    translator.fit(epochs=100, bucketing=True, bucket_range=2)
 
     translator.evaluate()
 
@@ -308,19 +308,11 @@ def test_training_data_gen_bucketing():
                             model_folder="data", model_file="model.h5")
     generator = translator._training_data_gen(batch_size=2, infinite=True,
                                               shuffle=False, bucketing=True,
-                                              bucket_range=1, bucket_min_size=1)
+                                              bucket_range=1)
 
     # to remove first returned value
     steps = next(generator)
-
-    training_data = next(generator)
-    encoder_input_data = training_data[0][0]
-    decoder_input_data = training_data[0][1]
-    decoder_target_data = training_data[1]
-
-    assert len(encoder_input_data) == 1
-    assert len(decoder_input_data) == 1
-    assert len(decoder_target_data) == 1
+    assert steps == 4
 
     training_data = next(generator)
     encoder_input_data = training_data[0][0]
@@ -331,17 +323,26 @@ def test_training_data_gen_bucketing():
     assert len(decoder_input_data) == 2
     assert len(decoder_target_data) == 2
 
+    training_data = next(generator)
+    encoder_input_data = training_data[0][0]
+    decoder_input_data = training_data[0][1]
+    decoder_target_data = training_data[1]
+
+    assert len(encoder_input_data) == 1
+    assert len(decoder_input_data) == 1
+    assert len(decoder_target_data) == 1
+
     decoded_data = Translator.decode_encoded_seq(encoder_input_data[0], translator.source_vocab)
-    test_decoded_data = ["se", "rozzlobila", SpecialSymbols.PAD]
+    test_decoded_data = ["přátelé", "jsme", SpecialSymbols.PAD]
     np.testing.assert_array_equal(decoded_data, test_decoded_data)
 
     decoded_data = Translator.decode_encoded_seq(decoder_input_data[0], translator.target_vocab)
-    test_decoded_data = [SpecialSymbols.GO, "she", "got", "angry"]
+    test_decoded_data = [SpecialSymbols.GO, "we're", "friends", SpecialSymbols.PAD]
     np.testing.assert_array_equal(decoded_data, test_decoded_data)
 
     decoded_data = Translator.decode_encoded_seq(decoder_target_data[0], translator.target_vocab,
                                                  one_hot=True)
-    test_decoded_data = ["she", "got", "angry", SpecialSymbols.EOS]
+    test_decoded_data = ["we're", "friends", SpecialSymbols.EOS, SpecialSymbols.PAD]
     np.testing.assert_array_equal(decoded_data, test_decoded_data)
 
 # TODO kompletni test, ze se to spravne nauci s bucketingem a vyzkouset jestli je to rychlejsi nez bez nej!!!!

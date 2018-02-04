@@ -32,6 +32,7 @@ def add_arguments(parser):
     parser.add_argument("--num_encoder_layers", type=int, default=1, help="Number of layers in encoder")
     parser.add_argument("--num_decoder_layers", type=int, default=1, help="Number of layers in decoder")
     parser.add_argument("--batch_size", type=int, default=64, help="Size of one batch")
+    parser.add_argument("--beam_size", type=int, default=1, help="Size of a beam for beam search decoding")
     parser.add_argument("--num_units", type=int, default=256,
                         help="Size of each network layer")
     parser.add_argument("--optimizer", type=str, default="rmsprop", help="Keras optimizer name")
@@ -121,8 +122,8 @@ def main():
         translator.fit(epochs=args.epochs, initial_epoch=args.initial_epoch,
                        batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
                        bucketing=args.bucketing, bucket_range=args.bucket_range)
-        evaluation = translator.evaluate(args.batch_size)
 
+        evaluation = translator.evaluate(args.batch_size, args.beam_size)
         print("model evaluation: {}".format(evaluation))
 
     elif args.livetest_mode:
