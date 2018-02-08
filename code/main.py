@@ -3,6 +3,7 @@
 import logging
 import argparse
 import os
+import subprocess
 import sys
 import random
 
@@ -73,38 +74,56 @@ def add_arguments(parser):
                         help="Whether to tokenize the sequences or not (they are already tokenizes e.g. using Moses tokenizer)")
     parser.add_argument("--clear", type=bool_arg, default=False,
                         help="Whether to delete old weights and logs before running")
+    parser.add_argument("--find_gpu", type=bool_arg, default=False,
+                        help="Find and assign empty gpu to env var CUDA_VISIVLE_DEVICES. Otherwise use anything.")
 
-    mode_group = parser.add_mutually_exclusive_group(required=True)
-    mode_group.add_argument('--training_mode', action='store_true', default=False,
-                            help="Trains the model on the training dataset and evaluate on testing dataset")
-    mode_group.add_argument('--livetest_mode', action='store_true', default=False,
-                            help="Loads trained model and lets user try translation in promt")
+    parser.add_argument('--train', action='store_true', default=False,
+                        help="Trains the model on the training dataset")
+    parser.add_argument('--evaluate', action='store_true', default=False,
+                        help="Evaluate on the test dataset")
+    parser.add_argument('--livetest', action='store_true', default=False,
+                        help="Loads trained model and lets user try translation in promt")
+
+
+def set_gpu():
+    free_gpu = subprocess.check_output(
+        'nvidia-smi -q | grep "Minor\|Processes" | grep "None" -B1 | tr -d " " | cut -d ":" -f2 | sed -n "1p"',
+        shell=True)
+
+    if len(free_gpu) == 0:
+        logger.error('No free GPU available!')
+        sys.exit(1)
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = free_gpu.decode().strip()
 
 
 # TODO compare use_fit_generator speed True vs False
 # TODO compare bucketing speed
 
-# python main.py --training_mode --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
-# python main.py --training_mode --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 5 --log_folder "logs/smallTest"
+# python main.py --train --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
+# python main.py --train --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 5 --log_folder "logs/smallTest"
 
 # SMT pousteni
-# python main.py --training_mode --training_dataset "G:\Clouds\DPbigFiles\WMT17\newsCommentary\news-commentary-v12.cs-en-tokenized.truecased.cleaned" --test_dataset "G:\Clouds\DPbigFiles\WMT17\testSet\newstest2017-csen-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --model_folder "G:\Clouds\DPbigFiles\WMT17\newsCommentary" --model_file "newsCommentarySmtModel.h5" --batch_size 64 --num_units 256 --optimizer "rmsprop" --max_source_vocab_size 10000 --max_target_vocab_size 10000 --source_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.cs.vec" --target_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.en.vec"
+# python main.py --train --training_dataset "G:\Clouds\DPbigFiles\WMT17\newsCommentary\news-commentary-v12.cs-en-tokenized.truecased.cleaned" --test_dataset "G:\Clouds\DPbigFiles\WMT17\testSet\newstest2017-csen-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --model_folder "G:\Clouds\DPbigFiles\WMT17\newsCommentary" --model_file "newsCommentarySmtModel.h5" --batch_size 64 --num_units 256 --optimizer "rmsprop" --max_source_vocab_size 10000 --max_target_vocab_size 10000 --source_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.cs.vec" --target_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.en.vec"
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the main.py that uses nmt module')
     add_arguments(parser)
 
     args, unparsed = parser.parse_known_args()
 
+    if not (args.train or args.evaluate or args.livetest):
+        parser.error('At least one action requested, add -train, -evaluate or livetest')
+
     if unparsed:
         logger.warning("some unexpected arguments: {}".format(unparsed))
+
+    if args.find_gpu:
+        set_gpu()
 
     # to speed up loading of parser help
     # tensorflow takes quite some time to load
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'nmtPackage')))
     from nmt import Translator
-
-    # TODO bucketing pravdepodobne nejede?
-    # bylo by potreba ho udelat PRED TIM nez se udela generator, aby se rozdelily vsechny vstupy a ne jen maly casti po batch size
 
     translator = Translator(
         source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,
@@ -122,15 +141,15 @@ def main():
 
     # TODO osamostatnit veci v modulu a vyndat je sem, z modulu udelat jen generic modul
 
-    if args.training_mode:
+    if args.train:
         translator.fit(epochs=args.epochs, initial_epoch=args.initial_epoch,
                        batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
                        bucketing=args.bucketing, bucket_range=args.bucket_range)
-
+    if args.evaluate:
         evaluation = translator.evaluate(args.batch_size, args.beam_size)
         print("model evaluation: {}".format(evaluation))
 
-    elif args.livetest_mode:
+    if args.livetest:
         while True:
             seq = input("Enter sequence: ")
             translator.translate(seq)
@@ -140,6 +159,5 @@ def main():
 
 # autogenerate docs
 # docs 	sphinx-apidoc -o docs nmt
-
 if __name__ == "__main__":
     main()

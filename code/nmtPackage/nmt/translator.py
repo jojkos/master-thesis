@@ -662,10 +662,12 @@ class Translator(object):
 
         # test_data_gen gets called more then steps times,
         # probably because of the workers caching the values for optimization
-        eval_data = self._test_data_gen(
-            batch_size)  # cannot be generator if want to use histograms in tensorboard callback
-        eval_values = self.model.evaluate_generator(eval_data,
-                                                    steps=steps)
+
+        # TODO is this good for something?
+        # eval_data = self._test_data_gen(
+        #     batch_size)  # cannot be generator if want to use histograms in tensorboard callback
+        # eval_values = self.model.evaluate_generator(eval_data,
+        #                                             steps=steps)
 
         logger.info("Translating test dataset for BLEU evaluation...")
         path_original = self.test_dataset_path + "." + self.target_lang
@@ -673,8 +675,8 @@ class Translator(object):
 
         step = 1
         with open(path, "w", encoding="utf-8") as out_file:
-            for inputs, targets in self._test_data_gen(batch_size, infinite=False):
-                print("\rstep {} out of {}".format(step, steps), end="", flush=True)
+            for inputs, targets in self._test_data_gen(1, infinite=False):
+                print("\rtranslating {} seq out of {}".format(step, self.test_dataset.num_samples), end="", flush=True)
                 step += 1
                 encoder_input_data = inputs[0]
                 for i in range(len(encoder_input_data)):
@@ -685,7 +687,7 @@ class Translator(object):
         print("", end="\n")
         utils.get_bleu(path_original, path)
 
-        return eval_values
+        # return eval_values
 
     def translate(self, seq=None, expected_seq=None, beam_size=1):
         """

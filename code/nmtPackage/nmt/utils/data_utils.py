@@ -233,6 +233,8 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
         del buckets[ix]
 
     logger.debug("created {} buckets".format(len(buckets)))
+    for bucket in buckets:
+        logger.debug("bucket {} has {} sequences".format(bucket, len(buckets[bucket]["x_word_seq"])))
 
     return buckets
 
@@ -269,7 +271,10 @@ def split_lines(lines):
     word_seq = []
 
     for line in lines:
-        word_seq.append(line.split(" "))
+        splitted = line.split(" ")
+        # skip empty lines
+        if len(splitted) > 0:
+            word_seq.append(splitted)
 
     return word_seq
 

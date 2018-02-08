@@ -33,10 +33,3 @@ class Candidate(object):
 
     def get_sentence_length(self):
         return len(self.decoded_sentence.split(" "))
-
-# python -m nmt.dataset
-# if __name__ == "__main__":
-#     dataset = Dataset("data/news-commentary-v9.cs-en",
-#                       "cs", "en", 100, True)
-#     print(dataset.x_max_seq_len)
-#     print(len(dataset.x_word_seq))
