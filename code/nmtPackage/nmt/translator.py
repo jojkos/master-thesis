@@ -276,9 +276,9 @@ class Translator(object):
             if shuffle:
                 random.shuffle(indices)
 
-                for ix in indices:
-                    x.append(self.training_dataset.x_word_seq[ix])
-                    y.append(self.training_dataset.y_word_seq[ix])
+            for ix in indices:
+                x.append(self.training_dataset.x_word_seq[ix])
+                y.append(self.training_dataset.y_word_seq[ix])
 
             i = 0
 

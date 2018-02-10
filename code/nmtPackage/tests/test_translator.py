@@ -4,6 +4,9 @@ import os
 import random
 import shutil
 
+# TODO so that tests run the same way every time
+random.seed(0)
+
 
 def teardown_module(module):
     """ teardown any state that was previously setup with a setup_module
@@ -272,18 +275,18 @@ def test_training_data_gen_shuffling():
     decoder_input_data = training_data[0][1]
     decoder_target_data = training_data[1]
 
-    assert len(encoder_input_data) == 3
-    assert len(decoder_input_data) == 3
-    assert len(decoder_target_data) == 3
+    assert len(encoder_input_data) == 4
+    assert len(decoder_input_data) == 4
+    assert len(decoder_target_data) == 4
 
     training_data = next(generator)
     encoder_input_data = training_data[0][0]
     decoder_input_data = training_data[0][1]
     decoder_target_data = training_data[1]
 
-    assert len(encoder_input_data) == 4
-    assert len(decoder_input_data) == 4
-    assert len(decoder_target_data) == 4
+    assert len(encoder_input_data) == 3
+    assert len(decoder_input_data) == 3
+    assert len(decoder_target_data) == 3
 
     decoded_data = Translator.decode_encoded_seq(encoder_input_data[0], translator.source_vocab)
     test_decoded_data = ["se", "rozzlobila", SpecialSymbols.PAD, SpecialSymbols.PAD, SpecialSymbols.PAD,
@@ -306,9 +309,9 @@ def test_training_data_gen_bucketing():
     translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
-    generator = translator._training_data_gen(batch_size=2, infinite=True,
-                                              shuffle=False, bucketing=True,
-                                              bucket_range=1)
+    generator = translator._training_data_bucketing(batch_size=2, infinite=True,
+                                                    shuffle=False, bucketing=True,
+                                                    bucket_range=1)
 
     # to remove first returned value
     steps = next(generator)
@@ -344,5 +347,3 @@ def test_training_data_gen_bucketing():
                                                  one_hot=True)
     test_decoded_data = ["we're", "friends", SpecialSymbols.EOS, SpecialSymbols.PAD]
     np.testing.assert_array_equal(decoded_data, test_decoded_data)
-
-# TODO kompletni test, ze se to spravne nauci s bucketingem a vyzkouset jestli je to rychlejsi nez bez nej!!!!
