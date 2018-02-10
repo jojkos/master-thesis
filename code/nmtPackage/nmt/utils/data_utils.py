@@ -215,7 +215,7 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
         if len(bucket["x_word_seq"]) < bucket_min_size:
             if ix < len(bucket_ixs) - 1:
                 merge_bucket_ix = bucket_ixs[ix + 1]
-            elif ix > 1:  # if last bucket, then it has to be merged to the lower one
+            else:  # if last bucket, then it has to be merged to the lower one
                 merge_bucket_ix = bucket_ixs[ix - 1]
 
             if merge_bucket_ix > 0 and merge_bucket_ix not in delete_ixs:
@@ -234,7 +234,10 @@ def split_to_buckets(x_sequences, y_sequences, bucket_range=3, x_max_len=None, y
 
     logger.debug("created {} buckets".format(len(buckets)))
     for bucket in buckets:
-        logger.debug("bucket {} has {} sequences".format(bucket, len(buckets[bucket]["x_word_seq"])))
+        logger.debug("bucket {} with xmaxlen {}, ymaxlen {} has {} sequences".format(
+            bucket, buckets[bucket]["x_max_seq_len"], buckets[bucket]["y_max_seq_len"],
+            len(buckets[bucket]["x_word_seq"]))
+        )
 
     return buckets
 

@@ -172,7 +172,8 @@ class Translator(object):
 
         return self._get_encoded_data(self.training_dataset, from_index, to_index)
 
-    def _training_data_gen(self, batch_size, infinite=True, shuffle=True, bucketing=False, bucket_range=3):
+    def _training_data_gen_WRONG_SHUFFLE(self, batch_size, infinite=True, shuffle=True, bucketing=False,
+                                         bucket_range=3):
         """
         Creates generator for keras fit_generator. First yielded value is number of steps needed for whole epoch.
 
@@ -240,6 +241,124 @@ class Translator(object):
                     training_data = self._get_training_data(i, i + batch_size)
                     yield [training_data["encoder_input_data"], training_data["decoder_input_data"]], training_data[
                         "decoder_target_data"]
+
+            if not infinite:
+                break
+
+    def _training_data_gen(self, batch_size, infinite=True, shuffle=True):
+        """
+        Creates generator for keras fit_generator. First yielded value is number of steps needed for whole epoch.
+
+        Args:
+            infinite: whether to yield data infinitely or stop after one walkthrough the dataset
+            shuffle: whether to shuffle the training data and return them in random order every epoch
+
+        Returns: First yielded value is number of steps needed for whole epoch.
+            Then yields ([encoder_input_data, decoder_input_data], decoder_target_data)
+
+        """
+        # shuffling
+        # https://stackoverflow.com/questions/46570172/how-to-fit-generator-in-keras
+        # https://github.com/keras-team/keras/issues/2389
+
+        # first value returned from generator is the number of steps for the whole epoch
+        first = True
+
+        while True:
+            x = []
+            y = []
+            indices = list(range(0, self.training_dataset.num_samples))
+
+            if first:
+                yield math.ceil(len(indices) / batch_size)
+                first = False
+
+            if shuffle:
+                random.shuffle(indices)
+
+                for ix in indices:
+                    x.append(self.training_dataset.x_word_seq[ix])
+                    y.append(self.training_dataset.y_word_seq[ix])
+
+            i = 0
+
+            while i < len(indices):
+                encoder_input_data, decoder_input_data, decoder_target_data = Translator.encode_sequences(
+                    x[i: i + batch_size],
+                    y[i: i + batch_size],
+                    self.training_dataset.x_max_seq_len, self.training_dataset.y_max_seq_len,
+                    self.source_vocab, self.target_vocab, self.reverse_input
+                )
+
+                yield [encoder_input_data, decoder_input_data], decoder_target_data
+
+                i += batch_size
+
+            if not infinite:
+                break
+
+    def _training_data_bucketing(self, batch_size, infinite=True, shuffle=True, bucketing=False, bucket_range=3):
+        """
+        Creates generator for keras fit_generator. First yielded value is number of steps needed for whole epoch.
+
+        Args:
+            infinite: whether to yield data infinitely or stop after one walkthrough the dataset
+            shuffle: whether to shuffle the training data and return them in random order every epoch
+            bucketing: whetether to use bucketing
+            bucket_range: range of each bucket
+
+        Returns: First yielded value is number of steps needed for whole epoch.
+            Then yields ([encoder_input_data, decoder_input_data], decoder_target_data)
+
+        """
+        # shuffling
+        # https://stackoverflow.com/questions/46570172/how-to-fit-generator-in-keras
+        # https://github.com/keras-team/keras/issues/2389
+
+        # first value returned from generator is the number of steps for the whole epoch
+        first = True
+
+        buckets = utils.split_to_buckets(self.training_dataset.x_word_seq,
+                                         self.training_dataset.y_word_seq,
+                                         bucket_range,
+                                         self.training_dataset.x_max_seq_len,
+                                         self.training_dataset.y_max_seq_len,
+                                         batch_size)
+        indices = []
+
+        # create indices to access each bucket and then each batch inside that bucket
+        for bucket in sorted(buckets.keys()):
+            bucket_indices = list(range(0, len(buckets[bucket]["x_word_seq"]), batch_size))
+            for index in bucket_indices:
+                indices.append([bucket, index])
+
+        while True:
+            if first:
+                yield len(indices)
+                first = False
+
+            if shuffle:
+                # we need as much random shufflin as possible
+                # so we shuffle both data inside buckets and then the order in which they are accessed
+
+                # shuffle all data inside the buckets
+                for bucket in sorted(buckets.keys()):
+                    zipped = list(zip(buckets[bucket]["x_word_seq"], buckets[bucket]["y_word_seq"]))
+                    random.shuffle(zipped)
+                    buckets[bucket]["x_word_seq"], buckets[bucket]["y_word_seq"] = zip(*zipped)
+
+                # shuffle the global bucket->batch indices
+                random.shuffle(indices)
+
+            for bucket_ix, i in indices:
+                training_data = Translator.encode_sequences(
+                    buckets[bucket_ix]["x_word_seq"][i: i + batch_size],
+                    buckets[bucket_ix]["y_word_seq"][i: i + batch_size],
+                    buckets[bucket_ix]["x_max_seq_len"],
+                    buckets[bucket_ix]["y_max_seq_len"],
+                    self.source_vocab, self.target_vocab, self.reverse_input
+                )
+                yield [training_data[0], training_data[1]], training_data[2]
 
             if not infinite:
                 break
@@ -612,9 +731,13 @@ class Translator(object):
             # to prevent memory error, only loads parts of dataset at once
             # or when using bucketing
 
-            generator = self._training_data_gen(batch_size, infinite=True,
-                                                shuffle=True, bucketing=bucketing,
-                                                bucket_range=bucket_range)
+            if bucketing:
+                generator = self._training_data_bucketing(batch_size, infinite=True,
+                                                          shuffle=True, bucketing=bucketing,
+                                                          bucket_range=bucket_range)
+            else:
+                generator = self._training_data_gen(batch_size, infinite=True,
+                                                    shuffle=True)
 
             # first returned value from the generator is number of steps for one epoch
             steps = next(generator)
