@@ -126,6 +126,7 @@ def main():
         source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,
         source_embedding_path=args.source_embedding_path, target_embedding_path=args.target_embedding_path,
         max_source_embedding_num=args.max_source_embedding_num, max_target_embedding_num=args.max_target_embedding_num,
+        num_encoder_layers=args.num_encoder_layers, num_decoder_layers=args.num_decoder_layers,
         source_lang=args.source_lang, dropout=args.dropout,
         num_units=args.num_units, optimizer=args.optimizer,
         log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,

@@ -39,7 +39,8 @@ class Translator(object):
                  optimizer="rmsprop",
                  source_embedding_dim=300, target_embedding_dim=300,
                  max_source_embedding_num=None, max_target_embedding_num=None,
-                 num_training_samples=-1, num_test_samples=-1):
+                 num_training_samples=-1, num_test_samples=-1,
+                 num_encoder_layers=1, num_decoder_layers=1):
         """
 
         Args:
@@ -66,6 +67,8 @@ class Translator(object):
             validaton_split (float): How big proportion of a development dataset should be used for validation during fiting
             clear (bool): Whether to delete old weights and logs before running
             tokenize (bool): Whether to tokenize the sequences or not (they are already tokenizes e.g. using Moses tokenizer)
+            num_encoder_layers (int): Number of layers in encoder
+            num_decoder_layers (int): Number of layers in decoder
         """
 
         self.source_embedding_dim = source_embedding_dim
@@ -91,9 +94,9 @@ class Translator(object):
         self.training_dataset_path = training_dataset
         self.clear = clear
         self.tokenize = tokenize
+        self.num_encoder_layers = num_encoder_layers
+        self.num_decoder_layers = num_decoder_layers
 
-        # TODO what about this
-        # is this the place to configure what gpus (only one for vut cluster) to use as well?
         # this is fix for the errors that are thrown sometimes (something was not able start wtf & shit..)
         import tensorflow as tf
         from keras.backend.tensorflow_backend import set_session
@@ -135,7 +138,14 @@ class Translator(object):
 
         self.model, self.encoder_model, self.decoder_model = self._define_models()
 
+        logger.info("Global model")
         self.model.summary()
+
+        logger.info("Encoder model")
+        self.encoder_model.summary()
+
+        logger.info("Decoder model")
+        self.decoder_model.summary()
 
         # model_to_dot(self.model).write_pdf("model.pdf")
 
@@ -462,7 +472,7 @@ class Translator(object):
         # model based on https://blog.keras.io/a-ten-minute-introduction-to-sequence-to-sequence-learning-in-keras.html
         logger.info("Creating models...")
         # Define an input sequence and process it.
-        encoder_inputs = Input(shape=(None,))
+        encoder_inputs = Input(shape=(None,), name="encoder_input")
 
         if self.source_embedding_weights is not None:
             self.source_embedding_weights = [self.source_embedding_weights]  # Embedding layer wantes list as parameter
@@ -471,40 +481,64 @@ class Translator(object):
         # input dim should be +1 when used with mask_zero..is it correctly set here?
         # i think that input dim is already +1 because padding symbol is part of the vocabulary
         source_embeddings = Embedding(self.source_vocab.vocab_len, self.source_embedding_dim,
-                                      weights=self.source_embedding_weights, mask_zero=True, trainable=True)
+                                      weights=self.source_embedding_weights, mask_zero=True, trainable=True,
+                                      name="input_embeddings")
         source_embedding_outputs = source_embeddings(encoder_inputs)
-        # dropout around lstm layers as in paper Recurrent neural network regularization
-        # TODO what about dropout
-        # source_embedding_outputs = Dropout(self.dropout)(source_embedding_outputs)
-        # muzu se inspirovat tady https://github.com/farizrahman4u/seq2seq/blob/master/seq2seq/models.py
 
         # use bi-directional encoder with concatenation as in Google neural machine translation paper
         # https://stackoverflow.com/questions/47923370/keras-bidirectional-lstm-seq2seq
-        # TODO concatenation would require decoder to be twice encoder size, using avg instead - IS IT OK?
-        encoder = Bidirectional(LSTM(self.num_units, return_state=True))
+        # TODO concatenation would require decoder to be twice encoder size (because decoder is initialized with states from encoder), using avg instead - IS IT OK?
+        # only first layer is bidirectional (too much params if all of them were)
+        bidirectional_encoder = Bidirectional(LSTM(self.num_units, return_state=True, return_sequences=True),
+                                              name="bidirectional_encoder_layer")
         # h is inner(output) state, c i memory cell
-        encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(source_embedding_outputs)
+        encoder_outputs, forward_h, forward_c, backward_h, backward_c = bidirectional_encoder(source_embedding_outputs)
         state_h = Average()([forward_h, backward_h])
         state_c = Average()([forward_c, backward_c])
+
+        # multiple encoder layers
+        for i in range(1, self.num_encoder_layers):
+            # dropout around lstm layers as in paper Recurrent neural network regularization
+            # TODO find the correct dropout value
+            # source_embedding_outputs = Dropout(self.dropout)(source_embedding_outputs)
+            # muzu se inspirovat tady https://github.com/farizrahman4u/seq2seq/blob/master/seq2seq/models.py
+            encoder_outputs = Dropout(self.dropout)(encoder_outputs)
+            encoder_outputs, state_h, state_c = LSTM(self.num_units, return_state=True, return_sequences=True,
+                                                     name="encoder_layer_{}".format(i + 1))(encoder_outputs)
+
         # We discard `encoder_outputs` and only keep the states.
         encoder_states = [state_h, state_c]
 
         # Set up the decoder, using `encoder_states` as initial state.
-        decoder_inputs = Input(shape=(None,))
+        decoder_inputs = Input(shape=(None,), name="decoder_input")
 
         if self.target_embedding_weights is not None:
             self.target_embedding_weights = [self.target_embedding_weights]  # Embedding layer wantes list as parameter
         target_embeddings = Embedding(self.target_vocab.vocab_len, self.target_embedding_dim,
-                                      weights=self.target_embedding_weights, mask_zero=True, trainable=True)
+                                      weights=self.target_embedding_weights, mask_zero=True, trainable=True,
+                                      name="target_embeddings")
         target_embedding_outputs = target_embeddings(decoder_inputs)
 
         # We set up our decoder to return full output sequences,
         # and to return internal states as well. We don't use the
         # return states in the training model, but we will use them in inference.
-        decoder_lstm = LSTM(self.num_units, return_sequences=True, return_state=True)
+        decoder_lstm = LSTM(self.num_units, return_sequences=True, return_state=True,
+                            name="decoder_layer_1")
         decoder_outputs, _, _ = decoder_lstm(target_embedding_outputs,
                                              initial_state=encoder_states)
-        decoder_dense = Dense(self.target_vocab.vocab_len, activation='softmax')
+
+        # TODO correctly apply to decoder_model
+        # multiple decoder layers
+        decoder_layers = []
+        for i in range(1, self.num_decoder_layers):
+            # TODO maybe instead use dropout/recurrent_dropout on LSTM layer?
+            # decoder_outputs = Dropout(self.dropout)(decoder_outputs)
+            decoder_layers.append(LSTM(self.num_units, return_state=True, return_sequences=True,
+                                       name="decoder_layer_{}".format(i + 1)))
+            decoder_outputs, _, _ = decoder_layers[-1](decoder_outputs)
+
+        decoder_dense = Dense(self.target_vocab.vocab_len, activation='softmax',
+                              name="output_layer")
         decoder_outputs = decoder_dense(decoder_outputs)
 
         # Define the model that will turn
@@ -522,12 +556,19 @@ class Translator(object):
         # Define sampling models
         encoder_model = Model(encoder_inputs, encoder_states)
 
-        decoder_state_input_h = Input(shape=(self.num_units,))
-        decoder_state_input_c = Input(shape=(self.num_units,))
+        decoder_state_input_h = Input(shape=(self.num_units,), name="decoder_state_h_input")
+        decoder_state_input_c = Input(shape=(self.num_units,), name="decoder_state_c_input")
         decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
         decoder_outputs, state_h, state_c = decoder_lstm(
             target_embedding_outputs, initial_state=decoder_states_inputs)
         decoder_states = [state_h, state_c]
+
+        # TODO how to do this more nicely? idealne bych jen vymenil prvni layer, aby tam byl jinej initial state, jinak je to stejny
+        for decoder_layer in decoder_layers:
+            # decoder_outputs = Dropout(self.dropout)(decoder_outputs)
+            decoder_outputs, state_h, state_c = decoder_layer(decoder_outputs)
+            decoder_states = [state_h, state_c]
+
         decoder_outputs = decoder_dense(decoder_outputs)
         decoder_model = Model(
             [decoder_inputs] + decoder_states_inputs,

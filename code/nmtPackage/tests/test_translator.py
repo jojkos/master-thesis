@@ -191,6 +191,29 @@ def test_translating_small_dataset_bucketing():
     assert translated_data == test_data
 
 
+def test_translating_small_dataset_multiple_layers():
+    # TODO multiple decoder layers not working properly
+    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+                            source_lang="cs", target_lang="en", log_folder="logs",
+                            model_folder="data", model_file="model.h5",
+                            num_encoder_layers=4)  # , num_decoder_layers=2
+
+    translator.fit(epochs=100, bucketing=True, bucket_range=2)
+
+    translator.evaluate()
+
+    os.remove("data/model.h5")
+
+    with open("data/smallTest.en.test.translated", encoding="utf-8") as test_file:
+        test_data = test_file.read()
+    with open("data/smallTest.en.translated", encoding="utf-8") as translated_file:
+        translated_data = translated_file.read()
+
+    os.remove("data/smallTest.en.translated")
+
+    assert translated_data == test_data
+
+
 def test_get_training_data():
     translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
@@ -347,3 +370,59 @@ def test_training_data_gen_bucketing():
                                                  one_hot=True)
     test_decoded_data = ["we're", "friends", SpecialSymbols.EOS, SpecialSymbols.PAD]
     np.testing.assert_array_equal(decoded_data, test_decoded_data)
+
+
+def test_define_models_default():
+    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+                            source_lang="cs", target_lang="en", log_folder="logs",
+                            model_folder="data", model_file="model.h5")
+
+    model, encoder_model, decoder_model = translator._define_models()
+
+    model_layers = ["encoder_input", "input_embeddings", "decoder_input", "bidirectional_encoder_layer",
+                    "target_embeddings", "average_3", "average_4", "decoder_layer_1", "output_layer"]
+
+    encoder_input = model.get_layer(name="encoder_input")
+    input_embeddings = model.get_layer(name="input_embeddings")
+    bidirectional_encoder_layer = model.get_layer(name="bidirectional_encoder_layer")
+    decoder_input = model.get_layer(name="decoder_input")
+    target_embeddings = model.get_layer(name="target_embeddings")
+    decoder_layer_1 = model.get_layer(name="decoder_layer_1")
+    output_layer = model.get_layer(name="output_layer")
+
+    assert len(model.layers) == 9
+    assert encoder_input.get_output_at(0) == input_embeddings.get_input_at(0)
+    assert input_embeddings.get_output_at(0) == bidirectional_encoder_layer.get_input_at(0)
+    assert decoder_input.get_output_at(0) == target_embeddings.get_input_at(0)
+    assert decoder_layer_1.get_output_at(0)[0] == output_layer.get_input_at(0)
+
+    assert len(decoder_model.layers) == 6
+    assert decoder_model.get_layer("decoder_layer_1").get_input_at(0)[0] == decoder_model.get_layer(
+        "target_embeddings").get_output_at(0)
+
+    assert len(encoder_model.layers) == 5
+
+
+def test_define_models_multiple_layers():
+    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+                            source_lang="cs", target_lang="en", log_folder="logs",
+                            model_folder="data", model_file="model.h5",
+                            num_encoder_layers=2, num_decoder_layers=2)
+
+    model, encoder_model, decoder_model = translator._define_models()
+
+    encoder_input = model.get_layer(name="encoder_input")
+    input_embeddings = model.get_layer(name="input_embeddings")
+    bidirectional_encoder_layer = model.get_layer(name="bidirectional_encoder_layer")
+    decoder_input = model.get_layer(name="decoder_input")
+    target_embeddings = model.get_layer(name="target_embeddings")
+    decoder_layer_1 = model.get_layer(name="decoder_layer_1")
+    output_layer = model.get_layer(name="output_layer")
+
+    assert len(model.layers) == 11
+
+    assert len(decoder_model.layers) == 8
+
+    assert len(encoder_model.layers) == 5
+
+    # TODO testy pro vice layeru encoder/decoder a mozna bych mel udelat test co overi ze vubec spravne vytvarim modely a maji spravnej pocet vrstev a tak
