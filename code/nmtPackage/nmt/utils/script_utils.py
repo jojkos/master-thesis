@@ -6,11 +6,11 @@ import os
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_FOLDER = "\\..\\scripts"
+SCRIPT_FOLDER = "/../scripts"
 
 
 def get_script_path(script_name):
-    return os.path.dirname(__file__) + SCRIPT_FOLDER + "\\" + script_name
+    return os.path.dirname(__file__) + SCRIPT_FOLDER + "/" + script_name
 
 
 def get_bleu(reference_file_path, hypothesis_file_path):
@@ -52,7 +52,7 @@ def create_bpe_dataset(paths, symbols):
     """
     codes_path = os.path.dirname(paths[0]) + "/codesfile"
 
-    args = ["python", get_script_path("subword-nmt\\learn_joint_bpe_and_vocab.py"), "-s", str(symbols),
+    args = ["python", get_script_path("subword-nmt/learn_joint_bpe_and_vocab.py"), "-s", str(symbols),
             "-o", codes_path]
     args += ["--input"] + paths
     args += ["--write-vocabulary"]
@@ -60,7 +60,7 @@ def create_bpe_dataset(paths, symbols):
     subprocess.run(args)
 
     for path in paths:
-        args = ["python", get_script_path("subword-nmt\\apply_bpe.py"), "-c", codes_path,
+        args = ["python", get_script_path("subword-nmt/apply_bpe.py"), "-c", codes_path,
                 "--vocabulary", path + ".vocab", "--input", path, "--output", path + ".BPE"]
         subprocess.run(args)
 
@@ -80,7 +80,7 @@ def create_bpe_testdataset(paths, vocab_paths, codefile_path):
     assert len(paths) == len(vocab_paths)
 
     for ix, path in enumerate(paths):
-        args = ["python", get_script_path("subword-nmt\\apply_bpe.py"), "-c", codefile_path,
+        args = ["python", get_script_path("subword-nmt/apply_bpe.py"), "-c", codefile_path,
                 "--vocabulary", vocab_paths[ix], "--input", path, "--output", path + ".BPE"]
         subprocess.run(args)
 
@@ -88,6 +88,6 @@ def create_bpe_testdataset(paths, vocab_paths, codefile_path):
 if __name__ == "__main__":
     # get_bleu("data/news-commentary-v9.cs-en.en.translated", "data/news-commentary-v9.cs-en.en.translated")
     create_bpe_dataset([
-        get_script_path("subword-nmt\\datasets\\mySmallTest.cs"),
-        get_script_path("subword-nmt\\datasets\\mySmallTest.en")
+        get_script_path("subword-nmt/datasets/mySmallTest.cs"),
+        get_script_path("subword-nmt/datasets/mySmallTest.en")
     ], 10)

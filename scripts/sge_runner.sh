@@ -21,5 +21,6 @@ do
          -o /pub/tmp/xholcn01/translation.out.${INITIAL_EPOCH} \
          -e /pub/tmp/xholcn01/translation.err.${INITIAL_EPOCH} \
          -q long.q@@gpu \
-         -l gpu=1,mem_free=4G,ram_free=4G,disk_free=2G,tmp_free=2G
+         -l gpu=1,mem_free=4G,ram_free=4G,disk_free=2G,tmp_free=2G \
+         nmt.sh
 done

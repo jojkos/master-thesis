@@ -93,6 +93,10 @@ def set_gpu():
     if len(free_gpu) == 0:
         logger.error('No free GPU available!')
         sys.exit(1)
+    else:
+        logger.info("Picked free GPU: {}".format(free_gpu.decode().strip()))
+
+    print(free_gpu)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = free_gpu.decode().strip()
 
