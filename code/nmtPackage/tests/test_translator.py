@@ -131,7 +131,7 @@ def test_encode_text_seq_to_encoder_seq():
 
 
 def test_translating_small_dataset():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
 
@@ -140,7 +140,7 @@ def test_translating_small_dataset():
 
     os.remove("data/model.h5")
 
-    with open("data/smallTest.en.test.translated", encoding="utf-8") as test_file:
+    with open("data/smallTest.en.reference.translated", encoding="utf-8") as test_file:
         test_data = test_file.read()
     with open("data/smallTest.en.translated", encoding="utf-8") as translated_file:
         translated_data = translated_file.read()
@@ -151,7 +151,7 @@ def test_translating_small_dataset():
 
 
 def test_translating_small_dataset_use_generator():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
 
@@ -160,7 +160,7 @@ def test_translating_small_dataset_use_generator():
 
     os.remove("data/model.h5")
 
-    with open("data/smallTest.en.test.translated", encoding="utf-8") as test_file:
+    with open("data/smallTest.en.reference.translated", encoding="utf-8") as test_file:
         test_data = test_file.read()
     with open("data/smallTest.en.translated", encoding="utf-8") as translated_file:
         translated_data = translated_file.read()
@@ -171,7 +171,7 @@ def test_translating_small_dataset_use_generator():
 
 
 def test_translating_small_dataset_bucketing():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
 
@@ -181,7 +181,7 @@ def test_translating_small_dataset_bucketing():
 
     os.remove("data/model.h5")
 
-    with open("data/smallTest.en.test.translated", encoding="utf-8") as test_file:
+    with open("data/smallTest.en.reference.translated", encoding="utf-8") as test_file:
         test_data = test_file.read()
     with open("data/smallTest.en.translated", encoding="utf-8") as translated_file:
         translated_data = translated_file.read()
@@ -193,7 +193,7 @@ def test_translating_small_dataset_bucketing():
 
 def test_translating_small_dataset_multiple_layers():
     # TODO multiple decoder layers not working properly
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5",
                             num_encoder_layers=4)  # , num_decoder_layers=2
@@ -204,7 +204,7 @@ def test_translating_small_dataset_multiple_layers():
 
     os.remove("data/model.h5")
 
-    with open("data/smallTest.en.test.translated", encoding="utf-8") as test_file:
+    with open("data/smallTest.en.reference.translated", encoding="utf-8") as test_file:
         test_data = test_file.read()
     with open("data/smallTest.en.translated", encoding="utf-8") as translated_file:
         translated_data = translated_file.read()
@@ -215,7 +215,7 @@ def test_translating_small_dataset_multiple_layers():
 
 
 def test_get_training_data():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
 
@@ -239,7 +239,7 @@ def test_get_training_data():
 
 
 def test_training_data_gen():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
 
@@ -284,7 +284,7 @@ def test_training_data_gen():
 
 
 def test_training_data_gen_shuffling():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
     random.seed(1)  # seed chosen to switch the indeces in data generator
@@ -329,7 +329,7 @@ def test_training_data_gen_shuffling():
 
 
 def test_training_data_gen_bucketing():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
     generator = translator._training_data_bucketing(batch_size=2, infinite=True,
@@ -373,7 +373,7 @@ def test_training_data_gen_bucketing():
 
 
 def test_define_models_default():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5")
 
@@ -404,7 +404,7 @@ def test_define_models_default():
 
 
 def test_define_models_multiple_layers():
-    translator = Translator(training_dataset="data/smallTest", test_dataset="data/smallTest",
+    translator = Translator(training_dataset="data/small", test_dataset="data/smallTest",
                             source_lang="cs", target_lang="en", log_folder="logs",
                             model_folder="data", model_file="model.h5",
                             num_encoder_layers=2, num_decoder_layers=2)
@@ -419,9 +419,9 @@ def test_define_models_multiple_layers():
     decoder_layer_1 = model.get_layer(name="decoder_layer_1")
     output_layer = model.get_layer(name="output_layer")
 
-    assert len(model.layers) == 11
+    assert len(model.layers) == 10
 
-    assert len(decoder_model.layers) == 8
+    assert len(decoder_model.layers) == 7
 
     assert len(encoder_model.layers) == 5
 

@@ -374,7 +374,7 @@ class Translator(object):
                 break
 
     def _get_test_data(self, from_index=0, to_index=None):
-        return self._get_encoded_data(self.training_dataset, from_index, to_index)
+        return self._get_encoded_data(self.test_dataset, from_index, to_index)
 
     def _test_data_gen(self, batch_size, infinite=True):
         """
@@ -848,7 +848,7 @@ class Translator(object):
                     decoded_sentence = self.translate_sequence_beam(encoder_input_data[i: i + 1], beam_size)
 
                     out_file.write(decoded_sentence + "\n")
-        print("", end="\n")
+        print("\n", end="\n")
         utils.get_bleu(path_original, path)
 
         # return eval_values

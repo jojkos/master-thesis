@@ -1,7 +1,7 @@
-To je pero.
-Tento lék by měl člověk brát každé tři hodiny.
-Jsme přátelé.
+Rozzlobila se.
 Má ho ráda.
+To je pero.
+Jsme přátelé.
 Možná nebudeš muset jít.
 Tom vypadal poněkud rozrušeně.
-Rozzlobila se.
+Tento lék by měl člověk brát každé tři hodiny.
