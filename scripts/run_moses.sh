@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 MOSES_PATH="/home/jonas/mosesdecoder"
-LANG_FROM="cs"
-LANG_TO="en"
-CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/OpenSubtitles2018"
-CORPUS_NAME="OpenSubtitles2018.cs-en.1mil"
+LANG_FROM="en"
+LANG_TO="fr"
+CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/OpenSubtitles2018EnFr"
+CORPUS_NAME="OpenSubtitles2018.en-fr"
 TEST_CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/testSet"  # already tokenized and cleaned..
 TEST_CORPUS_NAME="newstest2017-csen-tokenized.truecased.cleaned"
 TOOLS_PATH="/home/jonas/mosesdecoder/tools"
-MAX_LENGTH=20
+MAX_LENGTH=15
 FULL_PATH=${CORPUS_PATH}"/"${CORPUS_NAME}
 TOKENIZED_PATH=${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized"
 

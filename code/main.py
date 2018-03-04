@@ -70,7 +70,7 @@ def add_arguments(parser):
                         help="Range of different sequence lenghts in one bucket")
     parser.add_argument("--use_fit_generator", type=bool_arg, default=False,
                         help="Prevent memory crash by only load part of the dataset at once each time when fitting")
-    parser.add_argument("--reverse_input", type=bool_arg, default=True,
+    parser.add_argument("--reverse_input", type=bool_arg, default=False,
                         help="Whether to reverse source sequences (optimization for better learning)")
     parser.add_argument("--tokenize", type=bool_arg, default=False,
                         help="Whether to tokenize the sequences or not (they are already tokenizes e.g. using Moses tokenizer)")

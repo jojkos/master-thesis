@@ -113,7 +113,6 @@ class Translator(object):
         session = tf.Session(config=config)
         K.set_session(session)
 
-
         utils.prepare_folders([self.log_folder, self.model_folder], clear)
 
         self.training_dataset = Dataset(self.training_dataset_path, self.source_lang, self.target_lang,
@@ -158,6 +157,8 @@ class Translator(object):
         self.decoder_model.summary()
 
         # model_to_dot(self.model).write_pdf("model.pdf")
+        # model_to_dot(self.encoder_model).write_pdf("encoder_model.pdf")
+        # model_to_dot(self.decoder_model).write_pdf("decoder_model.pdf")
 
         logger.info("compiling model...")
         # Run training
@@ -499,6 +500,7 @@ class Translator(object):
         # https://stackoverflow.com/questions/47923370/keras-bidirectional-lstm-seq2seq
         # TODO concatenation would require decoder to be twice encoder size (because decoder is initialized with states from encoder), using avg instead - IS IT OK?
         # only first layer is bidirectional (too much params if all of them were)
+        # its OK to have return_sequences here as encoder outputs are not used anyway in the decoder and it is needed for multi layer encoder
         bidirectional_encoder = Bidirectional(LSTM(self.num_units, return_state=True, return_sequences=True),
                                               name="bidirectional_encoder_layer")
         # h is inner(output) state, c i memory cell
@@ -537,15 +539,14 @@ class Translator(object):
         decoder_outputs, _, _ = decoder_lstm(target_embedding_outputs,
                                              initial_state=encoder_states)
 
-        # TODO correctly apply to decoder_model
         # multiple decoder layers
         decoder_layers = []
         for i in range(1, self.num_decoder_layers):
-            # TODO maybe instead use dropout/recurrent_dropout on LSTM layer?
-            # decoder_outputs = Dropout(self.dropout)(decoder_outputs)
+            decoder_outputs = Dropout(self.dropout)(decoder_outputs)
             decoder_layers.append(LSTM(self.num_units, return_state=True, return_sequences=True,
                                        name="decoder_layer_{}".format(i + 1)))
-            decoder_outputs, _, _ = decoder_layers[-1](decoder_outputs)
+            # in the learning model, initial state of all decoder layers is encoder_states
+            decoder_outputs, _, _ = decoder_layers[-1](decoder_outputs, initial_state=encoder_states)
 
         decoder_dense = Dense(self.target_vocab.vocab_len, activation='softmax',
                               name="output_layer")
@@ -573,11 +574,18 @@ class Translator(object):
             target_embedding_outputs, initial_state=decoder_states_inputs)
         decoder_states = [state_h, state_c]
 
-        # TODO how to do this more nicely? idealne bych jen vymenil prvni layer, aby tam byl jinej initial state, jinak je to stejny
-        for decoder_layer in decoder_layers:
-            # decoder_outputs = Dropout(self.dropout)(decoder_outputs)
-            decoder_outputs, state_h, state_c = decoder_layer(decoder_outputs, initial_state=decoder_states_inputs) # initial_state seems to be helping!
-            decoder_states = [state_h, state_c]
+        for i, decoder_layer in enumerate(decoder_layers):
+            # every layer has to have its own inputs and outputs, because each outputs different state after first token
+            # at the start all of the layers are initialized with encoder states
+            # but then, during inference, each layer has different state and it has to be initialized with it
+            decoder_state_input_h = Input(shape=(self.num_units,), name="decoder_state_h_input_{}".format(i + 2))
+            decoder_state_input_c = Input(shape=(self.num_units,), name="decoder_state_c_input_{}".format(i + 2))
+            decoder_states_inputs += [decoder_state_input_h, decoder_state_input_c]
+
+            decoder_outputs = Dropout(self.dropout)(decoder_outputs)
+            decoder_outputs, state_h, state_c = decoder_layer(decoder_outputs,
+                                                              initial_state=decoder_states_inputs[-2:])
+            decoder_states += [state_h, state_c]
 
         decoder_outputs = decoder_dense(decoder_outputs)
         decoder_model = Model(
@@ -600,6 +608,9 @@ class Translator(object):
         # Encode the input as state vectors.
         states_value = self.encoder_model.predict(input_seq)
 
+        # at the begining, all decoder layers are initialized with the same encoder states
+        states_value *= self.num_decoder_layers
+
         # Generate empty target sequence of length 1.
         target_seq = np.zeros((1, 1))
         # Populate the first character of target sequence with the start character.
@@ -609,8 +620,10 @@ class Translator(object):
         # (to simplify, here we assume a batch of size 1). # TODO ? can the batch size be bigger?
         decoded_sentence = ""
         while True:
-            output_tokens, h, c = self.decoder_model.predict(
+            outputs = self.decoder_model.predict(
                 [target_seq] + states_value)
+
+            output_tokens = outputs[0]
 
             # Sample a token
             sampled_token_index = np.argmax(output_tokens[0, -1, :])
@@ -633,7 +646,7 @@ class Translator(object):
             target_seq[0, 0] = sampled_token_index
 
             # Update states
-            states_value = [h, c]
+            states_value = outputs[1:]
 
         # for BPE encoded
         # decoded_sentence = re.sub(r"(@@ )|(@@ ?$)", "", decoded_sentence)
@@ -645,6 +658,9 @@ class Translator(object):
         # Encode the input as state vectors.
         states_value = self.encoder_model.predict(input_seq)
 
+        # at the begining, all decoder layers are initialized with the same encoder states
+        states_value *= self.num_decoder_layers
+
         # only one candidate at the begining
         candidates = [
             Candidate(last_prediction=SpecialSymbols.GO_IX, states_value=states_value, score=0, decoded_sentence="")
@@ -655,11 +671,14 @@ class Translator(object):
             new_candidates = []
             for candidate in candidates:
                 if not candidate.finalised:
-                    output_tokens, h, c = self.decoder_model.predict(
+                    outputs = self.decoder_model.predict(
                         [candidate.last_prediction] + candidate.states_value)
                     should_stop = False
 
+                    output_tokens = outputs[0]
                     output_tokens = output_tokens[0, -1, :]
+
+                    states_value = outputs[1:]
 
                     # find n (beam_size) best predictions
                     indices = np.argpartition(output_tokens, -beam_size)[-beam_size:]
@@ -676,7 +695,8 @@ class Translator(object):
 
                         sampled_word = self.target_vocab.ix_to_word[sampled_token_index]
 
-                        new_candidate = Candidate(states_value=[h, c], decoded_sentence=candidate.decoded_sentence,
+                        new_candidate = Candidate(states_value=states_value,
+                                                  decoded_sentence=candidate.decoded_sentence,
                                                   score=avg_score,
                                                   sampled_word=sampled_word, last_prediction=sampled_token_index)
                         new_candidates.append(new_candidate)
