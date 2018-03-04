@@ -3,18 +3,18 @@
 MOSES_PATH="/home/jonas/mosesdecoder"
 LANG_FROM="cs"
 LANG_TO="en"
-CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/devSet"
-CORPUS_NAME="newstest2015-csen"
+CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/OpenSubtitles2018"
+CORPUS_NAME="OpenSubtitles2018.cs-en.1mil"
 TEST_CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/testSet"  # already tokenized and cleaned..
 TEST_CORPUS_NAME="newstest2017-csen-tokenized.truecased.cleaned"
 TOOLS_PATH="/home/jonas/mosesdecoder/tools"
-MAX_LENGTH=40
+MAX_LENGTH=20
 FULL_PATH=${CORPUS_PATH}"/"${CORPUS_NAME}
 TOKENIZED_PATH=${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized"
 
 cd ${MOSES_PATH}
 
-if [ $1 = "--tokenize" ] || [ $1 = "--all" ]
+if [ $1 = "--tokenize" ] || [ $1 = "--all" ] || [ $1 = "--preprocess" ]
 then
     printf "tokenizing..\n\n"
     scripts/tokenizer/tokenizer.perl -no-escape -l ${LANG_FROM} \
@@ -25,7 +25,7 @@ then
         > ${TOKENIZED_PATH}"."${LANG_TO}
 fi
 
-if [ $1 = "--truecase" ] || [ $1 = "--all" ]
+if [ $1 = "--truecase" ] || [ $1 = "--all" ] || [ $1 = "--preprocess" ]
 then
     printf "truecaser training..\n\n"
     scripts/recaser/train-truecaser.perl \
@@ -47,7 +47,7 @@ then
 fi
 
 
-if [ $1 = "--clean" ] || [ $1 = "--all" ]
+if [ $1 = "--clean" ] || [ $1 = "--all" ] || [ $1 = "--preprocess" ]
 then
     printf "cleaning..\n\n"
     scripts/training/clean-corpus-n.perl \

@@ -93,11 +93,11 @@ def load_embedding_weights(path, words, limit=None):
 
     # don't know how to limit size of vocabulary with FastText
     # loading the whole model takes too much time
-    # TODO use FastText for final version, because it can generate
+    # TODO use FastText for final version, because it can generate (.bin)
     # vectors for OOV words from ngrams
-    # model = FastText.load_fasttext_format(path)
+    model = FastText.load_fasttext_format(path)
 
-    model = KeyedVectors.load_word2vec_format(path, limit=limit)
+    # model = KeyedVectors.load_word2vec_format(path, limit=limit)
 
     # model.get_keras_embedding()
 
@@ -121,10 +121,10 @@ def load_embedding_weights(path, words, limit=None):
             oov_words += 1
             # Init random weights for out of vocabulary word        
             # TODO are the values in range (-1, 1)?
-            weight = np.random.uniform(low=-1.0, high=1.0, size=dim)
+            # weight = np.random.uniform(low=-1.0, high=1.0, size=dim)
 
             # TODO in final version change to fastText model
-            # weight = model.seeded_vector(random.random())
+            weight = model.seeded_vector(random.random())
             # https://www.quora.com/How-does-fastText-output-a-vector-for-a-word-that-is-not-in-the-pre-trained-model
 
         weights.append(weight)

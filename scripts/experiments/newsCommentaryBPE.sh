@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -V
-#$ -o /pub/tmp/xholcn01/experiments/newsCommentaryBPE/translation.out
-#$ -e /pub/tmp/xholcn01/experiments/newsCommentaryBPE/translation.err
+#$ -o /pub/tmp/xholcn01/experiments/newsCommentaryBPE/translation.trans.out
+#$ -e /pub/tmp/xholcn01/experiments/newsCommentaryBPE/translation.trans.err
 
 export PYTHONPATH=${PYTHONPATH}:/homes/eva/xh/xholcn01/.local/lib/python3.6/site-packages/
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 #$ -V
+#$ -o /pub/tmp/xholcn01/translation.out
+#$ -e /pub/tmp/xholcn01/translation.err
 
 export PYTHONPATH=${PYTHONPATH}:/homes/eva/xh/xholcn01/.local/lib/python3.6/site-packages/
 
@@ -36,7 +38,7 @@ fi
 
 python3 "${HOME_FOLDER}/main.py" \
     --${MODE} \
-    --training_dataset "${HOME_FOLDER}//data/newstest2015-csen" \
+    --training_dataset "${HOME_FOLDER}/data/news-commentary-v12.cs-en-tokenized.truecased.cleaned" \
     --test_dataset "${HOME_FOLDER}/data/newstest2015-csen" \
     --model_folder ${TMP_FOLDER} --model_file ${MODEL_FILE} \
     --log_folder "${HOME_FOLDER}/logs" \

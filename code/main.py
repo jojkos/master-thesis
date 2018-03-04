@@ -40,6 +40,8 @@ def add_arguments(parser):
     parser.add_argument("--beam_size", type=int, default=1, help="Size of a beam for beam search decoding")
     parser.add_argument("--num_units", type=int, default=256,
                         help="Size of each network layer")
+    parser.add_argument("--num_threads", type=int, default=4,
+                        help="Number of threads for tensorflow configuration")
     parser.add_argument("--optimizer", type=str, default="rmsprop", help="Keras optimizer name")
     parser.add_argument("--dropout", type=int, default=0.2, help="Dropout size")
     parser.add_argument("--num_training_samples", type=int, default=-1,
@@ -132,7 +134,7 @@ def main():
         max_source_embedding_num=args.max_source_embedding_num, max_target_embedding_num=args.max_target_embedding_num,
         num_encoder_layers=args.num_encoder_layers, num_decoder_layers=args.num_decoder_layers,
         source_lang=args.source_lang, dropout=args.dropout,
-        num_units=args.num_units, optimizer=args.optimizer,
+        num_units=args.num_units, num_threads=args.num_threads, optimizer=args.optimizer,
         log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
         max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
         num_training_samples=args.num_training_samples, num_test_samples=args.num_test_samples,

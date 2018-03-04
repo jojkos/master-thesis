@@ -35,7 +35,7 @@ class Translator(object):
                  target_lang, test_dataset, training_dataset,
                  reverse_input=True, max_source_vocab_size=10000, max_target_vocab_size=10000,
                  source_embedding_path=None, target_embedding_path=None,
-                 clear=False, tokenize=True, log_folder="logs/", num_units=256, dropout=0.2,
+                 clear=False, tokenize=True, log_folder="logs/", num_units=256, num_threads=4, dropout=0.2,
                  optimizer="rmsprop",
                  source_embedding_dim=300, target_embedding_dim=300,
                  max_source_embedding_num=None, max_target_embedding_num=None,
@@ -79,6 +79,7 @@ class Translator(object):
         self.max_target_embedding_num = max_target_embedding_num
         self.source_lang = source_lang
         self.num_units = num_units
+        self.num_threads = num_threads
         self.dropout = dropout
         self.optimizer = optimizer
         self.log_folder = log_folder
@@ -97,12 +98,21 @@ class Translator(object):
         self.num_encoder_layers = num_encoder_layers
         self.num_decoder_layers = num_decoder_layers
 
-        # this is fix for the errors that are thrown sometimes (something was not able start wtf & shit..)
         import tensorflow as tf
-        from keras.backend.tensorflow_backend import set_session
-        config = tf.ConfigProto()
+        from keras import backend as K
+
+        # configure number of threads
+        config = tf.ConfigProto(intra_op_parallelism_threads=self.num_threads,
+                                inter_op_parallelism_threads=self.num_threads,
+                                allow_soft_placement=True,
+                                device_count={'CPU': self.num_threads})
+
+        # this is fix for the errors that are thrown sometimes (something was not able start wtf & shit..)
         config.gpu_options.allow_growth = True
-        set_session(tf.Session(config=config))
+
+        session = tf.Session(config=config)
+        K.set_session(session)
+
 
         utils.prepare_folders([self.log_folder, self.model_folder], clear)
 
@@ -566,7 +576,7 @@ class Translator(object):
         # TODO how to do this more nicely? idealne bych jen vymenil prvni layer, aby tam byl jinej initial state, jinak je to stejny
         for decoder_layer in decoder_layers:
             # decoder_outputs = Dropout(self.dropout)(decoder_outputs)
-            decoder_outputs, state_h, state_c = decoder_layer(decoder_outputs)
+            decoder_outputs, state_h, state_c = decoder_layer(decoder_outputs, initial_state=decoder_states_inputs) # initial_state seems to be helping!
             decoder_states = [state_h, state_c]
 
         decoder_outputs = decoder_dense(decoder_outputs)
