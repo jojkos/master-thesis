@@ -1,10 +1,15 @@
 #!/bin/bash
 
 HOME_FOLDER="/pub/tmp/xholcn01"
-MAX_EPOCHS=0
+MAX_EPOCHS=28
 EPOCHS_RANGE=2
 
-for (( i=0; i <= MAX_EPOCHS; i+=EPOCHS_RANGE ))
+export PYTHONPATH=${PYTHONPATH}:/homes/eva/xh/xholcn01/.local/lib/python3.6/site-packages/
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/share/cuda-9.0.176/lib64:/usr/local/share/cuda-9.0.176/extras/CUPTI/lib64
+export CUDA_HOME=/usr/local/share/cuda-9.0.176
+
+for (( i=26; i <= MAX_EPOCHS; i+=EPOCHS_RANGE ))
 do
     export INITIAL_EPOCH=${i}
     export EPOCHS=$((INITIAL_EPOCH + EPOCHS_RANGE))
@@ -20,8 +25,7 @@ do
          -N xholcnNMT${INITIAL_EPOCH} \
          -q long.q@@gpu \
          -l gpu=1,mem_free=15G,ram_free=15G,disk_free=5G,tmp_free=5G \
-         -pe smp 4 \
-         newsCommentaryBPE.sh
+         openSubtitles1mil.sh
 
     retval=$?
     if [ ${retval} -ne 0 ]

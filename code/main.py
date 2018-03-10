@@ -40,7 +40,7 @@ def add_arguments(parser):
     parser.add_argument("--beam_size", type=int, default=1, help="Size of a beam for beam search decoding")
     parser.add_argument("--num_units", type=int, default=256,
                         help="Size of each network layer")
-    parser.add_argument("--num_threads", type=int, default=4,
+    parser.add_argument("--num_threads", type=int, default=1,
                         help="Number of threads for tensorflow configuration")
     parser.add_argument("--optimizer", type=str, default="rmsprop", help="Keras optimizer name")
     parser.add_argument("--dropout", type=int, default=0.2, help="Dropout size")
@@ -96,11 +96,12 @@ def set_gpu():
         logger.error('No free GPU available!')
         sys.exit(1)
     else:
-        logger.info("Picked free GPU: {}".format(free_gpu.decode().strip()))
+        free_gpu = free_gpu.decode().strip()
+        logger.info("Picked free GPU: {}".format(free_gpu))
 
-    print(free_gpu)
+    os.environ['CUDA_VISIBLE_DEVICES'] = free_gpu
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = free_gpu.decode().strip()
+    return free_gpu
 
 
 # python main.py --train --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
@@ -121,44 +122,50 @@ def main():
         logger.warning("some unexpected arguments: {}".format(unparsed))
 
     if args.find_gpu:
-        set_gpu()
+        device = "/gpu:{}".format(set_gpu())
+    else:
+        device = "/gpu:0"
 
     # to speed up loading of parser help
     # tensorflow takes quite some time to load
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'nmtPackage')))
     from nmt import Translator
+    import tensorflow as tf
 
-    translator = Translator(
-        source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,
-        source_embedding_path=args.source_embedding_path, target_embedding_path=args.target_embedding_path,
-        max_source_embedding_num=args.max_source_embedding_num, max_target_embedding_num=args.max_target_embedding_num,
-        num_encoder_layers=args.num_encoder_layers, num_decoder_layers=args.num_decoder_layers,
-        source_lang=args.source_lang, dropout=args.dropout,
-        num_units=args.num_units, num_threads=args.num_threads, optimizer=args.optimizer,
-        log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
-        max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file, model_folder=args.model_folder,
-        num_training_samples=args.num_training_samples, num_test_samples=args.num_test_samples,
-        reverse_input=args.reverse_input, target_lang=args.target_lang,
-        test_dataset=args.test_dataset, training_dataset=args.training_dataset,
-        tokenize=args.tokenize, clear=args.clear
-    )
+    with tf.device(device):
+        translator = Translator(
+            source_embedding_dim=args.source_embedding_dim, target_embedding_dim=args.target_embedding_dim,
+            source_embedding_path=args.source_embedding_path, target_embedding_path=args.target_embedding_path,
+            max_source_embedding_num=args.max_source_embedding_num,
+            max_target_embedding_num=args.max_target_embedding_num,
+            num_encoder_layers=args.num_encoder_layers, num_decoder_layers=args.num_decoder_layers,
+            source_lang=args.source_lang, dropout=args.dropout,
+            num_units=args.num_units, num_threads=args.num_threads, optimizer=args.optimizer,
+            log_folder=args.log_folder, max_source_vocab_size=args.max_source_vocab_size,
+            max_target_vocab_size=args.max_target_vocab_size, model_file=args.model_file,
+            model_folder=args.model_folder,
+            num_training_samples=args.num_training_samples, num_test_samples=args.num_test_samples,
+            reverse_input=args.reverse_input, target_lang=args.target_lang,
+            test_dataset=args.test_dataset, training_dataset=args.training_dataset,
+            tokenize=args.tokenize, clear=args.clear
+        )
 
-    # TODO osamostatnit veci v modulu a vyndat je sem, z modulu udelat jen generic modul
+        # TODO osamostatnit veci v modulu a vyndat je sem, z modulu udelat jen generic modul
 
-    if args.train:
-        translator.fit(epochs=args.epochs, initial_epoch=args.initial_epoch,
-                       batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
-                       bucketing=args.bucketing, bucket_range=args.bucket_range)
-    if args.evaluate:
-        evaluation = translator.evaluate(args.batch_size, args.beam_size)
-        print("model evaluation: {}".format(evaluation))
+        if args.train:
+            translator.fit(epochs=args.epochs, initial_epoch=args.initial_epoch,
+                           batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
+                           bucketing=args.bucketing, bucket_range=args.bucket_range)
+        if args.evaluate:
+            evaluation = translator.evaluate(args.batch_size, args.beam_size)
+            print("model evaluation: {}".format(evaluation))
 
-    if args.livetest:
-        while True:
-            seq = input("Enter sequence: ")
-            translator.translate(seq)
+        if args.livetest:
+            while True:
+                seq = input("Enter sequence: ")
+                translator.translate(seq)
 
-    # TODO class for encoder/decoder (model)
+        # TODO class for encoder/decoder (model)
 
 
 # autogenerate docs

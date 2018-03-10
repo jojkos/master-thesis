@@ -419,9 +419,9 @@ def test_define_models_multiple_layers():
     decoder_layer_1 = model.get_layer(name="decoder_layer_1")
     output_layer = model.get_layer(name="output_layer")
 
-    assert len(model.layers) == 10
+    assert len(model.layers) == 11
 
-    assert len(decoder_model.layers) == 7
+    assert len(decoder_model.layers) == 10
 
     assert len(encoder_model.layers) == 5
 

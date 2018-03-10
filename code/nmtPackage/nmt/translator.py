@@ -35,7 +35,7 @@ class Translator(object):
                  target_lang, test_dataset, training_dataset,
                  reverse_input=True, max_source_vocab_size=10000, max_target_vocab_size=10000,
                  source_embedding_path=None, target_embedding_path=None,
-                 clear=False, tokenize=True, log_folder="logs/", num_units=256, num_threads=4, dropout=0.2,
+                 clear=False, tokenize=True, log_folder="logs/", num_units=256, num_threads=1, dropout=0.2,
                  optimizer="rmsprop",
                  source_embedding_dim=300, target_embedding_dim=300,
                  max_source_embedding_num=None, max_target_embedding_num=None,
@@ -99,19 +99,22 @@ class Translator(object):
         self.num_decoder_layers = num_decoder_layers
 
         import tensorflow as tf
-        from keras import backend as K
+        from keras.backend.tensorflow_backend import set_session
 
         # configure number of threads
+
+        # intra_op_parallelism_threads = self.num_threads,
+        # inter_op_parallelism_threads = self.num_threads,
+        # allow_soft_placement = True,
+        # device_count = {'CPU': self.num_threads}
+
+        # FAILS ON FIT CLUSTER when started manually and not through qsub
         config = tf.ConfigProto(intra_op_parallelism_threads=self.num_threads,
                                 inter_op_parallelism_threads=self.num_threads,
                                 allow_soft_placement=True,
                                 device_count={'CPU': self.num_threads})
-
-        # this is fix for the errors that are thrown sometimes (something was not able start wtf & shit..)
         config.gpu_options.allow_growth = True
-
-        session = tf.Session(config=config)
-        K.set_session(session)
+        set_session(tf.Session(config=config))
 
         utils.prepare_folders([self.log_folder, self.model_folder], clear)
 
