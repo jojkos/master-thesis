@@ -1,3 +1,0 @@
-[submodule "code/nmtPackage/nmt/scripts/subword-nmt"]
-	path = code/nmtPackage/nmt/scripts/subword-nmt
-	url = https://github.com/rsennrich/subword-nmt
