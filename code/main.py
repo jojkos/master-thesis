@@ -110,7 +110,7 @@ def set_gpu():
 # SMT pousteni
 # python main.py --train --training_dataset "G:\Clouds\DPbigFiles\WMT17\newsCommentary\news-commentary-v12.cs-en-tokenized.truecased.cleaned" --test_dataset "G:\Clouds\DPbigFiles\WMT17\testSet\newstest2017-csen-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --model_folder "G:\Clouds\DPbigFiles\WMT17\newsCommentary" --model_file "newsCommentarySmtModel.h5" --batch_size 64 --num_units 256 --optimizer "rmsprop" --max_source_vocab_size 10000 --max_target_vocab_size 10000 --source_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.cs.vec" --target_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.en.vec"
 def main():
-    parser = argparse.ArgumentParser(description='Arguments for the main.py that uses nmt module')
+    parser = argparse.ArgumentParser(description='Arguments for the main.py that uses nmt package')
     add_arguments(parser)
 
     args, unparsed = parser.parse_known_args()
@@ -170,5 +170,6 @@ def main():
 
 # autogenerate docs
 # docs 	sphinx-apidoc -o docs nmt
+# and probably run Generate docs in pycharm
 if __name__ == "__main__":
     main()
