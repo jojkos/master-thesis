@@ -1,0 +1,152 @@
+\documentclass{ExcelAtFIT}
+%\documentclass[czech]{ExcelAtFIT} % when writing in CZECH
+%\documentclass[slovak]{ExcelAtFIT} % when writing in SLOVAK
+
+
+%--------------------------------------------------------
+%--------------------------------------------------------
+%	REVIEW vs. FINAL VERSION
+%--------------------------------------------------------
+
+%   LEAVE this line commented out for the REVIEW VERSIONS
+%   UNCOMMENT this line to get the FINAL VERSION
+%\ExcelFinalCopy
+
+
+%--------------------------------------------------------
+%--------------------------------------------------------
+%	PDF CUSTOMIZATION
+%--------------------------------------------------------
+
+\hypersetup{
+	pdftitle={Paper Title},
+	pdfauthor={Author},
+	pdfkeywords={Keyword1, Keyword2, Keyword3}
+}
+
+%--------------------------------------------------------
+%--------------------------------------------------------
+%	ARTICLE INFORMATION
+%--------------------------------------------------------
+
+\ExcelYear{2018}
+
+\PaperTitle{Machine Translation Using Artificial Neural Networks}
+
+\Authors{Jonáš Holcner*}
+\affiliation{*%
+  \href{mailto:xholcn01@stud.fit.vutbr.cz}{xholcn01@stud.fit.vutbr.cz},
+  \textit{Faculty of Information Technology, Brno University of Technology}}
+
+\Keywords{neural machine translation --- NMT --- recurrent neural networks --- RNN ---
+LSTM --- encoder-decoder architecture --- sequence to sequence --- seq2seq ---
+keras --- moses --- bleu}
+
+\Supplementary{\href{https://github.com/jojkos/neural-machine-translation}{Downloadable Library}}
+
+
+%--------------------------------------------------------
+%--------------------------------------------------------
+%	ABSTRACT and TEASER
+%--------------------------------------------------------
+
+\Abstract{
+The goal of this paper is to develop a neural machine translation system (NMT). That is a machine translation system based on neural networks. Specifically, the system is based on the state-of-the-art architecture, which is encoder-decoder architecture, created with recurrent neural networks enabling sequence to sequence translation.
+
+The system is build with libraries Keras and Tensorflow and is tested against Moses statistical machine translation tool.
+
+This work does not bring some concrete model with new state of the art results but shows some insight into the topic as well as provides an open source python library that can interested reader use to easily conduct his own experiments.
+}
+
+\Teaser{
+	\TeaserImage{placeholder.pdf}
+	\TeaserImage{placeholder.pdf}
+	\TeaserImage{placeholder.pdf}
+}
+
+%--------------------------------------------------------
+
+\begin{document}
+
+\startdocument
+
+%--------------------------------------------------------
+%	ARTICLE CONTENTS
+%--------------------------------------------------------
+
+\section{Introduction}
+In the recent years, there is a significant increase in usage of machine learning and artificial intelligence. This is because only lately, the capacity and performance of computers caught up with the available amount of data that is being produced every day as to build and train large enough neural networks. Now days, neural networks are widely capable of recognizing images, transcribing spoken language and most interestingly for this paper, they are quite capable in translating sequences from one language to another.
+
+The biggest advantage of modern NMT approach is that it does not have some of the problems the traditional machine translation systems had. Instead of being composed of many different complex parts, NMT has the ability to learn and translate directly in and-to-end fashion.
+
+Goal of this work is to develop and try out such system and provide an out of the box usable library. Solution proposed in this paper make use of the state-of-the-art NMT architecture which is encoder-decoder. Each of these two components is one recurrent neural network together capable of directly translating whole sequences from one language to another.
+
+The result is python package \emph{nmt} built with Keras and Tensorflow. With this package were conducted experiments, evaluated with the standard BLEU score. Results were compared with the system produced by the Moses \cite{Moses} statistical machine tool.
+
+
+\section{Previous Works}
+First idea of recurrent neural networks comes from the nineties \cite{rnn}. The vanilla RNN, however, had a problem with long term dependencies because of the vanishing and exploding gradient \cite{gradientProblems}.
+
+Thus came improved variants of the RNN -- long short term memory (LSTM) \cite{LSTM, forgetLSTM} and its simpler version, gated recurrent unit (GRU) \cite{GRU}. These units have a memory, that stores and changes information in it over time, enabling the network to remember long term dependencies.
+
+Works \cite{neuralLanguageModels, neuralLanguageModels2, mikolovphd} shows that good performing language models are possible to build with recurrent neural networks. This lays foundation for the neural machine translation as language models are the vital part. The advantage of neural language model is that it learns embeddings in a continuous space for the words, which provides the model with more context it can learn from. Different variants of learning the word embbeddings are shown here \cite{word2vec,kingQueen,glove,fasttext}. Pre-trained word  embeddings, for example on some very large data set, can be used to boost performance of a NMT system, which would have to otherwise learn those embeddings by itself.
+
+Encoder-decoder architecture was proposed in \cite{encoderDecoder} and was used for rescoring hypotheses produced by a phrase-based system with successful improvement. \cite{seq2seq} then shows how to use encoder-decoder architecture for direct sequence to sequence translation and comes with the best results at the time. Furthermore, they found out the importance of reversing order of the words  in all source sentences (reverse encoder), that improves models performance, by introducing short term dependencies between the source and the target sentence.
+
+Upon this builds \cite{attention} which shows even better results with bi-directional encoder. What is even more important, they address the problem of encoder-decoder approach, where the meaning of the translated sentence is captured in a fixed-length vector and that can be problematic for translating long sentences. The proposed remedy is so called \emph{attention} mechanism which lets the model at the time of decoding, look at the most important words from the source sentence for the currently translated word, resulting in even better performance.
+
+As translation is an open-vocabulary problem, the NMT systems have to somehow handle the vocabularies. This was typically done by using out-of-vocabulary words and by using very large vocabularies, which cases the models to be very memory and performance demanding. \cite{mikolovSubwords, subwords} shows that using sub-word units can be more efficient, help with rare and unknown words and improve the results. 
+
+Current state-of-the-art results are published by Google \cite{googleBridgingGap,googleAttention}, which uses all of the techniques described, showing that they can be successfully applied on large production data sets.
+
+Another thing Google shows, is that with no changes to the model architecture, one model can be used to learn to translate from and to more languages \cite{googleMultiLingual}, even to produce translations between languages, that it was not explicitly trained on (zero-shot translations).
+
+\section{Seq2seq translation with encoder-decoder architecture}
+
+
+For a deeper overview of NMT based systems, I would point the reader to \cite{nmtTutorial}.
+
+\section{Implementation of the NMT system}
+
+datasets
+preprocessing
+bucketing
+fit generator?
+bidirectional encoder
+subwords - BPE
+beam search
+shuffling
+main.py repo
+
+
+\section{Experiments and evaluation}
+
+\section{Conclusions}
+\label{sec:Conclusions}
+
+\textbf{[Paper Summary]} What was the paper about, then? What the reader needs to remember about it?
+
+\textbf{[Highlights of Results]} Exact numbers. Remind the reader that the paper matters.
+
+
+\textbf{[Paper Contributions]} What is the original contribution of this work? Two or three thoughts that one should definitely take home.
+
+
+\textbf{[Future Work]} How can other researchers / developers make use of the results of this work?  Do you have further plans with this work? Or anybody else?
+
+
+\section*{Acknowledgements}
+I would like to thank my supervisor X. Y. for his help.
+
+
+%--------------------------------------------------------
+%	REFERENCE LIST
+%--------------------------------------------------------
+\phantomsection
+\bibliographystyle{unsrt}
+\bibliography{2018-ExcelFIT-NeuralMachineTranslation}
+
+%--------------------------------------------------------
+%--------------------------------------------------------
+%--------------------------------------------------------
+\end{document} 
