@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 MOSES_PATH="/home/jonas/mosesdecoder"
-LANG_FROM="en"
-LANG_TO="fr"
-CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/OpenSubtitles2018EnFr"
-CORPUS_NAME="OpenSubtitles2018.en-fr"
+LANG_FROM="cs"
+LANG_TO="en"
+CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/AllTogetherPreprocessed"
+CORPUS_NAME="corpus.tc"
 TEST_CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/testSet"  # already tokenized and cleaned..
 TEST_CORPUS_NAME="newstest2017-csen-tokenized.truecased.cleaned"
 TOOLS_PATH="/home/jonas/mosesdecoder/tools"
@@ -25,6 +25,14 @@ then
         > ${TOKENIZED_PATH}"."${LANG_TO}
 fi
 
+if [ $1 = "--clean" ] || [ $1 = "--all" ] || [ $1 = "--preprocess" ]
+then
+    printf "cleaning..\n\n"
+    scripts/training/clean-corpus-n.perl \
+        ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized" ${LANG_FROM} ${LANG_TO} \
+        ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.cleaned" 1 ${MAX_LENGTH}
+fi
+
 if [ $1 = "--truecase" ] || [ $1 = "--all" ] || [ $1 = "--preprocess" ]
 then
     printf "truecaser training..\n\n"
@@ -38,21 +46,12 @@ then
     printf "truecasing..\n\n"
     scripts/recaser/truecase.perl \
         --model ${CORPUS_PATH}"/truecase-model."${LANG_FROM} \
-        < ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized."${LANG_FROM} \
-        > ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.truecased."${LANG_FROM}
+        < ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.cleaned."${LANG_FROM} \
+        > ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.cleaned.truecased."${LANG_FROM}
     scripts/recaser/truecase.perl \
         --model ${CORPUS_PATH}"/truecase-model."${LANG_TO} \
-        < ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized."${LANG_TO} \
-        > ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.truecased."${LANG_TO}
-fi
-
-
-if [ $1 = "--clean" ] || [ $1 = "--all" ] || [ $1 = "--preprocess" ]
-then
-    printf "cleaning..\n\n"
-    scripts/training/clean-corpus-n.perl \
-        ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.truecased" ${LANG_FROM} ${LANG_TO} \
-        ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.truecased.cleaned" 1 ${MAX_LENGTH}
+        < ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.cleaned."${LANG_TO} \
+        > ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.cleaned.truecased."${LANG_TO}
 fi
 
 if [ $1 = "--train" ] || [ $1 = "--all" ]

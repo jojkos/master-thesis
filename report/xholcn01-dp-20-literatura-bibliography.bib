@@ -1,21 +1,4 @@
 % Encoding: UTF-8
-@BOOK{Pravidla,
-  author =       "Zdeněk Hlavsa and others",
-  title =        "{\it Pravidla českého pravopisu}",
-  publisher =    "Academia",
-  year =         "2005",
-  isbn =         "80-200-1327-X",
-}
-
-@MISC{citace,
-  author =       "Zdena Rábová and Petr Hanáček and Petr Peringer and Petr Přikryl and Bohuslav Křena",
-  title =        "{\it Pravidla pro bibliografické citace}",
-  howpublished = "FIT VUT v Brně",
-  year =         "2014",
-  month =        Mar,
-  url =          "http://www.fit.vutbr.cz/info/szz/bib_citace.html",
-  note =         "[Online; navštíveno 12.07.2016]"
-}
 
 @Article{googleAttention,
   author        = {Ashish Vaswani and Noam Shazeer and Niki Parmar and Jakob Uszkoreit and Llion Jones and Aidan N. Gomez and Lukasz Kaiser and Illia Polosukhin},
@@ -359,6 +342,64 @@
   eprint        = {1609.04747},
   timestamp     = {Wed, 07 Jun 2017 14:40:06 +0200},
   url           = {http://arxiv.org/abs/1609.04747},
+}
+
+@Article{neuralLanguageModels,
+  author     = {Bengio, Yoshua and Ducharme, R{\'e}jean and Vincent, Pascal and Janvin, Christian},
+  title      = {A Neural Probabilistic Language Model},
+  journal    = {J. Mach. Learn. Res.},
+  year       = {2003},
+  volume     = {3},
+  pages      = {1137--1155},
+  month      = mar,
+  issn       = {1532-4435},
+  acmid      = {944966},
+  issue_date = {3/1/2003},
+  numpages   = {19},
+  publisher  = {JMLR.org},
+  url        = {http://dl.acm.org/citation.cfm?id=944919.944966},
+}
+
+@InProceedings{neuralLanguageModels2,
+  author    = {Morin, Frederic and Bengio, Yoshua},
+  title     = {Hierarchical Probabilistic Neural Network Language Model},
+  booktitle = {Proceedings of the Tenth International Workshop on Artificial Intelligence and Statistics},
+  year      = {2005},
+  editor    = {Cowell, Robert G. and Ghahramani, Zoubin},
+  pages     = {246--252},
+  publisher = {Society for Artificial Intelligence and Statistics},
+  abstract  = {In recent years, variants of a neural network architecture for statistical language modeling have been proposed and successfully applied, e.g. in the language modeling component of speech recognizers. The main advantage of these architectures is that they learn an embedding for words (or other symbols) in a continuous space that helps to smooth the language model and provide good generalization even when the number of training examples is insufficient. However, these models are extremely slow in comparison to the more commonly used n-gram models, both for training and recognition. As an alternative to an importance sampling method proposed to speed-up training, we introduce a hierarchical decomposition of the conditional probabilities that yields a speed-up of about 200 both during training and recognition. The hierarchical decomposition is a binary hierarchical clustering constrained by the prior knowledge extracted from the WordNet semantic hierarchy.},
+  cat       = {C},
+  topics    = {Language},
+  url       = {http://www.iro.umontreal.ca/~lisa/pointeurs/hierarchical-nnlm-aistats05.pdf},
+}
+
+@Article{subwords,
+  author        = {Rico Sennrich and Barry Haddow and Alexandra Birch},
+  title         = {Neural Machine Translation of Rare Words with Subword Units},
+  journal       = {CoRR},
+  year          = {2015},
+  volume        = {abs/1508.07909},
+  archiveprefix = {arXiv},
+  bibsource     = {dblp computer science bibliography, https://dblp.org},
+  biburl        = {https://dblp.org/rec/bib/journals/corr/SennrichHB15},
+  eprint        = {1508.07909},
+  timestamp     = {Wed, 07 Jun 2017 14:40:14 +0200},
+  url           = {http://arxiv.org/abs/1508.07909},
+}
+
+@Article{googleMultiLingual,
+  author        = {Melvin Johnson and Mike Schuster and Quoc V. Le and Maxim Krikun and Yonghui Wu and Zhifeng Chen and Nikhil Thorat and Fernanda B. Vi{\'{e}}gas and Martin Wattenberg and Greg Corrado and Macduff Hughes and Jeffrey Dean},
+  title         = {Google's Multilingual Neural Machine Translation System: Enabling Zero-Shot Translation},
+  journal       = {CoRR},
+  year          = {2016},
+  volume        = {abs/1611.04558},
+  archiveprefix = {arXiv},
+  bibsource     = {dblp computer science bibliography, https://dblp.org},
+  biburl        = {https://dblp.org/rec/bib/journals/corr/JohnsonSLKWCTVW16},
+  eprint        = {1611.04558},
+  timestamp     = {Wed, 07 Jun 2017 14:41:25 +0200},
+  url           = {http://arxiv.org/abs/1611.04558},
 }
 
 @Comment{jabref-meta: databaseType:bibtex;}

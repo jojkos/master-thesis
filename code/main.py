@@ -129,7 +129,7 @@ def main():
     # to speed up loading of parser help
     # tensorflow takes quite some time to load
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'nmtPackage')))
-    from nmt import Translator
+    from nmt import Translator, utils
     import tensorflow as tf
 
     with tf.device(device):
@@ -155,7 +155,12 @@ def main():
         if args.train:
             translator.fit(epochs=args.epochs, initial_epoch=args.initial_epoch,
                            batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
-                           bucketing=args.bucketing, bucket_range=args.bucket_range)
+                           bucketing=args.bucketing, bucket_range=args.bucket_range,
+                           validation_split=args.validation_split)
+
+        # remove bpe subwords before evaluation
+        utils.restore_subwords(args.test_dataset + args.target_lang + ".translated")
+
         if args.evaluate:
             evaluation = translator.evaluate(args.batch_size, args.beam_size)
             print("model evaluation: {}".format(evaluation))
