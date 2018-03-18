@@ -7,10 +7,9 @@ import subprocess
 import sys
 import random
 
-# seed to keep the results same every time TODO correct?
+# seed to keep the results same every time
 random.seed(0)
 
-# TODO how to properly log
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -159,7 +158,7 @@ def main():
                            validation_split=args.validation_split)
 
         # remove bpe subwords before evaluation
-        utils.restore_subwords(args.test_dataset + args.target_lang + ".translated")
+        # utils.restore_subwords(args.test_dataset + args.target_lang + ".translated")
 
         if args.evaluate:
             evaluation = translator.evaluate(args.batch_size, args.beam_size)
