@@ -161,8 +161,8 @@ def main():
         # utils.restore_subwords(args.test_dataset + args.target_lang + ".translated")
 
         if args.evaluate:
-            evaluation = translator.evaluate(args.batch_size, args.beam_size)
-            print("model evaluation: {}".format(evaluation))
+            bleu = translator.evaluate(args.batch_size, args.beam_size)
+            print("BLEU: {}".format(bleu))
 
         if args.livetest:
             while True:
