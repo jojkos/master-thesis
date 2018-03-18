@@ -40,7 +40,7 @@
 
 \Keywords{neural machine translation --- NMT --- recurrent neural networks --- RNN ---
 LSTM --- encoder-decoder architecture --- sequence to sequence --- seq2seq ---
-keras --- moses --- bleu}
+keras --- moses --- BLEU}
 
 \Supplementary{\href{https://github.com/jojkos/neural-machine-translation}{Downloadable Library}}
 
@@ -51,7 +51,7 @@ keras --- moses --- bleu}
 %--------------------------------------------------------
 
 \Abstract{
-The goal of this paper is to develop a neural machine translation system (NMT). That is a machine translation system based on neural networks. Specifically, the system is based on the state-of-the-art architecture, which is encoder-decoder architecture, created with recurrent neural networks enabling sequence to sequence translation.
+The aim of this work is to develop a neural machine translation system (NMT). That is a machine translation system based on neural networks. Specifically, the system is based on the encoder-decoder architecture, created with recurrent neural networks enabling sequence to sequence translation.
 
 The system is build with libraries Keras and Tensorflow and is tested against Moses statistical machine translation tool.
 
@@ -59,9 +59,10 @@ This work does not bring some concrete model with new state of the art results b
 }
 
 \Teaser{
-	\TeaserImage{placeholder.pdf}
-	\TeaserImage{placeholder.pdf}
-	\TeaserImage{placeholder.pdf}
+	%\TeaserImage{teaser1.pdf}
+	%\TeaserImage{teaser2.pdf}
+	%\TeaserImage{teaser3.pdf}
+    \includegraphics[width=1\linewidth]{excelTeaser.pdf}
 }
 
 %--------------------------------------------------------
@@ -79,7 +80,7 @@ In the recent years, there is a significant increase in usage of machine learnin
 
 The biggest advantage of modern NMT approach is that it does not have some of the problems the traditional machine translation systems had. Instead of being composed of many different complex parts, NMT has the ability to learn and translate directly in and-to-end fashion.
 
-Goal of this work is to develop and try out such system and provide an out of the box usable library. Solution proposed in this paper make use of the state-of-the-art NMT architecture which is encoder-decoder. Each of these two components is one recurrent neural network together capable of directly translating whole sequences from one language to another.
+Goal of this work is to develop and try out such system and provide an out of the box usable library. Solution proposed in this paper make use of the encoder-decoder architecture. Each of these two components is one recurrent neural network together capable of directly translating whole sequences from one language to another.
 
 The result is python package \emph{nmt} built with Keras and Tensorflow. With this package were conducted experiments, evaluated with the standard BLEU score. Results were compared with the system produced by the Moses \cite{Moses} statistical machine tool.
 
@@ -93,16 +94,70 @@ Works \cite{neuralLanguageModels, neuralLanguageModels2, mikolovphd} shows that 
 
 Encoder-decoder architecture was proposed in \cite{encoderDecoder} and was used for rescoring hypotheses produced by a phrase-based system with successful improvement. \cite{seq2seq} then shows how to use encoder-decoder architecture for direct sequence to sequence translation and comes with the best results at the time. Furthermore, they found out the importance of reversing order of the words  in all source sentences (reverse encoder), that improves models performance, by introducing short term dependencies between the source and the target sentence.
 
-Upon this builds \cite{attention} which shows even better results with bi-directional encoder. What is even more important, they address the problem of encoder-decoder approach, where the meaning of the translated sentence is captured in a fixed-length vector and that can be problematic for translating long sentences. The proposed remedy is so called \emph{attention} mechanism which lets the model at the time of decoding, look at the most important words from the source sentence for the currently translated word, resulting in even better performance.
+Upon this builds \cite{attention} which shows even better results with bi-directional encoder. What is even more important, they address the problem of encoder-decoder approach, where the meaning of the translated sentence is captured in a fixed-length vector and that can be problematic for translating long sentences. The proposed remedy is so called \emph{attention} mechanism which lets the model, at the time of decoding, look at the most important words from the source sentence for the currently translated word, resulting in even better performance.
 
-As translation is an open-vocabulary problem, the NMT systems have to somehow handle the vocabularies. This was typically done by using out-of-vocabulary words and by using very large vocabularies, which cases the models to be very memory and performance demanding. \cite{mikolovSubwords, subwords} shows that using sub-word units can be more efficient, help with rare and unknown words and improve the results. 
+As translation is an open-vocabulary problem, the NMT systems have to somehow handle the words not present at the time of training. This was typically done by using out-of-vocabulary tokens and by using very large vocabularies, which causes the models to be very memory and performance demanding. Solution for this can be sub-word units \cite{mikolovSubwords, subwords}, that are shown to be more efficient, help with rare and unknown words and improve the results.
 
 Current state-of-the-art results are published by Google \cite{googleBridgingGap,googleAttention}, which uses all of the techniques described, showing that they can be successfully applied on large production data sets.
 
 Another thing Google shows, is that with no changes to the model architecture, one model can be used to learn to translate from and to more languages \cite{googleMultiLingual}, even to produce translations between languages, that it was not explicitly trained on (zero-shot translations).
 
 \section{Seq2seq translation with encoder-decoder architecture}
+Sequence to sequence (\textbf{seq2seq}) means that the process of translating takes one whole sentence at the input, in a source language, and its meaning translates into sequence in a target language. Its modeling probability of a target sentence based on source sentence as shown in figure \ref{fig:seqProbability}.
 
+\begin{figure}[h!]
+    \begin{center}
+        \setlength{\fboxsep}{8pt}
+        \fbox{$W_{in}$ = ``Ahoj světe"}
+        $\Longrightarrow$
+        \fbox{$W_{out}$ = ``Hello world"}
+    \end{center}
+	\caption{Seq2seq models a probability $P(W_{out}|W_{in})$. Meaning that the model learns to predict sentence $W_{out}$ based on a sentence $W_{in}$, so it learns to translate.}
+	\label{fig:seqProbability}
+\end{figure}
+
+Best neural network architecture for this modeling is \textbf{encoder-decoder}. Both encoder and decoder are recurrent neural network, usually one or more layers of LSTM or GRU.
+
+Encoder takes embeddings of the input tokens (words or subwords) and and processes the input sequence in source language into fixed-length vector, so called ``thought" vector -- it captures the essence of the given sentence.
+
+Decoders hidden state is initialized with this output from encoder. The decoding process is started with start token, which is given to decoder as first input. Decoder then generates sequence in target language until it reaches end token that tells it to stop. There is a difference between time when model is being trained and between time when it is used to predict. In the training time, decoder is fed the correct, expected output. This is called ``teacher forcing" \cite{teacherForcing}. In the inference time, decoder is fed its own output each time step. Figure \ref{fig:seq2seq} shows the encoder-decoder architecture.
+
+\begin{figure*}[h!]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
+  \centering
+  \includegraphics[width=0.82\linewidth]{seq2seqEn.pdf}\\[1pt]
+  \caption{Encoder-decoder architecture shown on translation from Czech sentence to its English equivalent. Encoder processes embeddings of input sequence and produces fixed-length ``thought" vector. This vector is used as initial state of decoder, it tells it from what context should it produce output in target language. Prediction is started with the $\langle s \rangle$ starting token. Then the decoder is fed either correct output tokens during training time or its own output, from time $t - 1$, during inference time, until it generates the ending $\langle /s \rangle$ token.}
+  \label{fig:seq2seq}
+\end{figure*}
+
+Equations for the encoder-decoder:
+\begin{linenomath}
+\begin{align}
+    m^{(f)}_{t}&=M^{(f)}_{f_t}\label{figure:encoderEmb} \\
+    h^{f}_{t}&=\begin{cases}
+                    RNN^{(f)}(m^{(f)}_{t},h^{(f)}_{t-1}) & \mbox{if t $\geq$ 1},\label{figure:encoderState} \\
+                    0 & \mbox{otherwise}.
+                \end{cases}\\
+    m^{(e)}_{t}&=M^{(e)}_{e_{t-1}}\label{figure:decoderEmb} \\
+    h^{e}_{t}&=\begin{cases}
+                    RNN^{(e)}(m^{(e)}_{t},h^{(e)}_{t-1}) & \mbox{if t $\geq$ 1},\\
+                    h^{f}_{|F|} & \mbox{otherwise}.
+                \end{cases}\label{figure:decoderState} \\
+    p^{(e)}_{t}&=\mbox{softmax}(W_{hs}h^{(e)}_{t} + b_{s}) \label{figure:resultSoftmax}
+\end{align}
+\end{linenomath}
+
+\begin{itemize}
+    \item $RNN^(f)$ - encoder, $RNN^(e)$ - decoder
+    \item $M^{(f)}_{f_t}$ - embedding for encoder input in time $t$    
+    \item $M^{(e)}_{e_t}$ - embedding for decoder input in time $t$
+    \item $h^{(f)}_t$ - encoder hidden state in time $t$
+    \item $h^{(e)}_t$ - encoder hidden state in time $t$
+    \item $W_{hs}$ - weights
+    \item $b_s$ - bias
+\end{itemize}
+
+
+Embedding is looked up for every word in time $t$ (eq. \ref{figure:encoderEmb}). Then the hidden state of encoder is computed (eq. \ref{figure:encoderState}). After processing the whole input sequence, there should be enough context stored for decoder initialisation. Then, as for encoder, embedding is looked up for decoder input (eq. \ref{figure:decoderEmb}). Only now the word is from time $t - 1$ as decoder generates new word based on the last one. In the time $t_0$ decoder is fed starting symbol $\langle s \rangle$. Eq. \ref{figure:decoderState} computes hidden state of decoder and shows that in the time $t_0$, decoder is initialised with encoder final state. Final output probability is resolved with $softmax$ function (eq. \ref{figure:resultSoftmax}).
 
 For a deeper overview of NMT based systems, I would point the reader to \cite{nmtTutorial}.
 
@@ -136,7 +191,7 @@ main.py repo
 
 
 \section*{Acknowledgements}
-I would like to thank my supervisor X. Y. for his help.
+I would like to thank my supervisor Ing.~Igor Szőke,~Ph.D. for his help.
 
 
 %--------------------------------------------------------

@@ -343,10 +343,13 @@ Cílem jazykového modelu je předpovídat následující slovo ve větě. Při 
     \begin{center}
             \tmpframe{\includegraphics[width=1\linewidth]{img/graphs/seq2seq.pdf}}
     \end{center}
-	\caption{Enkodér-dekodér architektura. Enkodér obdrží větu na vstupu a vytvoří inicializační stav pro dekodér. Ten v době trénování dostává na vstupu správně přeloženou větu. V době generování na vstup dostává po jednom slova co sám vygeneroval a tím tak získává výslednou větu, dokud nenarazí na koncový symbol </s>.}
+	\caption{Enkodér-dekodér architektura. Enkodér obdrží větu na vstupu a vytvoří inicializační stav pro dekodér. Ten v době trénování dostává na vstupu správně přeloženou větu. V době generování na vstup dostává po jednom slova co sám vygeneroval a tím tak získává výslednou větu, dokud nenarazí na koncový symbol </s>. \todo{líp popsat rozdíl inference a trénování. udělat tenhle odstavec obsáhlej a smysluplnej, kdyžtak doladit obrázek}}
 	\label{img:seq2seq}
 \end{figure}
 
+\todo{\url{https://arxiv.org/abs/1610.09038} teacher forcing citace}
+\todo{asi bych zkusil udelat primo dva obrazky, jeden na uceni a jeden na inference kde dekoder dostava svuj vlastni output}
+\todo{lip popsat vsechny rovnice! vysvetlit jednotlivy pismenka}
 
 \subsection{Metody optimalizace} \label{subsection:optimization} V této sekci jsou popsány způsoby jakými lze zlepšit výkon seq2seq modelu.
 
