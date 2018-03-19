@@ -541,6 +541,9 @@ Moses \cite{moses} je nástroj na vytváření statistických strojových překl
 
 \todo{líp popsat na čem jsem natrénoval baseline, možná až v experimentech a hodnocení}
 
+\todo{ukládání modelu po každé epoše, jen nejlepší?}
+\todo{early stopping}
+
 \section{Překladový systém}\label{section:nmtSystem}
 Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{python.org}} v jeho verzi 3.6. Na výběr bylo z několika vhodných knihoven/frameworků pro práci se strojovým učením:
 
@@ -556,7 +559,7 @@ Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{p
 Překladový systém je naimplementován formou pythoního balíčku (knihovny), který je zveřejněn na githubu \footnote{https://github.com/jojkos/neural-machine-translation}. Pro jeho implementaci byla zvolena knihovna Keras \cite{keras} pro svůj jednoduchý a více intuitivní přístup a také pro množství návodu, které pro tuto knihovnu vznikají. Jako backend pro Keras je použit framework Tensorflow \cite{tensorflow}.
 \\\\
 Slovníky výchozího a cílového jazyku se omezují na zvolenou maximální velikost a neznámá slova jsou nahrazeny symbolem <unk> (viz sekce \ref{subsection:oov}). Knihovna umožňuje použití před trénovaných word embeddings (\ref{subsection:neuralembeddings}) ve formátu \emph{fastText}.
-\todo{Obsahuje beam search s normalizaci skore podle delky vety..co dal?, bi-directional encoder, multi layering}
+\todo{Obsahuje beam search s normalizaci skore podle delky vety..co dal?, bi-directional encoder, multi layering, nejak zhruba popsat ze je v tom vystavenej celej ten encoder-decoder model}
 \\\\\\
 Hlavní třídou je \emph{Translator}. Tato třída implementuje za pomocí knihovny Keras enkodér-dekodér architekturu (sekce \ref{section:encoderdecoder}). Enkodér i dekodér jsou vytvořeny z jedné vrstvy LSTM. Všechny vrstvy modelu jsou zachyceny na obrázku \ref{img:model}. Sekvence vstupující do enkodéru jsou převráceny podle \ref{desc:revert}. 
 
@@ -669,4 +672,4 @@ Je několik vhodných rozšíření systému, které by mohly pomoci dosáhnout 
 
 \todo{attention}
 \todo{knihovna neni nutne specificka pro nmt, ale zavisla na datech, upravil bych api na vic genericky a zkusil natrenovat chatbota}
-\todo{ze jsem se hodne zameroval na experimenty a data, ale chtel bych vylepsit dekompozici knihovny a jeji api}
+\todo{ze jsem se hodne zameroval na experimenty a data, ale chtel bych vylepsit dekompozici knihovny a jeji api a distribuovat na PyPI}

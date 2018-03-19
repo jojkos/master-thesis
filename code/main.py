@@ -39,6 +39,8 @@ def add_arguments(parser):
     parser.add_argument("--beam_size", type=int, default=1, help="Size of a beam for beam search decoding")
     parser.add_argument("--num_units", type=int, default=256,
                         help="Size of each network layer")
+    parser.add_argument("--early_stopping_patience", type=int, default=-1,
+                        help="How many epochs should model train after loss/val_loss decreases. -1 means that early stopping won't be used.")
     parser.add_argument("--num_threads", type=int, default=1,
                         help="Number of threads for tensorflow configuration")
     parser.add_argument("--optimizer", type=str, default="rmsprop", help="Keras optimizer name")
@@ -61,8 +63,6 @@ def add_arguments(parser):
                         help="how many first lines from embedding file should be loaded, None means all of them")
     parser.add_argument("--max_target_embedding_num", type=int, default=None,
                         help="how many first lines from embedding file should be loaded, None means all of them")
-    parser.add_argument("--validation_split", type=float, default=0.0,
-                        help="How big proportion of a development dataset should be used for validation during fiting")
     parser.add_argument("--bucketing", type=bool_arg, default=False,
                         help="Whether to bucket sequences according their size to optimize padding")
     parser.add_argument("--bucket_range", type=int, default=3,
@@ -155,7 +155,7 @@ def main():
             translator.fit(epochs=args.epochs, initial_epoch=args.initial_epoch,
                            batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
                            bucketing=args.bucketing, bucket_range=args.bucket_range,
-                           validation_split=args.validation_split)
+                           early_stopping_patience=args.early_stopping_patience)
 
         if args.evaluate:
             translator.translate_test_data(args.batch_size, args.beam_size)
