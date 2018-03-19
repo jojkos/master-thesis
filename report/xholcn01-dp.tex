@@ -36,6 +36,8 @@
 % Basic packages are at the bottom of template file fitthesis.cls
 %zde muzeme vlozit vlastni balicky / you can place own packages here
 
+\usepackage{subcaption}
+
 % tmpframe od herouta http://www.herout.net/blog/2017/03/pomalu-uz-pojdme-psat/
 % na konci odkomentovat, slouzi k viditelnemu oramovani obrazku
 \setlength{\fboxsep}{0.005pt}
@@ -95,7 +97,7 @@
 %---------------------------------------------------------------------------
 \projectinfo{
   %Prace / Thesis
-  project=SP,            %typ prace BP/SP/DP/DR  / thesis type (SP = term project)
+  project=DP,            %typ prace BP/SP/DP/DR  / thesis type (SP = term project)
   year=2018,             %rok odevzdání / year of submission
   date=\today,           %datum odevzdani / submission date
   %Nazev prace / thesis title
@@ -141,12 +143,12 @@
 \abstract[en]{The goal of this thesis is to describe and build a system for neural machine translation. System is build using recurrent neural networks -- encoder-decoder architecture in particular. Results are compared with system build with statistical tool Moses.}
 
 %Klicova slova (cesky, slovensky ci anglicky) / Keywords (in czech, slovak or english)
-\keywords[cs]{strojový překlad, neurální strojový překlad, neuronové sítě, rekurentní neuronové sítě, LSTM, enkodér, dekodér, model enkodér-dekodér, sekvence do sekvence, seq2seq, keras, moses, bleu}
-\keywords[en]{machine translation, neural machine translation, neural networks, recurrent neural networks, LSTM, encoder, decoder, encoder-decoder model, sequence to sequence, seq2seq, keras, moses, bleu}
+\keywords[cs]{strojový překlad, neurální strojový překlad, neuronové sítě, rekurentní neuronové sítě, LSTM, enkodér, dekodér, model enkodér-dekodér, sekvence do sekvence, seq2seq, keras, moses, BLEU}
+\keywords[en]{machine translation, neural machine translation, neural networks, recurrent neural networks, LSTM, encoder, decoder, encoder-decoder model, sequence to sequence, seq2seq, keras, moses, BLEU}
 
 %Prohlaseni (u anglicky psane prace anglicky, u slovensky psane prace slovensky)
 %Declaration (for thesis in english should be in english)
-\declaration{Prohlašuji, že jsem tento semestrální vypracoval samostatně pod vedením pana Igora Szökeho.
+\declaration{Prohlašuji, že jsem tuto diplomovou práci vypracoval samostatně pod vedením pana Igora Szökeho.
 Uvedl jsem všechny literární prameny a publikace, ze kterých jsem čerpal.}
 
 % \declaration{Hereby I declare that this bachelor's thesis was prepared as an original author’s work under the supervision of Mr. X
@@ -154,7 +156,7 @@ Uvedl jsem všechny literární prameny a publikace, ze kterých jsem čerpal.}
 % All the relevant information sources, which were used during preparation of this thesis, are properly cited and included in the list of references.}
 
 %Podekovani (nepovinne, nejlepe v jazyce prace) / Acknowledgement (optional, ideally in the language of the thesis)
-%\acknowledgment{V této sekci je možno uvést poděkování vedoucímu práce a těm, kteří poskytli odbornou pomoc
+\acknowledgment{Tímto bych rád poděkoval panu Ing. Szőkemu, PhD. za vedení mé práce.}
 %(externí zadavatel, konzultant, apod.)  napsat neco o metacentru?.}
 %\acknowledgment{Here it is possible to express thanks to the supervisor and to the people which provided professional help
 %(external submitter, consultant, etc.).}

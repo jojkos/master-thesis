@@ -157,11 +157,13 @@ def main():
                            bucketing=args.bucketing, bucket_range=args.bucket_range,
                            validation_split=args.validation_split)
 
-        # remove bpe subwords before evaluation
-        # utils.restore_subwords(args.test_dataset + args.target_lang + ".translated")
-
         if args.evaluate:
-            bleu = translator.evaluate(args.batch_size, args.beam_size)
+            translator.translate_test_data(args.batch_size, args.beam_size)
+
+            # remove bpe subwords before bleu scoring
+            utils.restore_subwords(args.test_dataset + "." + args.target_lang + ".translated")
+
+            bleu = translator.get_bleu_for_test_data_translation()
             print("BLEU: {}".format(bleu))
 
         if args.livetest:

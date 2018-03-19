@@ -100,7 +100,7 @@ As translation is an open-vocabulary problem, the NMT systems have to somehow ha
 
 Current state-of-the-art results are published by Google \cite{googleBridgingGap,googleAttention}, which uses all of the techniques described, showing that they can be successfully applied on large production data sets.
 
-Another thing Google shows, is that with no changes to the model architecture, one model can be used to learn to translate from and to more languages \cite{googleMultiLingual}, even to produce translations between languages, that it was not explicitly trained on (zero-shot translations).
+Another thing Google shows, is that with no changes to the model architecture, one model can be used to learn to translate between many languages \cite{googleMultiLingual}, even to produce translations between languages, that it was not explicitly trained on (zero-shot translations).
 
 \section{Seq2seq translation with encoder-decoder architecture}
 Sequence to sequence (\textbf{seq2seq}) means that the process of translating takes one whole sentence at the input, in a source language, and its meaning translates into sequence in a target language. Its modeling probability of a target sentence based on source sentence as shown in figure \ref{fig:seqProbability}.
@@ -148,7 +148,7 @@ Equations for the encoder-decoder:
 
 \begin{itemize}
     \item $RNN^(f)$ - encoder, $RNN^(e)$ - decoder
-    \item $M^{(f)}_{f_t}$ - embedding for encoder input in time $t$    
+    \item $M^{(f)}_{f_t}$ - embedding for encoder input in time $t$
     \item $M^{(e)}_{e_t}$ - embedding for decoder input in time $t$
     \item $h^{(f)}_t$ - encoder hidden state in time $t$
     \item $h^{(e)}_t$ - encoder hidden state in time $t$

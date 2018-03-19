@@ -3,8 +3,8 @@
 MOSES_PATH="/home/jonas/mosesdecoder"
 LANG_FROM="cs"
 LANG_TO="en"
-CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/AllTogetherPreprocessed"
-CORPUS_NAME="corpus.tc"
+CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/AllTogetherPreprocessed/dev"
+CORPUS_NAME="newstest2016.tc"
 TEST_CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/testSet"  # already tokenized and cleaned..
 TEST_CORPUS_NAME="newstest2017-csen-tokenized.truecased.cleaned"
 TOOLS_PATH="/home/jonas/mosesdecoder/tools"
