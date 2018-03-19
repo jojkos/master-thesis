@@ -77,17 +77,6 @@ then
 fi
 
 
-# # TODO tuning
-
-# printf "filtering phrase table..\n\n"
-# scripts/training/filter-model-given-input.pl \
-#     ${CORPUS_PATH}"/filteredModel" \
-#     ${CORPUS_PATH}"/train/model/moses.ini" \
-#     ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.truecased."${LANG_FROM} \
-#     -MinScore 2:0.0001
-
-
-
 if [ $1 = "--test" ] || [ $1 = "--all" ]
 then
     printf "testing..\n\n"
