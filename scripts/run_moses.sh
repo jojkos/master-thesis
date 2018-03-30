@@ -3,10 +3,10 @@
 MOSES_PATH="/home/jonas/mosesdecoder"
 LANG_FROM="cs"
 LANG_TO="en"
-CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/AllTogetherPreprocessed/dev"
-CORPUS_NAME="newstest2016.tc"
-TEST_CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/testSet"  # already tokenized and cleaned..
-TEST_CORPUS_NAME="newstest2017-csen-tokenized.truecased.cleaned"
+CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/allTogetherPreprocessedMOSES"
+CORPUS_NAME="corpus.tc.1million"
+TEST_CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/allTogetherPreprocessedMOSES"  # already tokenized and cleaned..
+TEST_CORPUS_NAME="corpus.tc.dev2000"
 TOOLS_PATH="/home/jonas/mosesdecoder/tools"
 MAX_LENGTH=15
 FULL_PATH=${CORPUS_PATH}"/"${CORPUS_NAME}
@@ -59,7 +59,7 @@ then
     printf "language model training..\n\n"
     mkdir ${CORPUS_PATH}/languagemodel
     bin/lmplz -o 3 \
-        < ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.truecased.cleaned."${LANG_TO} \
+        < ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.cleaned.truecased."${LANG_TO} \
         > ${CORPUS_PATH}"/languagemodel/"${CORPUS_NAME}".arpa."${LANG_TO}
 
     printf "binarizing for faster loading..\n\n"
@@ -69,7 +69,7 @@ then
     printf "training model..\n\n"
     scripts/training/train-model.perl \
          -root-dir ${CORPUS_PATH}"/"train \
-         -corpus ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.truecased.cleaned" \
+         -corpus ${CORPUS_PATH}"/"${CORPUS_NAME}"-tokenized.cleaned.truecased" \
          -f ${LANG_FROM} -e ${LANG_TO} \
          -alignment grow-diag-final-and -reordering msd-bidirectional-fe \
          -lm 0:3:${CORPUS_PATH}"/languagemodel/"${CORPUS_NAME}".binary."${LANG_TO}:8 \

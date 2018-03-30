@@ -44,7 +44,7 @@ def add_arguments(parser):
     parser.add_argument("--num_threads", type=int, default=1,
                         help="Number of threads for tensorflow configuration")
     parser.add_argument("--optimizer", type=str, default="rmsprop", help="Keras optimizer name")
-    parser.add_argument("--dropout", type=int, default=0.2, help="Dropout size")
+    parser.add_argument("--dropout", type=float, default=0.0, help="Dropout size")
     parser.add_argument("--num_training_samples", type=int, default=-1,
                         help="How many samples to take from the training dataset, -1 for all of them")
     parser.add_argument("--num_test_samples", type=int, default=-1,
@@ -161,7 +161,8 @@ def main():
             translator.translate_test_data(args.batch_size, args.beam_size)
 
             # remove bpe subwords before bleu scoring
-            utils.restore_subwords(args.test_dataset + "." + args.target_lang + ".translated")
+            # TODO rucne to pak az porovnam u sebe pro uplne vysledny skore, protoze potrebuju mit spravnej test BPE data set pro validaci pri fitovani
+            # utils.restore_subwords(args.test_dataset + "." + args.target_lang + ".translated")
 
             bleu = translator.get_bleu_for_test_data_translation()
             print("BLEU: {}".format(bleu))

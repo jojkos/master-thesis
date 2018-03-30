@@ -127,12 +127,12 @@ Dalším uváděním řešením, je místo slov jako nejmenší jednotky se kter
 
 \begin{description}
   \item[Subword units:]\label{subsection:subwords} Kvůli velkému množství slov a jejich tvarů, se obvykle používá velikost slovníků kolem 30 000-50 000 tisíců slov. Kvůli tomu je trénink a překlad náročnější a také to nezaručuje kvalitní překlad pro vzácná slova ani že se nevyskytnou slova neznámá. Značné množství slov je tvořeno několika pod částmi, předložkami a spojeninami (například \uv{kladkostroj}). Ukázalo se, že v případě, že se slova rozdělí na takovéto podčásti tak se:
-      
+
       \begin{enumerate}
         \item Zmenší velikost slovníku - když by se místo slov pro trénování sítě používaly jednotlivá písmena, velikost slovníku by byla jen samozřejmě nejmenší, ale trénink modelu by byl složitý. Při použití částí slov je možné z nich skládat větší celky a nemusí se tak ve slovníku vyskytovat tolik slov. Je to vhodná kombinace mezi velikostí slovníku a množstvím závislostí co model musí natrénovat.
         \item Zredukuje se výskyt neznámých slov - protože se slovník skládá z jednotek menších jak slovo, je možné z nich seskládat všechna slova z trénovacího datasetu a tím v něm zrušit výskyt neznámých slov. V případě výskytu neznámých slov v době překladu je možné z menších jednotek slovo přeložit po částech.
       \end{enumerate}
-      
+
       Pro rozložení na menší jednotky se používá \emph{byte pair encoding} (BPE). BPE je jednoduchá kompresní metoda. V práci \cite{subwords} je použita pro spojování písmen nebo sekvencí ve větší celky. Vybere se počet, kolikrát má proběhnout spojování, v každé iteraci se vyberou nejčastěji se vyskytující znaky nebo sekvence ve slovníku a ty se spojí. Nejčastější slova tak zůstanou zachována a ostatní budou rozdělena na různé množství n-gramů. Díky zachování nejčastějších slov, nevzniká výrazný problém s nárůstem délek sekvencí, která by zapříčinila horší učení modelu, protože delší sekvence znamená větší vzdálenost, přes kterou musí model přenést informace.
 \end{description}
 
@@ -349,7 +349,7 @@ Pro každé slovo v čase $t$ ze vstupní sequence $F$ se vyhledá jeho embeddin
 
 \subsection{Průběh trénování a generování}
 
-Cílem jazykového modelu je předpovídat následující slovo ve větě. Při trénování se nejprve do enkodéru pošle výchozí věta, aby se získal inicializační stav pro dekodér. Do dekodéru, inicializovaného získaným stavem, se po jednotlivých slovech pošle správně přeložená věta, které předchází \textbf{startovací} symbol. Startovací symbol dekodéru říká, že má začít překládat. Při trénování se mu pak následně posílají korektní další slova, aby se zrychlilo učení. Tato metoda se nazývá \uv{teacher forcing} (\cite{teacherForcing}). Po naučení modelu, ve fázi generování, se pak do dekodéru posílají slova, která již sám vygeneroval. Proces je znázorněný na obrázku \ref{img:seq2seq}. Dekodér generuje tak dlouho, dokud nenarazí na \textbf{koncový} symbol, kterým je v době trénování zakončená každá očekávaná věta. Ve skutečnosti však výstupem dekodéru není přímo slovo, ale rozložení pravděpodobnosti přes všechna slova cílového slovníku získaného funkcí \emph{softmax} v rovnici \ref{figure:resultSoftmax}. Je několik možností jak z tohoto rozložení vybrat konkrétní slovo:
+Cílem jazykového modelu je předpovídat následující slovo ve větě. Při trénování se nejprve do enkodéru pošle výchozí věta, aby se získal inicializační stav pro dekodér. Do dekodéru, inicializovaného získaným stavem, se po jednotlivých slovech pošle správně přeložená věta, které předchází \textbf{startovací} symbol. Startovací symbol dekodéru říká, že má začít překládat. Při trénování se mu pak následně posílají korektní další slova, aby se zrychlilo učení. Tato metoda se nazývá \uv{teacher forcing}\label{teacherForcing} (\cite{teacherForcing}). Po naučení modelu, ve fázi generování, se pak do dekodéru posílají slova, která již sám vygeneroval. Proces je znázorněný na obrázku \ref{img:seq2seq}. Dekodér generuje tak dlouho, dokud nenarazí na \textbf{koncový} symbol, kterým je v době trénování zakončená každá očekávaná věta. Ve skutečnosti však výstupem dekodéru není přímo slovo, ale rozložení pravděpodobnosti přes všechna slova cílového slovníku získaného funkcí \emph{softmax} v rovnici \ref{figure:resultSoftmax}. Je několik možností jak z tohoto rozložení vybrat konkrétní slovo:
 
 \begin{description}
   \item[Náhodný výběr:] Z rozložení pravděpodobnosti $P(E|F)$ se slovo vybere náhodně.
@@ -375,7 +375,6 @@ Cílem jazykového modelu je předpovídat následující slovo ve větě. Při 
 \end{figure}
 
 
-\todo{\url{https://arxiv.org/abs/1610.09038} teacher forcing citace}
 \todo{asi bych zkusil udelat primo dva obrazky, jeden na uceni a jeden na inference kde dekoder dostava svuj vlastni output}
 \todo{lip popsat vsechny rovnice! vysvetlit jednotlivy pismenka}
 
@@ -383,9 +382,21 @@ Cílem jazykového modelu je předpovídat následující slovo ve větě. Při 
 
 \begin{description}
   \item[Převrácení vstupu:] \label{desc:revert} Článek \cite{seq2seq} udává, že výrazným způsobem pomůže, když se slova ve vstupní sekvenci převrátí a do enkodéru  se věta předává pozpátku. Pravděpodobně je to díky tomu, že závislosti co by běžně byly vzdálené -- typicky poslední slovo ve vstupní větě a jeho přeložená varianta v přeložené větě -- jsou si takhle blíž. Díky tomu se může model snáz a rychleji učit.
-  \item[Obousměrný enkodér:] Zatímco převrácení vstupu pomůže jen pokud jsou slova ve větách překládaných jazyků na podobných místech (což není pravda napříč všemi jazyky), tato varianta je spolehlivější. Místo jednoho enkodéru se použijí dva a každý z nich projde větu jedním směrem. Jejich výsledky se pak spojí do jednoho skrytého stavu $h$, kterým se již běžně inicializuje dekodér.
+  \item[Obousměrný enkodér:] \label{desc:biriectional} Zatímco převrácení vstupu pomůže jen pokud jsou slova ve větách překládaných jazyků na podobných místech (což není pravda napříč všemi jazyky), tato varianta je spolehlivější. Místo jednoho enkodéru se použijí dva a každý z nich projde větu jedním směrem. Jejich výsledky se pak spojí do jednoho skrytého stavu $h$, kterým se již běžně inicializuje dekodér.
   \item[Hloubka sítí:] Enkodér i dekodér jsou RNN a mohou obsahovat více skrytých vrstev (ať již základní varianty, LSTM nebo GRU). Článek \cite{googleBridgingGap} udává, že více vrstev může do určité hloubky pomoci. V práci jich použili 8 jak pro enkodér tak dekodér. Při použití většího množství již má model problém se úspěšně učit.
+  \item[Dropout:] \label{desc:dropout} Při trénování neuronových sítí může dojít k přetrénování -- síť se naučí podávat správné výsledky pro trénovací data, ale bude mít malou nebo žádnou schopnost generalizce, tedy nebude fungovat nad jinými než trénovacími daty. Dropout (\cite{dropout}), je regulační metoda používaná k předejití přetrénovaní. Metoda spočívá v náhodném zahazování výsledků některých neuronů v době trénovaní, čímž se snaží síť udělat více robustní, protože se síť nemůže spoléhat na výstupy konkrétních neuronů.
+  \item[Reziduální propojení:] V práci \cite{googleBridgingGap} doporučují při použití více vrstev LSTM použít takzvané reziduální propojení nebo zapojení mezi vrstvy. Podle jejich experimentů při použití většího počtu vrstev a běžném zapojení, začne být učení pomalé a složité, pravděpodobně kvůli explodujícímu a mizejícímu gradientu (\ref{subsection:gradient}). Řešením je použití reziduálního propojení vrstev. Běžně by do vrstvy $LSTM_0$ vstupoval vstup $x_0$ a do vrstvy $LSTM_1$ vstup $x_1$, který je výstupem vrstvy $LSTM_0$. Při reziduálním propojení vstupuje da každé následující vrstvy výstup z vrstvy minulé sečtený dohromady se vstupem minulé vrstvy. Tedy do $LSTM_1$ vchází $x_1+x_0$ (obrázek \ref{img:residuals}).
+
 \end{description}
+
+\begin{figure}[H]
+    \begin{center}
+            \tmpframe{\includegraphics[width=0.9\linewidth]{img/graphs/residuals.pdf}}
+    \end{center}
+	\caption{Rozdíl mezi normálním a reziduálním propojení pro zlepšení učení více vrstvých LSTM. Levý obrázek znázorňuje běžné zapojení zatímco na pravém je ukázka reziduálního propojení. Do každé (kromě první) vrstvy $LSTM_i$ vstupuje součet výstupu vrstvy minulé $x_i$ sečtený se vstupem minulé vrstvy $x_{i-1}$.}
+	\label{img:residuals}
+\end{figure}
+
 
 \subsection{Překlad s jedním modelem mezi více jazyky}
 Doposud udávané informace se týkaly překladu z jednoho jazyka do druhého, tedy existují páry vět mezi dvěmi jazyky, enkodér se natrénuje na větách ve zdrojovém jazyce a dekodér se naučí překládat pomocí vět v cílovém jazyce.
@@ -394,7 +405,7 @@ Google ve své práci \cite{googleMultiLingual} ukazuje, že lze se stejným enk
 Jediným rozdílem je přidání speciálního tokenu před zdrojové věty, který udává, do jakého jazyka se má daná věta překládat, znázorněno na obrázku \ref{figure:multiLingDataset}. V práci se používá slovník wordpieces (\ref{subsection:subwords}) natrénovaný a sdílený přes všechny použité jazyky.
 
 
-\begin{figure}[H]        
+\begin{figure}[H]
     \begin{center}
         \begin{tabular}{|c|}
           \hline
@@ -418,7 +429,7 @@ Jediným rozdílem je přidání speciálního tokenu před zdrojové věty, kte
         \centering
         \subcaption{Příklad párů vět mezi dvěmi jazyky.}\label{subcap:singlePair}
     \end{minipage}%
-    
+
     \begin{center}
         \begin{tabular}{|c|}
           \hline
@@ -437,12 +448,12 @@ Jediným rozdílem je přidání speciálního tokenu před zdrojové věty, kte
           Bonjour monde \\
           \hline
         \end{tabular}
-    \end{center}    
+    \end{center}
     \begin{minipage}[t]{1\linewidth}
         \centering
         \subcaption{Příklad párů vět se speciálním tokenem, který odlišuje do jakého jazyka má být věta přeložena. Model může překládat z vícero do vícero jazyků.}\label{subcap:multiLingual}
-    \end{minipage}%    
-   
+    \end{minipage}%
+
 	\caption{Obrázek ukazuje rozdíl mezi páry vět použitými při běžném překladu mezi dvěmi jazyky (\ref{subcap:singlePair}) a při použití stejného modelu pro překlad mezi více jazyky (\ref{subcap:multiLingual}). Je potřeba přidat počáteční token, který pro enkodér označuje jazyk, do kterého se věta má přeložit.}
 	\label{figure:multiLingDataset}
 \end{figure}
@@ -461,7 +472,7 @@ Zajímavým zjištěním je, že model je schopný naučit se generovat překlad
 \todo{\url{https://en.wikipedia.org/wiki/Evaluation_of_machine_translation} vsechny nebo jenom BLEU? muze to byt kdyztak nekde dole, pokud jenom BLEU?}
 
 \subsection{BLEU} \label{subsection:bleu}
-\emph{BLEU} \cite{BLEU} nebo-li bilingual evaluation understudy, je algoritmus pro automatické hodnocení kvality překladu získané strojovým překladem vůči původnímu zdroji. BLEU je jedním z nejpopulárnějších způsobů hodnocení kvality systému mezi výzkumníky. Snaží se hodnotit takovým způsobem, aby čím větší skóre znamenalo, tím blíže se překlad blíží k něčemu co by přeložil profesionální lidský překladatel. 
+\emph{BLEU} \cite{BLEU} nebo-li bilingual evaluation understudy, je algoritmus pro automatické hodnocení kvality překladu získané strojovým překladem vůči původnímu zdroji. BLEU je jedním z nejpopulárnějších způsobů hodnocení kvality systému mezi výzkumníky. Snaží se hodnotit takovým způsobem, aby čím větší skóre znamenalo, tím blíže se překlad blíží k něčemu co by přeložil profesionální lidský překladatel.
 
 BLEU je počítáno pro jednotlivé věty, které porovnává s jedním nebo více referenčními překlady. Skóre se pak zprůměruje přes celý dataset. Algoritmus porovnává shody v n-gramech a výsledkem je skóre 0--1 respektive 0--100\%.
 
@@ -541,9 +552,6 @@ Moses \cite{moses} je nástroj na vytváření statistických strojových překl
 
 \todo{líp popsat na čem jsem natrénoval baseline, možná až v experimentech a hodnocení}
 
-\todo{ukládání modelu po každé epoše, jen nejlepší?}
-\todo{early stopping}
-
 \section{Překladový systém}\label{section:nmtSystem}
 Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{python.org}} v jeho verzi 3.6. Na výběr bylo z několika vhodných knihoven/frameworků pro práci se strojovým učením:
 
@@ -551,40 +559,64 @@ Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{p
   \item Tensorflow -- je open source knihovna, která původně vznikla v rámci výzkumného týmu Google Brain uvnitř společnosti Google. Tensorflow používá pro výpočty graf, kde jednotlivé uzly reprezentují operace a hrany reprezentují datové struktury (tensory). Tensorflow se stala velice populární v oblasti vývoje neuronových sítí.
   \item Theano -- knihovna pro efektivní práci s mnoho rozměrnými poli. Využívá pole z hojně používané pythoní knihovny Numpy. Nedávno se knihovna dostala na verzi 1.0 a naráz s tím se ukončil její vývoj.
   \item CNTK -- Cognitive Toolik je open-source nástroj deep learning od firmy Microsoft. Poskytuje API pro jazyky C\#, C++ i Python. Pro výpočty také používá graf, kde listy reprezentují vstupní hodnoty nebo parametry a ostatní uzly reprezentují maticové operace.
-  \item Keras -- je pythoní knihovna poskytující vysoko úrovňové API pro deep learning. Je vysoce modulární a určená pro snadné prototypování. Knihovna běží nad backendem, který používá pro výpočty. Backend může být jedna z předchozích knihovne -- Tensorflow, Theano nebo CNTK.
+  \item Keras -- je pythoní knihovna poskytující vysoko úrovňové API pro deep learning. Je vysoce modulární a určená pro snadné prototypování. Knihovna běží nad backendem, který používá pro výpočty. Backend může být jedna z předchozích knihoven -- Tensorflow, Theano nebo CNTK.
 \end{itemize}
 
 
 \subsection{Balíček nmt}
-Překladový systém je naimplementován formou pythoního balíčku (knihovny), který je zveřejněn na githubu \footnote{https://github.com/jojkos/neural-machine-translation}. Pro jeho implementaci byla zvolena knihovna Keras \cite{keras} pro svůj jednoduchý a více intuitivní přístup a také pro množství návodu, které pro tuto knihovnu vznikají. Jako backend pro Keras je použit framework Tensorflow \cite{tensorflow}.
+Překladový systém je naimplementován formou pythoního balíčku (knihovny), který je zveřejněn na githubu \footnote{https://github.com/jojkos/neural-machine-translation}. Pro jeho implementaci byla zvolena knihovna Keras \cite{keras} pro svůj jednoduchý a více intuitivní přístup a také pro množství návodů, které pro tuto knihovnu vznikají. Jako backend pro Keras je použit framework Tensorflow \cite{tensorflow}.
 \\\\
-Slovníky výchozího a cílového jazyku se omezují na zvolenou maximální velikost a neznámá slova jsou nahrazeny symbolem <unk> (viz sekce \ref{subsection:oov}). Knihovna umožňuje použití před trénovaných word embeddings (\ref{subsection:neuralembeddings}) ve formátu \emph{fastText}.
-\todo{Obsahuje beam search s normalizaci skore podle delky vety..co dal?, bi-directional encoder, multi layering, nejak zhruba popsat ze je v tom vystavenej celej ten encoder-decoder model}
-\\\\\\
-Hlavní třídou je \emph{Translator}. Tato třída implementuje za pomocí knihovny Keras enkodér-dekodér architekturu (sekce \ref{section:encoderdecoder}). Enkodér i dekodér jsou vytvořeny z jedné vrstvy LSTM. Všechny vrstvy modelu jsou zachyceny na obrázku \ref{img:model}. Sekvence vstupující do enkodéru jsou převráceny podle \ref{desc:revert}. 
+Slovníky výchozího a cílového jazyku se omezují na zvolenou maximální velikost a neznámá slova jsou nahrazeny symbolem <unk> (viz sekce \ref{subsection:oov}). Knihovna umožňuje použití před trénovaných word embeddings (\ref{subsection:neuralembeddings}) ve formátu \emph{fastText}. Jsou implementovány a použity optimalizace popsané v sekci \ref{subsection:optimization} -- používá se obousměrný enkodér, je možné vytvořit model s různou hloubkou sítí a při trénování se používá dropout a teacher forcing (\ref{teacherForcing}). Pro co nejpřesnější generování předpovídaných vět je použito paprskové prohledávání (\ref{decsription:beamsearch}).
 
-Metodou \emph{fit} se spustí trénování modelu \todo{nekde vysvetlit pojmy jako epocha, batch size a vsechny tyhle dalsi veci..kde a jak?}
+Pro potřeby trénování a překladu jsou pomocí knihovny Keras vystavěny tři modely, které spolu sdílejí vrstvy a jejich natrénované váhy -- úplný model enkodér-dekodér použitý při trénovaní (obrázek \ref{img:model}), model enkodéru použitý při překladu pro získání inicializačních hodnot pro dekodér (obrázek \ref{img:encodermodel}) a model dekodéru použitý při překladu pro generování vět (obrázek \ref{img:decodermodel}).
+
+
+\todo{udelat na to i novej model obrazek s residuals..muzu udelat bez vrstev kompletni a s vrsvama zvlast encoder/decoder at to nezabira tak moc mista}
+
+\begin{figure}[H]
+    \begin{center}
+            \tmpframe{\includegraphics[width=0.85\linewidth]{img/model.pdf}}
+    \end{center}
+	\caption{Vrstvy a jejich propojení v enkodér-dekodér modelu použitém při trénovaní při použití 3 vrstev LSTM pro enkodér a 3 vrstev LSTM pro dekodér. Do \emph{encoder\_input} přicházejí sekvence ve výchozím jazyce. V \emph{input\_embeddings} se převedou do podoby embeddings vektoru. Následuje první vrstva enkodéru, která je obousměrná. Další vrstvy enkodéru jsou již jen dopředné. Do \emph{decoder\_input} přichází sekvence začínající startovacím tokenem <s> následované korektním překladem v cílovém jazyce, protože se používá teacher forcing. V \emph{target\_embeddings} se převedou do podoby embeddings vektoru. Následují vrstvy dekodéru, které jsou všechny inicializovány výsledným stavem enkodéru. Poslední vrstva \emph{output\_layer} s aktivační funkcí \emph{softmax} vrací pravděpodobnosti pro všechna slova z cílového slovníku.}
+	\label{img:model}
+\end{figure}
+
+\begin{figure}[H]
+    \begin{center}
+            \tmpframe{\includegraphics[width=0.6\linewidth]{img/encoder_model.pdf}}
+    \end{center}
+	\caption{Vrstvy a jejich propojení v modelu enkodéru použitém při generování překladů při použití 3 vrstev LSTM.}
+	\label{img:encodermodel}
+\end{figure}
 
 
 \begin{figure}[H]
     \begin{center}
-            \tmpframe{\includegraphics[width=0.55\linewidth]{img/model.pdf}}
+            \tmpframe{\includegraphics[width=0.9\linewidth]{img/decoder_model.pdf}}
     \end{center}
-	\caption{Struktura modelu. Enkodér je vrstva \emph{lstm\_1}, dekodér je vrtva \emph{lstm\_2}. Poslední vrstva \emph{dense\_1} s aktivační funkcí \emph{softmax} vyhodnotí pravděpodobnost pro všechny slova z cílového slovníku.}
-	\label{img:model}
+	\caption{Vrstvy a jejich propojení v modelu dekodéru použitém při generování překladů při použití 3 vrstev LSTM.}
+	\label{img:decodermodel}
 \end{figure}
+
+
+Hlavní třídou je \emph{Translator}. Tato třída implementuje za pomocí knihovny Keras enkodér-dekodér architekturu (sekce \ref{section:encoderdecoder}). Enkodér i dekodér jsou vytvořeny z jedné vrstvy LSTM. Všechny vrstvy modelu jsou zachyceny na obrázku \ref{img:model}. Sekvence vstupující do enkodéru jsou převráceny podle \ref{desc:revert}.
+
+Metodou \emph{fit} se spustí trénování modelu \todo{nekde vysvetlit pojmy jako epocha, batch size a vsechny tyhle dalsi veci..kde a jak?}
+
 
 
 \subsubsection{Stručný popis obsahu repozitáře \texttt{nmt}}
 \begin{description}
   \item[třída Translator:] Je hlavní třídou. Přijímá veškerá nastavení týkající se modelu, trénovací a testovací dataset, vytváří model a provádí trénink, překlad a jeho vyhodnocení.
+
+      Přehled hlavních metod:
       \begin{itemize}
                   \item metoda \texttt{fit} zahajuje trénování
                   \item metoda \texttt{translate\_test\_data} přeloží testovací dataset s pomocí natrénovaného modelu
                   \item metoda \texttt{get\_bleu\_for\_test\_data\_translation} vyhodnotí skóre BLEU pro vzniklý překlad
       \end{itemize}
   \item[třída Dataset:] Drží v sobě dataset v jeho tokenizované formě, tedy pole sekvencí jednotlivých vět. Řeší jeho načtení ze souboru a zpracováno do podoby vhodné pro trénování.
-  \item[třída Vocabulary:] Na základě všech sekvencí v datasetu daného jazyka vezme a drží v sobě \emph{x} nejčastějších slov, se kterými pak model pracuje.  
+  \item[třída Vocabulary:] Na základě všech sekvencí v datasetu daného jazyka vezme a drží v sobě \emph{x} nejčastějších slov, se kterými pak model pracuje.
   \item[třída Candidate:] Je pomocná třída použitá při výpočtu paprskového prohledávání \ref{decsription:beamsearch}. Drží v sobě hodnotu jednoho z aktuálně rozgerovaných kandidátních překladů.
   \item[třída SpecialSymbols:] Obsahuje výčet speciálních symbolů použitých při trénování. \begin{itemize}
                   \item \emph{\_PAD} pro zarovnávací nulu
@@ -598,7 +630,7 @@ Metodou \emph{fit} se spustí trénování modelu \todo{nekde vysvetlit pojmy ja
 \end{description}
 
 \subsection{Rozdělení dat podle velikosti}\label{subsection:Bucketing}
-Všechny sekvence při trénování v rámci jedné dávky musí mít stejnou délku. Věty však mají délku různou. To se řeší tak, že se každá věta zarovná pomocí nul na délku nejdelší věty (obrázek \ref{figure:padding}). Na první pohled může být jasné, že pokud se všechny věty v datasetu zarovnají na velikost věty největší, způsobí to zbytečně větší vytížení paměti a delší trénování modelu.
+Všechny sekvence při trénování v rámci jedné dávky musí mít stejnou délku. Věty však mají délku různou. To bývá řešeno tak, že se každá věta zarovná pomocí nul na délku nejdelší věty (obrázek \ref{figure:padding}). Na první pohled může být jasné, že pokud se všechny věty v datasetu zarovnají na velikost nejdelší věty, způsobí to zbytečně větší vytížení paměti a delší trénování modelu.
 
 \begin{figure}[H]
     \begin{center}
@@ -622,8 +654,8 @@ Všechny sekvence při trénování v rámci jedné dávky musí mít stejnou d�
 
 Tento problém je omezen pomocí rozdělení vět v datasetech do skupin podle jejich velikostí. Věty o podobné velikosti jsou shluknuty do jedné skupiny a tím se zamezí zbytečnému nárůstu požadavků na paměť. Dávky se pak při generování (\ref{subsection:generation}) berou vždy z jedné skupiny, tak aby všechny sekevence v jedné dávce byly stejně dlouhé.
 
-\subsection{Generování dávek (batchů)}\label{subsection:generation}
-Protože se data při trénování upravují datasety do podoby velkých matic, není možné, kvůli paměťovým omezením, vyrobit jednu matici pro všechny data zaráz. Proto se dávky v průběhu trénování vytváří postupně, pomocí generátorové funkce. Ta před každou epochou (jedna epocha znamená, že modelem prošly všechny vstupní data), zamíchá vstupní data -- správně míchání vstupních dat je důležité pro dobrou konvergenci modelu -- a postupně generuje matice s jednotlivými dávkami. V případě, že je zapnuté dělení do skupin podle velikosti, probíhá míchání na úrovní skupin a dávek tak, aby se model nepřetrénoval v jednu chvíli na například krátké věty a v jiné části epochy zase na dlouhé. Je použit \texttt{random.seed(0)} pro opakovatelnost experimentů.
+\subsection{Generování dávek}\label{subsection:generation}
+Protože se data při trénování upravují datasety do podoby velkých matic, není možné, kvůli paměťovým omezením, vyrobit jednu matici pro všechny data zaráz. Proto se dávky (batche) v průběhu trénování vytváří postupně, pomocí generátorové funkce. Ta před každou epochou (jedna epocha znamená, že modelem prošly všechny vstupní data), zamíchá vstupní data -- správné míchání vstupních dat je důležité pro dobrou konvergenci modelu -- a postupně generuje matice s jednotlivými dávkami. V případě, že je zapnuté dělení do skupin podle velikosti, probíhá míchání na úrovní skupin a dávek tak, aby se model nepřetrénoval v jednu chvíli na například krátké věty a v jiné části epochy zase na dlouhé. Je použit \texttt{random.seed(0)} pro opakovatelnost experimentů.
 
 \todo{hodnoceni skore v beam search}
 
@@ -638,6 +670,12 @@ Hodnotící metrikou je standardní skore BLEU. Pro jeho výpočet byl použit s
 \todo{BPE x bez BPE}
 \todo{hodnoceni pokud bylo pouzito BPE je udelano po jeho odstraneni - prevedeni na cela slova }
 
+\todo{ukládání modelu po každé epoše, jen nejlepší?}
+\todo{early stopping}
+
+\todo{loss funkce je categorical\_crossentropy, co vyzkouset ruzny? mozna popsat ruzny loss funkce v teorii?}
+\todo{\url{https://stackoverflow.com/questions/34518656/how-to-interpret-loss-and-accuracy-for-a-machine-learning-model} ze sleduju val\_loss ZAJIMA ME LOSS, acc se pocita zahadne a loss ukazuje proste jak moc si dobre zrovna ten model vede}
+
 \begin{figure}[H]
     \begin{center}
         \begin{tabular}{c|c|c}
@@ -651,18 +689,40 @@ Hodnotící metrikou je standardní skore BLEU. Pro jeho výpočet byl použit s
 	\label{table:results}
 \end{figure}
 
+\todo{napsat nejaky ocekavani, jakoze BPE bude lepsi, vetsi hloubka (podle googlu do urcite miry) bude lepsi, vetsi dataset bude lepsi atd (necim to podlozit vzdycky) a pak to podle toho overit.}
+
 \subsection{Použité datasety}
 ocitovat WMT, popsat jak jsem je vytvořil a jakej na co použiju, nad kterým se natrénuje moses
+
+\todo{popsat jaky vsechny pouzivam datasety, kde jsem je ziskal (citace) jak jsem je presne predzpracoval a proc. KOLIK EPOCH TO BEZELO, idealne ze to bezelo tak dlouho, dokud se to nezhorsovalo pro testovaci dataset (dev dataset) a uklada se vzdycky jen nejlepsi model po kazde epose}
 
 \todo{napsat, že jsem je prováděl na školním clusteru s pomocí main.py skriptu, který využívá mojí nmt knihovnu, ideálně někde zmínit, že je možný to pouštět po epochách a rozkládat na víc puštění nebo obnovit po chybě}
 
 \todo{navrhnout testy, rovnou si je sem pokaždé vypsat a pak až je pustit, celý je dát do příloh nějak}
 \todo{vždycky když se změni struktura modelu, přidat obrázek vyprintovanej z kerasu}
+\todo{napsat ze bleu se pocita az po oddelani subwords}
+\todo{moses je testovanej ne dev setem ale test setem}
 \subsection{1. experiment}
 popis datasetů, parametrů
 grafy
 výsledek
 \subsection{2. experiment}
+\todo{zkusit dropout a pak ten rekurentni dropout primo v LSTM}
+
+\textbf{kdyz by se mi chtelo, tak to pro kazdej projet s nekolika ruznyma beam size a pak uz treba pouzivat jen ten nejlepsi}
+\begin{enumerate}
+  \item nejakej zakladni bez BPE (final1)
+  \item stejnej bez BPE, ale s vyrazne vetsim slovnikem
+  \item stejnej, ale s BPE a slovnikem jak ten prvni (oduvodnit pocet bpe operaci, ze 15k je snesitelna velikost slovniku)
+  \item BPE bude nejlepsi? kdyz jo, tak s vic jednotkama
+  \item s tim poslednim (protoze je nejlepsi) vyzkouset dropout 0.1, 0.2, 0.3
+  \item 2 vrstvy pro encoder (s nejlepsim dropautem, takze 0.1)
+  \item 2 vrstvy pro decoder
+  \item 2 vrstvy pro oboje
+  \item 4 vrstvy pro oboje (finalni model?)
+\end{enumerate}
+
+\todo{google rika ze to dobre funguje bez residual connections do 4 layeru}
 
 \chapter{Závěr}
 Práce popisuje komponenty potřebné pro vytvoření překladového systému s pomocí neuronových sítí. Za pomocí těchto komponent byl vytvořen systém realizovaný pythoním balíčkem \emph{nmt}. Byly zvoleny trénovací a testovací data s kterými byl tento systém otestován. Hodnotícím kritériem je skore BLEU, které pro testovací dataset newtest2017 vyšlo 2.03. V porovnání se skóre 14.0, které vyšlo pro systém natrénovaný nástrojem Moses to není velmi úspěšný výsledek. Systém bude potřeba rozšířit a vylepšit, tak aby fungoval výrazně lépe.
