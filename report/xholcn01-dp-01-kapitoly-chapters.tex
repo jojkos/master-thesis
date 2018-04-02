@@ -349,7 +349,7 @@ Pro každé slovo v čase $t$ ze vstupní sequence $F$ se vyhledá jeho embeddin
 
 \subsection{Průběh trénování a generování}
 
-Cílem jazykového modelu je předpovídat následující slovo ve větě. Při trénování se nejprve do enkodéru pošle výchozí věta, aby se získal inicializační stav pro dekodér. Do dekodéru, inicializovaného získaným stavem, se po jednotlivých slovech pošle správně přeložená věta, které předchází \textbf{startovací} symbol. Startovací symbol dekodéru říká, že má začít překládat. Při trénování se mu pak následně posílají korektní další slova, aby se zrychlilo učení. Tato metoda se nazývá \uv{teacher forcing}\label{teacherForcing} (\cite{teacherForcing}). Po naučení modelu, ve fázi generování, se pak do dekodéru posílají slova, která již sám vygeneroval. Proces je znázorněný na obrázku \ref{img:seq2seq}. Dekodér generuje tak dlouho, dokud nenarazí na \textbf{koncový} symbol, kterým je v době trénování zakončená každá očekávaná věta. Ve skutečnosti však výstupem dekodéru není přímo slovo, ale rozložení pravděpodobnosti přes všechna slova cílového slovníku získaného funkcí \emph{softmax} v rovnici \ref{figure:resultSoftmax}. Je několik možností jak z tohoto rozložení vybrat konkrétní slovo:
+Cílem jazykového modelu je předpovídat následující slovo ve větě. Při trénování se nejprve do enkodéru pošle výchozí věta, aby se získal inicializační stav pro dekodér. Do dekodéru, inicializovaného získaným stavem, se po jednotlivých slovech pošle správně přeložená věta, které předchází \textbf{startovací} symbol. Startovací symbol dekodéru říká, že má začít překládat. Při trénování se mu pak následně posílají korektní další slova, aby se zrychlilo učení. Tato metoda se nazývá \uv{teacher forcing}\label{teacherForcing} (\cite{teacherForcing}). Proces je znázorněný na obrázku \ref{img:seq2seq}. Po naučení modelu, ve fázi generování, se pak do dekodéru posílají slova, která již sám vygeneroval (obrázek \ref{img:inference}). Dekodér generuje tak dlouho, dokud nenarazí na \textbf{koncový} symbol, kterým je v době trénování zakončená každá očekávaná věta. Ve skutečnosti však výstupem dekodéru není přímo slovo, ale rozložení pravděpodobnosti přes všechna slova cílového slovníku získaného funkcí \emph{softmax} v rovnici \ref{figure:resultSoftmax}. Je několik možností jak z tohoto rozložení vybrat konkrétní slovo:
 
 \begin{description}
   \item[Náhodný výběr:] Z rozložení pravděpodobnosti $P(E|F)$ se slovo vybere náhodně.
@@ -362,7 +362,7 @@ Cílem jazykového modelu je předpovídat následující slovo ve větě. Při 
     \begin{center}
             \tmpframe{\includegraphics[width=1\linewidth]{img/graphs/seq2seq.pdf}}
     \end{center}
-	\caption{Enkodér-dekodér architektura. Enkodér obdrží větu na vstupu a vytvoří inicializační stav pro dekodér. Ten v době trénování dostává na vstupu správně přeloženou větu. V době generování na vstup dostává po jednom slova co sám vygeneroval a tím tak získává výslednou větu, dokud nenarazí na koncový symbol </s>. \todo{líp popsat rozdíl inference a trénování. udělat tenhle odstavec obsáhlej a smysluplnej, kdyžtak doladit obrázek}}
+	\caption{Enkodér-dekodér architektura. Enkodér obdrží větu na vstupu a vytvoří inicializační stav pro dekodér (\uv{myšlenkový vektor}). Tímto vektorem je inicializován počáteční stav dekodéru. Ten v době trénování dostává na vstupu správně přeloženou větu (teacher forcing) a době generování na vstup slova co sám vygeneroval. Konečný výstup se získá pomocí vrstvy softmax.}
 	\label{img:seq2seq}
 \end{figure}
 
@@ -370,13 +370,9 @@ Cílem jazykového modelu je předpovídat následující slovo ve větě. Při 
     \begin{center}
             \tmpframe{\includegraphics[width=0.8\linewidth]{img/graphs/inference.pdf}}
     \end{center}
-	\caption{Inference}
+	\caption{Ukázka práce dekodéru v době predikce překladu (inference). Na vstup jako první příchází startovací symbol <s>. Následně v každém dalším kroku na vstup dekodéru dostane svůj vlastní výstup z kroku minulého. Takto generuje tak dlouho, dokud nenarazí na koncový symbol </s>.}
 	\label{img:inference}
 \end{figure}
-
-
-\todo{asi bych zkusil udelat primo dva obrazky, jeden na uceni a jeden na inference kde dekoder dostava svuj vlastni output}
-\todo{lip popsat vsechny rovnice! vysvetlit jednotlivy pismenka}
 
 \subsection{Metody optimalizace} \label{subsection:optimization} V této sekci jsou popsány způsoby jakými lze zlepšit výkon seq2seq modelu.
 
@@ -385,7 +381,7 @@ Cílem jazykového modelu je předpovídat následující slovo ve větě. Při 
   \item[Obousměrný enkodér:] \label{desc:biriectional} Zatímco převrácení vstupu pomůže jen pokud jsou slova ve větách překládaných jazyků na podobných místech (což není pravda napříč všemi jazyky), tato varianta je spolehlivější. Místo jednoho enkodéru se použijí dva a každý z nich projde větu jedním směrem. Jejich výsledky se pak spojí do jednoho skrytého stavu $h$, kterým se již běžně inicializuje dekodér.
   \item[Hloubka sítí:] Enkodér i dekodér jsou RNN a mohou obsahovat více skrytých vrstev (ať již základní varianty, LSTM nebo GRU). Článek \cite{googleBridgingGap} udává, že více vrstev může do určité hloubky pomoci. V práci jich použili 8 jak pro enkodér tak dekodér. Při použití většího množství již má model problém se úspěšně učit.
   \item[Dropout:] \label{desc:dropout} Při trénování neuronových sítí může dojít k přetrénování -- síť se naučí podávat správné výsledky pro trénovací data, ale bude mít malou nebo žádnou schopnost generalizce, tedy nebude fungovat nad jinými než trénovacími daty. Dropout (\cite{dropout}), je regulační metoda používaná k předejití přetrénovaní. Metoda spočívá v náhodném zahazování výsledků některých neuronů v době trénovaní, čímž se snaží síť udělat více robustní, protože se síť nemůže spoléhat na výstupy konkrétních neuronů.
-  \item[Reziduální propojení:] V práci \cite{googleBridgingGap} doporučují při použití více vrstev LSTM použít takzvané reziduální propojení nebo zapojení mezi vrstvy. Podle jejich experimentů při použití většího počtu vrstev a běžném zapojení, začne být učení pomalé a složité, pravděpodobně kvůli explodujícímu a mizejícímu gradientu (\ref{subsection:gradient}). Řešením je použití reziduálního propojení vrstev. Běžně by do vrstvy $LSTM_0$ vstupoval vstup $x_0$ a do vrstvy $LSTM_1$ vstup $x_1$, který je výstupem vrstvy $LSTM_0$. Při reziduálním propojení vstupuje da každé následující vrstvy výstup z vrstvy minulé sečtený dohromady se vstupem minulé vrstvy. Tedy do $LSTM_1$ vchází $x_1+x_0$ (obrázek \ref{img:residuals}).
+  \item[Reziduální propojení:] \label{residuals} V práci \cite{googleBridgingGap} doporučují při použití více vrstev LSTM použít takzvané reziduální propojení nebo zapojení mezi vrstvy. Podle jejich experimentů při použití většího počtu vrstev a běžném zapojení, začne být učení pomalé a složité, pravděpodobně kvůli explodujícímu a mizejícímu gradientu (\ref{subsection:gradient}). Řešením je použití reziduálního propojení vrstev. Běžně by do vrstvy $LSTM_0$ vstupoval vstup $x_0$ a do vrstvy $LSTM_1$ vstup $x_1$, který je výstupem vrstvy $LSTM_0$. Při reziduálním propojení vstupuje da každé následující vrstvy výstup z vrstvy minulé sečtený dohromady se vstupem minulé vrstvy. Tedy do $LSTM_1$ vchází $x_1+x_0$ (obrázek \ref{img:residuals}).
 
 \end{description}
 
@@ -515,7 +511,7 @@ Jako dataset (nebo korpus) se v této práci považují dva soubory. Každý ze 
 \end{figure}
 
 \subsection{Předzpracování} \label{subsection:preparing}
-Datasety obsahující zarovnané řádky vět v různých jazycích lze pořídit online\footnote{například na \url{statmt.org/wmt17/translation-task.html} a \url{opus.lingfil.uu.se}}. Před použitím na trénování a vyhodnocování překládacího systému je však potřeba je ještě vhodným způsobem předpřipravit. Všechny použíte skripty jsou dostupné na githubu programu Moses \footnote{\url{https://github.com/moses-smt/mosesdecoder}}. Cílem je snížit velikost výsledných slovníků a zbavit se nevhodných vět.
+Před použitím na trénování a vyhodnocování překládacího systému je potřeba datasety vhodným způsobem předpřipravit. Tato sekce popisuje aplikované metody. Všechny použité skripty jsou dostupné na githubu programu Moses \footnote{\url{https://github.com/moses-smt/mosesdecoder}}. Cílem je snížit velikost výsledných slovníků a zbavit se nevhodných vět.
 
 \begin{description}
   \item[Tokenizace:] Věty se rozdělí na jednotlivé tokeny oddělené mezerou. V případě běžných slov to znamená, že se nic nezmění. Oddělí se však například interpunkce. K tokenizaci se používá skript z nástroje Moses \emph{tokenizer.perl}. Každý jeden token je ve výsledku jedno slovo ze slovníku a musí tak pro něj existovat jeho embedding nebo se převede na <unk> symbol.
@@ -543,14 +539,12 @@ Datasety obsahující zarovnané řádky vět v různých jazycích lze pořídi
 \end{description}
 
 \begin{description}
-  \item[Rozdělení slov na menší jednotky:]\label{description:bpeApplication} Jak je popsáno v sekci \ref{subsection:subwords}, může být pro trénování výhodné nepoužívat jako nejmenší jednotku slova, ale jejich části. Pro aplikování BPE je použita knihovna \emph{subword-nmt}\footnote{\url{https://github.com/rsennrich/subword-nmt}}. Podle doporučení se BPE vytváří za dohromady nad datasety zdrojového i cílového jazyka. Zvolený počet \emph{merge} operací je 15000. V sekci \ref{chapter:results} je blíže popsáno na které datasety toto bylo aplikováno a jak se podle toho liší výsledky.
+  \item[Rozdělení slov na menší jednotky:]\label{description:bpeApplication} Jak je popsáno v sekci \ref{subsection:subwords}, může být pro trénování výhodné nepoužívat jako nejmenší jednotku slova, ale jejich části. Pro aplikování BPE je použita knihovna \emph{subword-nmt}\footnote{\url{https://github.com/rsennrich/subword-nmt}}. Podle doporučení se BPE vytváří dohromady nad datasety zdrojového i cílového jazyka. Zvolený počet \emph{merge} operací je 15000.
 \end{description}
 
 
 \section{Baseline systém v Moses}\label{section:baseline}
 Moses \cite{moses} je nástroj na vytváření statistických strojových překladových systémů. Vzniklý model bude sloužit jako baseline vůči kterému se porovnají výsledky implementovaného překladového systému (sekce \ref{section:nmtSystem}). Kromě toho se také používají některé skripty z tohoto nástroje pro přípravu datasetů (sekce \ref{subsection:preparing}) a získání skóre BLEU. Konkrétní postup jeho přípravy je dostupný na stránkách Moses \footnote{\url{statmt.org/moses/?n=Moses.Baseline}}, byly použity výchozí nastavení (viz soubor \emph{run\_moses.sh}). \todo{muzu odkazovat na prilozene soubory?}
-
-\todo{líp popsat na čem jsem natrénoval baseline, možná až v experimentech a hodnocení}
 
 \section{Překladový systém}\label{section:nmtSystem}
 Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{python.org}} v jeho verzi 3.6. Na výběr bylo z několika vhodných knihoven/frameworků pro práci se strojovým učením:
@@ -566,18 +560,16 @@ Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{p
 \subsection{Balíček nmt}
 Překladový systém je naimplementován formou pythoního balíčku (knihovny), který je zveřejněn na githubu \footnote{https://github.com/jojkos/neural-machine-translation}. Pro jeho implementaci byla zvolena knihovna Keras \cite{keras} pro svůj jednoduchý a více intuitivní přístup a také pro množství návodů, které pro tuto knihovnu vznikají. Jako backend pro Keras je použit framework Tensorflow \cite{tensorflow}.
 \\\\
-Slovníky výchozího a cílového jazyku se omezují na zvolenou maximální velikost a neznámá slova jsou nahrazeny symbolem <unk> (viz sekce \ref{subsection:oov}). Knihovna umožňuje použití před trénovaných word embeddings (\ref{subsection:neuralembeddings}) ve formátu \emph{fastText}. Jsou implementovány a použity optimalizace popsané v sekci \ref{subsection:optimization} -- používá se obousměrný enkodér, je možné vytvořit model s různou hloubkou sítí a při trénování se používá dropout a teacher forcing (\ref{teacherForcing}). Pro co nejpřesnější generování předpovídaných vět je použito paprskové prohledávání (\ref{decsription:beamsearch}).
+Slovníky výchozího a cílového jazyku se omezují na zvolenou maximální velikost a neznámá slova jsou nahrazeny symbolem <unk> (viz sekce \ref{subsection:oov}). Knihovna umožňuje použití před trénovaných word embeddings (\ref{subsection:neuralembeddings}) ve formátu \emph{fastText}. Jsou implementovány a použity optimalizace popsané v sekci \ref{subsection:optimization} -- používá se obousměrný enkodér, je možné vytvořit model s různou hloubkou sítí a při trénování se používá dropout a teacher forcing (\ref{teacherForcing}). Vrstvy enkodéru a dekodéru jsou tvořeny jednotkami LSTM (\ref{section:LSTM}) s použitím reziduálních propojení. Pro co nejpřesnější generování předpovídaných vět je použito paprskové prohledávání (\ref{decsription:beamsearch}).
 
-Pro potřeby trénování a překladu jsou pomocí knihovny Keras vystavěny tři modely, které spolu sdílejí vrstvy a jejich natrénované váhy -- úplný model enkodér-dekodér použitý při trénovaní (obrázek \ref{img:model}), model enkodéru použitý při překladu pro získání inicializačních hodnot pro dekodér (obrázek \ref{img:encodermodel}) a model dekodéru použitý při překladu pro generování vět (obrázek \ref{img:decodermodel}).
+Pro potřeby trénování a překladu jsou pomocí knihovny Keras vystavěny tři modely, které spolu sdílejí vrstvy a jejich natrénované váhy -- úplný model enkodér-dekodér použitý při trénovaní (obrázek \ref{img:model}) (do modelu vstupují věty ve výchozím jazyce, věty v cílovém jazyce pro použití teacher forcing), model enkodéru použitý při překladu pro získání inicializačních hodnot pro dekodér (obrázek \ref{img:encodermodel}) a model dekodéru použitý při překladu pro generování vět (obrázek \ref{img:decodermodel}).
 
-
-\todo{udelat na to i novej model obrazek s residuals..muzu udelat bez vrstev kompletni a s vrsvama zvlast encoder/decoder at to nezabira tak moc mista}
 
 \begin{figure}[H]
     \begin{center}
-            \tmpframe{\includegraphics[width=0.85\linewidth]{img/model.pdf}}
+            \tmpframe{\includegraphics[width=0.95\linewidth]{img/model.pdf}}
     \end{center}
-	\caption{Vrstvy a jejich propojení v enkodér-dekodér modelu použitém při trénovaní při použití 3 vrstev LSTM pro enkodér a 3 vrstev LSTM pro dekodér. Do \emph{encoder\_input} přicházejí sekvence ve výchozím jazyce. V \emph{input\_embeddings} se převedou do podoby embeddings vektoru. Následuje první vrstva enkodéru, která je obousměrná. Další vrstvy enkodéru jsou již jen dopředné. Do \emph{decoder\_input} přichází sekvence začínající startovacím tokenem <s> následované korektním překladem v cílovém jazyce, protože se používá teacher forcing. V \emph{target\_embeddings} se převedou do podoby embeddings vektoru. Následují vrstvy dekodéru, které jsou všechny inicializovány výsledným stavem enkodéru. Poslední vrstva \emph{output\_layer} s aktivační funkcí \emph{softmax} vrací pravděpodobnosti pro všechna slova z cílového slovníku.}
+	\caption{Vrstvy a jejich propojení v enkodér-dekodér modelu použitém při trénovaní za použití 1 vrstvy LSTM pro enkodér a 1 vrstvy LSTM pro dekodér. Do \emph{encoder\_input} přicházejí sekvence ve výchozím jazyce. V \emph{input\_embeddings} se převedou do podoby embeddings vektoru. Následuje obousměrná vrstva enkodéru. Do \emph{decoder\_input} přichází sekvence začínající startovacím tokenem <s> následované korektním překladem v cílovém jazyce, protože se používá teacher forcing. V \emph{target\_embeddings} se převedou do podoby embeddings vektoru. Následuje vrstva dekodéru, který výsledným stavem enkodéru -- zprůměrovaným, protože enkodér je obousměrným, takže má dvojnásobně veliký vnitřní stav. Poslední vrstva \emph{output\_layer} s aktivační funkcí \emph{softmax} vrací pravděpodobnosti pro všechna slova z cílového slovníku.}
 	\label{img:model}
 \end{figure}
 
@@ -585,24 +577,20 @@ Pro potřeby trénování a překladu jsou pomocí knihovny Keras vystavěny tř
     \begin{center}
             \tmpframe{\includegraphics[width=0.6\linewidth]{img/encoder_model.pdf}}
     \end{center}
-	\caption{Vrstvy a jejich propojení v modelu enkodéru použitém při generování překladů při použití 3 vrstev LSTM.}
+	\caption{Vrstvy a jejich propojení v modelu enkodéru použitém při generování překladů při použití 3 vrstev LSTM. 1. vrstva je obousměrná, další vrstvy jsou již jen dopředné. Protože velikost embeddings se nemusí shodovat s počtem použitých jednotek v LSTM a první vrstva je obousměrná, reziduální propojení se používá až od třetí vrstvy a dál.}
 	\label{img:encodermodel}
 \end{figure}
 
-
 \begin{figure}[H]
     \begin{center}
-            \tmpframe{\includegraphics[width=0.9\linewidth]{img/decoder_model.pdf}}
+            \tmpframe{\includegraphics[width=1.0\linewidth]{img/decoder_model.pdf}}
     \end{center}
-	\caption{Vrstvy a jejich propojení v modelu dekodéru použitém při generování překladů při použití 3 vrstev LSTM.}
+	\caption{Vrstvy a jejich propojení v modelu dekodéru použitém při generování překladů při použití 3 vrstev LSTM. Každá vrstva dekodéru je inicializována koncovým stavem enkodéru. Protože velikost embeddings se nemusí shodovat s počtem použitých jednotek v LSTM, reziduální propojení se používá až od druhé vrstvy a dál.}
 	\label{img:decodermodel}
 \end{figure}
 
 
-Hlavní třídou je \emph{Translator}. Tato třída implementuje za pomocí knihovny Keras enkodér-dekodér architekturu (sekce \ref{section:encoderdecoder}). Enkodér i dekodér jsou vytvořeny z jedné vrstvy LSTM. Všechny vrstvy modelu jsou zachyceny na obrázku \ref{img:model}. Sekvence vstupující do enkodéru jsou převráceny podle \ref{desc:revert}.
-
 Metodou \emph{fit} se spustí trénování modelu \todo{nekde vysvetlit pojmy jako epocha, batch size a vsechny tyhle dalsi veci..kde a jak?}
-
 
 
 \subsubsection{Stručný popis obsahu repozitáře \texttt{nmt}}
@@ -657,24 +645,111 @@ Tento problém je omezen pomocí rozdělení vět v datasetech do skupin podle j
 \subsection{Generování dávek}\label{subsection:generation}
 Protože se data při trénování upravují datasety do podoby velkých matic, není možné, kvůli paměťovým omezením, vyrobit jednu matici pro všechny data zaráz. Proto se dávky (batche) v průběhu trénování vytváří postupně, pomocí generátorové funkce. Ta před každou epochou (jedna epocha znamená, že modelem prošly všechny vstupní data), zamíchá vstupní data -- správné míchání vstupních dat je důležité pro dobrou konvergenci modelu -- a postupně generuje matice s jednotlivými dávkami. V případě, že je zapnuté dělení do skupin podle velikosti, probíhá míchání na úrovní skupin a dávek tak, aby se model nepřetrénoval v jednu chvíli na například krátké věty a v jiné části epochy zase na dlouhé. Je použit \texttt{random.seed(0)} pro opakovatelnost experimentů.
 
-\todo{hodnoceni skore v beam search}
+\chapter{Experimenty a výsledky} \label{chapter:results}
+V této sekci jsou prezentovány datasety které byly použity pro experimenty provedené s vytvořeným překladovým systémem a nástrojem Moses.
 
-\chapter{Experimenty a vyhodnocení} \label{chapter:results}
-V této sekci jsou prezentovány experimenty provedené s překladovým systémem. Systém byl natrénován pro překlad z češtiny (cs) do angličtiny (en). Jako trénovací dataset byl použit \uv{news-commentary-v12.cs-en}\footnote{http://data.statmt.org/wmt17/translation-task/training-parallel-nc-v12.tgz}. Po vyčištění provedeném podle \ref{subsection:preparing} obsahuje 132114 párů vět. Jako testovací dataset byl použit \uv{newstest2017-csen}\footnote{http://data.statmt.org/wmt17/translation-task/test.tgz}, který po vyčištění obsahuje 2841 párů vět. Oba tyto sety pochází z každoročně publikovaného překládacího úkolu konference WMT. Jak baseline systém vytvořený v nástroji Moses (sekce \ref{section:baseline}), tak systém prezentovaný v této práci (sekce \ref{section:nmtSystem}) byly natrénovány a otestovány na těchto dvou datasetech.
+V experimentech \ref{subsection:experimentsOptimal} byl systém natrénován pro překlad z češtiny (cs) do angličtiny (en). Tyto experimenty byly provedeny za účelem najití nejlepších hyperparametrů pro model a pro jeho otestování.
 
-Trénink probíhal 23 epoch. Jak enkodér, tak dekodér je jednovrsté LSTM s 256 jednotkami. Zvolený optimalizátor je RMSprop. Maximální počet různých tokenů ve výstupním jazyce je 30000 a ve výstupním 15000. Byly použity předučené word embeddings (varianta fastText), jak pro vstupní, tak výstupní jazyk, poskytnuté firmou Facebook \footnote{\url{https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md}}.
+V experimentech \todo{xx---yy} byl systém natrénován pro překlad mezi s parametry, které se určili podle předchozích experimentů.
 
-Hodnotící metrikou je standardní skore BLEU. Pro jeho výpočet byl použit skript \emph{multi-blue.pl} dodávaný s nástrojem Moses. Výsledky jsou zaznamenány v tabulce \ref{table:results}.
+Pro všechny experimenty byly použity předučené word embeddings, jak pro vstupní tak výstupní jazyk, poskytnuté firmou Facebook\footnote{\url{https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md}}.
 
-\todo{popis BLEU}
-\todo{BPE x bez BPE}
-\todo{hodnoceni pokud bylo pouzito BPE je udelano po jeho odstraneni - prevedeni na cela slova }
+Každý experiment běžel tak dlouho, dokud se 5 epoch nezlepšil výsledek loss funkce (\ref{subsection:training}, křížová entropie) počítané pro validační dataset. Z experimentu se ukládají váhy modelu s nejlepším výsledkem loss funkce, jinak se zahazuje.
 
-\todo{ukládání modelu po každé epoše, jen nejlepší?}
-\todo{early stopping}
+Velikost jedné trénovací dávky je 128. Je použito generování dávek (\ref{subsection:generation}) a rozdělení dat podle velikosti (\ref{subsection:Bucketing}).
 
-\todo{loss funkce je categorical\_crossentropy, co vyzkouset ruzny? mozna popsat ruzny loss funkce v teorii?}
-\todo{\url{https://stackoverflow.com/questions/34518656/how-to-interpret-loss-and-accuracy-for-a-machine-learning-model} ze sleduju val\_loss ZAJIMA ME LOSS, acc se pocita zahadne a loss ukazuje proste jak moc si dobre zrovna ten model vede}
+Hodnotící metrikou je standardní skore BLEU (\ref{subsection:bleu}). Pro jeho výpočet byl použit skript \emph{multi-blue.pl} dodávaný s nástrojem Moses.
+
+
+\section{Použité datasety}
+Všechny použité datasety pochází z každoročně publikovaného překládacího úkolu konference WMT. Konkrétně jsou použity datasety z WMT17\footnote{\url{http://data.statmt.org/wmt17/translation-task/preprocessed/}} obsahující textová data z různých domén, jako jsou titulky, knihy, noviny a internet. Jsou dostupné různé jazykové kombinace, zvolený použitý překlad je z češtiny do angličtiny.
+
+Stažený dataset byl rozdělený na několik menších datasetů, které spolu nesdílí páry vět:
+\begin{description}
+  \item[Trénovací malý:] Obsahuje 1000000 párů vět náhodně vybraných ze staženého datasetu. Je určený pro trénování v experimentech, pomocí kterých se hledají optimální hyperparametry modelu a pro trénování baseline systému.
+  \item[Trénovací velký:] Obsahuje 33962614 párů vět náhodně vybraných ze staženého datasetu. Je určený pro finální otestování modelu s nejlepšími výsledky nad malým trénovacím datasetem.
+  \item[Validační:] Obsahuje 2000 párů vět náhodně vybraných ze staženého datasetu. Je určený pro testování modelu trénovaném s malým trenovacím datasetem, za účelem hledání optimalních hyperparametrů modelu.
+  \item[Testovací:] Obsahuje 2000 párů vět náhodně vybraných ze staženého datasetu. Je určený pro finální otestování modelu natrénovaného s velkým trenovacím datasetem. Používá se místo validačního modelu aby se vyzkoušelo, že výsledný model je skutečně schopný generalizace a nebyl jen úzce přizpůsoben pro dobré výsledky s validačním datasetem.
+\end{description}
+
+V případě, že byl dataset v experimentu předzpracován pomocí subword-nmt pro rozdělení slov na menší jednotky, byl vždy přeložený text před vyhodnocením BLEU skóre převeden zpátky na celá slova.
+
+\section{Baseline systém v Moses}
+Systém (popsaný v \ref{section:baseline}) byl natrénován za účelem porovnání jeho výsledku s výsledky prezentovaného systému. Pro trénování byl použit \textbf{trénovací malý dataset} a pro vyhodnocení \textbf{testovací dataset}. Výsledek je v tabulce \ref{table:baseline}.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{c|c}
+          & baseline systém v Moses  \\
+          \hline
+          BLEU skóre & 23.08\\
+          \hline
+        \end{tabular}
+    \end{center}
+	\caption{Výsledky modelu natrénovaného pomocí statistického nástroje Moses.}
+	\label{table:baseline}
+\end{figure}
+
+\section{Experimenty}
+
+\subsection{Hledání optimálních hyperparametrů}\label{subsection:experimentsOptimal}
+V této sekci je popsán průběh a výsledky experimentů prováděných za účelem nalezení co nejlepších hyperparametrů modelu. Všechny experimenty jsou provedeny za pomocí malého trénovacího datasetu a překlad je testován pomocí validačního datasetu.
+
+\subsubsection{1. experiment}
+Parametry:
+\begin{itemize}
+  \item Používají se celá slova
+  \item 1 vrstva LSTM v enkodéru o velikosti 512
+  \item 1 vrstva LSTM v dekodéru o velikosti 512
+  \item velikost slovníku je omezena na 15000
+  \item paprskové prohledávání o velikosti 1
+\end{itemize}
+
+Trénování bylo ukončeno po 9. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.8550}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{7.26}.
+
+
+
+
+\begin{figure}[H]
+    \begin{center}
+            \begin{tikzpicture}
+            \begin{axis}[grid=both,
+                         width=0.5\linewidth,
+                         xlabel=epocha,
+                         ylabel=loss,
+                         xtick=data]
+                \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final1_logs-tag-loss.csv};
+            \end{axis}
+            \end{tikzpicture}   
+            \begin{tikzpicture}
+            \begin{axis}[grid=both,
+                         width=0.5\linewidth,
+                         xlabel=epocha,
+                         ylabel=loss,
+                         xtick=data]
+                \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final1_logs-tag-val_loss.csv};
+            \end{axis}
+            \end{tikzpicture}
+    \end{center}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+\end{figure}
+
+
+
+\subsubsection{2. experiment}
+
+\begin{enumerate}
+  \item nejakej zakladni bez BPE (final1)
+  \item stejnej bez BPE, ale s vyrazne vetsim slovnikem
+  \item stejnej, ale s BPE a slovnikem jak ten prvni (oduvodnit pocet bpe operaci, ze 15k je snesitelna velikost slovniku)
+  \item BPE bude nejlepsi? kdyz jo, tak s vic jednotkama
+  \item s tim poslednim (protoze je nejlepsi) vyzkouset dropout 0.1, 0.2, 0.3
+  \item 2 vrstvy pro encoder (s nejlepsim dropautem, takze 0.1)
+  \item 2 vrstvy pro decoder
+  \item 2 vrstvy pro oboje
+  \item 4 vrstvy pro oboje (finalni model?)
+\end{enumerate}
+
 
 \begin{figure}[H]
     \begin{center}
@@ -689,40 +764,57 @@ Hodnotící metrikou je standardní skore BLEU. Pro jeho výpočet byl použit s
 	\label{table:results}
 \end{figure}
 
-\todo{napsat nejaky ocekavani, jakoze BPE bude lepsi, vetsi hloubka (podle googlu do urcite miry) bude lepsi, vetsi dataset bude lepsi atd (necim to podlozit vzdycky) a pak to podle toho overit.}
+\subsubsection{3. experiment}
 
-\subsection{Použité datasety}
-ocitovat WMT, popsat jak jsem je vytvořil a jakej na co použiju, nad kterým se natrénuje moses
+\subsubsection{4. experiment}
 
-\todo{popsat jaky vsechny pouzivam datasety, kde jsem je ziskal (citace) jak jsem je presne predzpracoval a proc. KOLIK EPOCH TO BEZELO, idealne ze to bezelo tak dlouho, dokud se to nezhorsovalo pro testovaci dataset (dev dataset) a uklada se vzdycky jen nejlepsi model po kazde epose}
+\subsubsection{5. experiment}
 
-\todo{napsat, že jsem je prováděl na školním clusteru s pomocí main.py skriptu, který využívá mojí nmt knihovnu, ideálně někde zmínit, že je možný to pouštět po epochách a rozkládat na víc puštění nebo obnovit po chybě}
+\begin{figure}[H]
+    \begin{center}
+            \begin{tikzpicture}
+            \begin{axis}[grid=both,
+                         width=0.48\linewidth,
+                         xlabel=epocha,
+                         ylabel=loss,
+                         xtick={0,2, ..., 14},
+                         legend entries = {dropout=0.1, dropout=0.2, dropout=0.3},]]
+                \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5-2_logs-tag-loss.csv};
+                \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5_logs-tag-loss.csv};
+                \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5-3_logs-tag-loss.csv};
+            \end{axis}
+            \end{tikzpicture}
+            \begin{tikzpicture}
+            \begin{axis}[grid=both,
+                         width=0.48\linewidth,
+                         xlabel=epocha,
+                         ylabel=loss,
+                         xtick={0,2, ..., 14},
+                         legend entries = {dropout=0.1, dropout=0.2, dropout=0.3},]]
+                \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5-2_logs-tag-val_loss.csv};
+                \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5_logs-tag-val_loss.csv};
+                \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5-3_logs-tag-val_loss.csv};
+            \end{axis}
+            \end{tikzpicture}
+    \end{center}
+    \caption{asd}
+\end{figure}
 
-\todo{navrhnout testy, rovnou si je sem pokaždé vypsat a pak až je pustit, celý je dát do příloh nějak}
-\todo{vždycky když se změni struktura modelu, přidat obrázek vyprintovanej z kerasu}
-\todo{napsat ze bleu se pocita az po oddelani subwords}
-\todo{moses je testovanej ne dev setem ale test setem}
-\subsection{1. experiment}
-popis datasetů, parametrů
-grafy
-výsledek
-\subsection{2. experiment}
-\todo{zkusit dropout a pak ten rekurentni dropout primo v LSTM}
+\subsubsection{6. experiment}
 
-\textbf{kdyz by se mi chtelo, tak to pro kazdej projet s nekolika ruznyma beam size a pak uz treba pouzivat jen ten nejlepsi}
-\begin{enumerate}
-  \item nejakej zakladni bez BPE (final1)
-  \item stejnej bez BPE, ale s vyrazne vetsim slovnikem
-  \item stejnej, ale s BPE a slovnikem jak ten prvni (oduvodnit pocet bpe operaci, ze 15k je snesitelna velikost slovniku)
-  \item BPE bude nejlepsi? kdyz jo, tak s vic jednotkama
-  \item s tim poslednim (protoze je nejlepsi) vyzkouset dropout 0.1, 0.2, 0.3
-  \item 2 vrstvy pro encoder (s nejlepsim dropautem, takze 0.1)
-  \item 2 vrstvy pro decoder
-  \item 2 vrstvy pro oboje
-  \item 4 vrstvy pro oboje (finalni model?)
-\end{enumerate}
+\subsubsection{7. experiment}
 
-\todo{google rika ze to dobre funguje bez residual connections do 4 layeru}
+\subsubsection{8. experiment}
+
+\subsubsection{9. experiment}
+
+
+
+
+\subsection{Otestování nejlepšího modelu}
+
+\subsection{Překlad mezi více jazyky}
+
 
 \chapter{Závěr}
 Práce popisuje komponenty potřebné pro vytvoření překladového systému s pomocí neuronových sítí. Za pomocí těchto komponent byl vytvořen systém realizovaný pythoním balíčkem \emph{nmt}. Byly zvoleny trénovací a testovací data s kterými byl tento systém otestován. Hodnotícím kritériem je skore BLEU, které pro testovací dataset newtest2017 vyšlo 2.03. V porovnání se skóre 14.0, které vyšlo pro systém natrénovaný nástrojem Moses to není velmi úspěšný výsledek. Systém bude potřeba rozšířit a vylepšit, tak aby fungoval výrazně lépe.
