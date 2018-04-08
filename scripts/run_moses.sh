@@ -2,9 +2,9 @@
 
 MOSES_PATH="/home/jonas/mosesdecoder"
 LANG_FROM="cs"
-LANG_TO="en"
-CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/allTogetherPreprocessedMOSES"
-CORPUS_NAME="corpus.tc.1million"
+LANG_TO="de"
+CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/newsCommentaryCsDe"
+CORPUS_NAME="nc11"
 TEST_CORPUS_PATH="/mnt/g/Clouds/DPbigFiles/WMT17/allTogetherPreprocessedMOSES"  # already tokenized and cleaned..
 TEST_CORPUS_NAME="corpus.tc.dev2000"
 TOOLS_PATH="/home/jonas/mosesdecoder/tools"

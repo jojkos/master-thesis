@@ -51,11 +51,11 @@ keras --- moses --- BLEU}
 %--------------------------------------------------------
 
 \Abstract{
-The aim of this work is to develop a neural machine translation system (NMT). That is a machine translation system based on neural networks. Specifically, the system is based on the encoder-decoder architecture, created with recurrent neural networks enabling sequence to sequence translation.
+The aim of this work is to develop a neural machine translation system (NMT). This is a machine translation system based on neural networks. Specifically, the system is based on an encoder-decoder architecture, created with recurrent neural networks enabling sequence-to-sequence translation.
 
-The system is build with libraries Keras and Tensorflow and is tested against Moses statistical machine translation tool.
+The system is built with Keras and Tensorflow libraries and is tested against Moses statistical machine translation tool.
 
-This work does not bring some concrete model with new state of the art results but shows some insight into the topic as well as provides an open source python library that can interested reader use to easily conduct his own experiments.
+This work does not bring any specific new state-of-the-art model but shows an insight into the topic. The result is an open source python library that can interested reader use to conduct his own experiments easily.
 }
 
 \Teaser{
@@ -76,34 +76,62 @@ This work does not bring some concrete model with new state of the art results b
 %--------------------------------------------------------
 
 \section{Introduction}
-In the recent years, there is a significant increase in usage of machine learning and artificial intelligence. This is because only lately, the capacity and performance of computers caught up with the available amount of data that is being produced every day as to build and train large enough neural networks. Now days, neural networks are widely capable of recognizing images, transcribing spoken language and most interestingly for this paper, they are quite capable in translating sequences from one language to another.
+In the recent years, there is a significant increase in usage of a machine learning and an artificial intelligence. This is because, the capacity and performance of computers caught up with the available amount of data that is being produced every day, as to build and train large enough neural networks. Nowadays, neural networks are widely capable of recognizing images, transcribing spoken language and most interestingly for this paper, they are quite capable in translating sequences from a one language to another.
 
-The biggest advantage of modern NMT approach is that it does not have some of the problems the traditional machine translation systems had. Instead of being composed of many different complex parts, NMT has the ability to learn and translate directly in end-to-end fashion.
+The biggest advantage of the modern neural machine translation (\emph{NMT}) approach is that it does not have some of the problems the traditional machine translation systems had. Instead of being composed of many different complex parts, NMT has the ability to learn and translate directly in end-to-end fashion.
 
-Goal of this work is to develop and try out such system and provide an out of the box usable library. Solution proposed in this paper make use of the encoder-decoder architecture. Each of these two components is one recurrent neural network together capable of directly translating whole sequences from one language to another.
+The goal of this work is to develop and try out such system and provide an out of the box usable library. The solution proposed in this paper make use of the encoder-decoder architecture.
 
-The result is python package \emph{nmt} built with Keras and Tensorflow. With this package were conducted experiments, evaluated with the standard BLEU score. Results were compared with the system produced by the Moses \cite{Moses} statistical machine tool.
+The result is python package \emph{nmt} built with Keras and Tensorflow. Experiments were conducted with this package, evaluated with the standard BLEU score. Results were compared with the system produced by the Moses \cite{Moses} statistical machine tool.
 
 
 \section{Previous Works}
-First idea of recurrent neural networks comes from the nineties \cite{rnn}. The vanilla RNN, however, had a problem with long term dependencies because of the vanishing and exploding gradient \cite{gradientProblems}.
+The first idea of the recurrent neural networks comes from the nineties \cite{rnn}. The vanilla RNN, however, had a problem with long term dependencies because of the vanishing and exploding gradient \cite{gradientProblems}.
 
 Thus came improved variants of the RNN -- long short term memory (LSTM) \cite{LSTM, forgetLSTM} and its simpler version, gated recurrent unit (GRU) \cite{GRU}. These units have a memory, that stores and changes information in it over time, enabling the network to remember long term dependencies.
 
-Works \cite{neuralLanguageModels, neuralLanguageModels2, mikolovphd} shows that good performing language models are possible to build with recurrent neural networks. This lays foundation for the neural machine translation as language models are the vital part. The advantage of neural language model is that it learns embeddings in a continuous space for the words, which provides the model with more context it can learn from. Different variants of learning the word embbeddings are shown here \cite{word2vec,kingQueen,glove,fasttext}. Pre-trained word  embeddings, for example on some very large data set, can be used to boost performance of a NMT system, which would have to otherwise learn those embeddings by itself.
+Works \cite{neuralLanguageModels, neuralLanguageModels2, mikolovphd} shows that good performing language models are possible to build with recurrent neural networks. This lays a foundation for the neural machine translation as language models are the vital part. The advantage of neural language model is that it learns embeddings (figure \ref{figure:oneHotAndEmbedding}) in a continuous space for the words, which provides the model with more context it can learn from.
 
-Encoder-decoder architecture was proposed in \cite{encoderDecoder} and was used for rescoring hypotheses produced by a phrase-based system with successful improvement. Paper \cite{seq2seq} then shows how to use encoder-decoder architecture for direct sequence to sequence translation and comes with the best results at the time. Furthermore, it was found that the importance of reversing order of the words  in all source sentences (reverse encoder), improves models performance, by introducing short term dependencies between the source and the target sentence.
+\begin{figure}[h!]
+    \begin{center}
+        $V$ = $[$farmer, cow, steak, eats$]$ \\ \vspace{5mm}
+        $
+        oneHot_{steak}=
+        \begin{bmatrix}
+            0 \\
+            0 \\
+            1 \\
+            0 \\
+        \end{bmatrix}
+        $ \\ \vspace{5mm}
+        $
+        wordEmbedding_{steak}=
+        \begin{bmatrix}
+            x_0 \\
+            x_1 \\
+            $\vdots$ \\
+            x_{300} \\
+        \end{bmatrix}
+        $
+    \end{center}
+	\caption{Difference between common representation and word embeddings representation of words from vocabulary $V$. Common one-hot sparse vector represent the word with 1 on the position in the vector that corresponds with the index of the word in the vocabulary. Word embedding dense vector on the other hand represents the word with a big dimension vector (300 in this example) which holds some semantic value of the word and thus can be better utilized by the neural network.}
+	\label{figure:oneHotAndEmbedding}
+\end{figure}
 
-Upon this builds work \cite{attention} which shows even better results with bi-directional encoder which is encoder that process in both normal and reverse order. What is even more important, they address the problem of encoder-decoder approach, where the meaning of the translated sentence is captured in a fixed-length vector and that can be problematic for translating long sentences. The proposed remedy is so called \emph{attention} mechanism which lets the model, at the time of decoding, look at the most important words from the source sentence for the currently translated word, resulting in even better performance.
+Different variants of learning the word embbeddings are shown here \cite{word2vec,kingQueen,glove,fasttext}. Pre-trained word  embeddings, for example on some very large data set, can be used to boost the performance of a NMT system, which would have to otherwise learn those embeddings by itself.
 
-As translation is an open-vocabulary problem, the NMT systems have to somehow handle the words not present at the time of the training. This was typically done by using out-of-vocabulary tokens and by using very large vocabularies, which causes the models to be very memory and performance demanding. Solution for this can be sub-word units \cite{mikolovSubwords, subwords}, that are shown to be more efficient, help with rare and unknown words and improve the results.
+The encoder-decoder architecture was proposed in \cite{encoderDecoder} and was used for rescoring hypotheses produced by a phrase-based system with a successful improvement. Paper \cite{seq2seq} then shows how to use the encoder-decoder architecture for direct sequence-to-sequence translation and comes with the best results at the time. Furthermore, it was found that reversing order of the words in all source sentences (reverse encoder), improves models performance, by introducing short term dependencies between the source and the target sentence.
+
+Upon this builds the work \cite{attention} which shows even better results with the bi-directional encoder which is an encoder that process sequences in both normal and reverse order. What is even more important, they address the problem of the encoder-decoder approach, where the meaning of the translated sentence is captured in a fixed-length vector and that can be problematic for translating long sentences. The proposed remedy is so called \emph{attention} mechanism which lets the model, at the time of decoding, look at the most important words from the source sentence for the currently translated word, resulting in even better performance.
+
+As translation is an open-vocabulary problem, the NMT systems have to somehow handle the words not present at the time of the training. This was typically done by using out-of-vocabulary tokens and by using very large vocabularies, which causes the models to be very memory and performance demanding. A solution for this can be sub-word units \cite{mikolovSubwords, subwords}, that are shown to be more efficient, help with rare and unknown words and improve the results.
 
 Current state-of-the-art results are published by Google \cite{googleBridgingGap,googleAttention}, which uses all of the techniques described, showing that they can be successfully applied on large production data sets.
 
 Another thing Google shows is, that with no changes to the model architecture, one model can be used to learn to translate between many languages \cite{googleMultiLingual}, even to produce translations between languages that it was not explicitly trained on (zero-shot translations).
 
 \section{Seq2seq translation with encoder-decoder architecture}
-Sequence to sequence (\textbf{seq2seq}) means that the process of translating takes one whole sentence at the input, in a source language, and its meaning translates into sequence in a target language. This can be better in contrast to other methods like word-based translation or phrase-based translation as in seq2seq the whole meaning of the source sequence is translated at once and can keep the precise meaning. Seq2seq is modeling probability of a target sentence based on source sentence as shown in figure \ref{fig:seqProbability}.
+Sequence-to-sequence (\textbf{seq2seq}) means that the process of translating takes one whole sentence at the input, in a source language, and its meaning translates into a sequence in a target language. This can be better in contrast to other methods like word-based translation or phrase-based translation as in seq2seq the whole meaning of the source sequence is translated at once and can keep the precise meaning. Seq2seq is modeling probability of a target sentence based on a source sentence as shown in figure \ref{fig:seqProbability}.
 
 \begin{figure}[h!]
     \begin{center}
@@ -112,28 +140,28 @@ Sequence to sequence (\textbf{seq2seq}) means that the process of translating ta
         $\Longrightarrow$
         \fbox{$W_{out}$ = ``Hello world"}
     \end{center}
-	\caption{Seq2seq models a probability $P(W_{out}|W_{in})$. Meaning that the model learns to predict sentence $W_{out}$ based on a sentence $W_{in}$.}
+	\caption{Seq2seq models a probability $P(W_{out}|W_{in})$. Meaning that the model learns to predict a sentence $W_{out}$ based on a sentence $W_{in}$.}
 	\label{fig:seqProbability}
 \end{figure}
 
-Neural network architecture, used for this kind of modeling, is \textbf{encoder-decoder}. Both encoder and decoder are recurrent neural network (figure \ref{fig:rnn}), usually one or more layers of LSTM or GRU.
+The neural network architecture, used for this kind of modeling, is \textbf{encoder-decoder}. Both the encoder and the decoder are recurrent neural network (figure \ref{fig:rnn}), usually one or more layers of LSTM or GRU.
 
 \begin{figure}[h!]\centering
   \centering
-  \includegraphics[width=0.5\linewidth]{RNN-rolled}
-  \caption{RNN are neural networks with loops. They process sequence of data and output $h_t$ from each time step $t$ is fed as input to time step $t+1$. Image taken from \cite{understandingLSTM}.}
+  \includegraphics[width=0.4\linewidth]{RNN-rolled}
+  \caption{RNN are neural networks with loops. They process sequence of data and an output $h_t$ from each time step $t$ is fed as an input to the time step $t+1$. The image is taken from \cite{understandingLSTM}.}
   \label{fig:rnn}
 \end{figure}
 
 
-Encoder takes embeddings of the input tokens (words or subwords) and processes the input sequence in source language into fixed-length vector, so called ``thought" vector -- it captures the essence of the given sentence.
+The encoder takes embeddings of the input tokens (words or subwords) and processes the input sequence in a source language into a fixed-length vector, the so called ``thought" vector -- it captures the essence of the given sentence.
 
-Decoders hidden state is initialized with this output from encoder. The decoding process is started with start token, which is given to decoder as first input. Decoder then generates sequence in target language until it reaches end token that tells it to stop. There is a difference between time when model is being trained and between time when it is used to predict sequences. In the training time, decoder is fed the correct, expected output. This is called ``teacher forcing" \cite{teacherForcing}. In the inference time, decoder is fed its own output each time step. Figure \ref{fig:seq2seq} shows the encoder-decoder architecture.
+The hidden state of a decoder is initialized with this output from an encoder. The decoding process is started with a start token, which is given to the decoder as the first input. The decoder then generates a sequence in the target language until it reaches an end token that tells it to stop. There is a difference between the time when model is being trained and between the time when it is used to predict sequences. In the training time, the decoder is fed the correct, expected output. This is called ``teacher forcing" \cite{teacherForcing}. In the inference time, the decoder is fed its own output the each time step. The figure \ref{fig:seq2seq} shows the encoder-decoder architecture.
 
 \begin{figure*}[h!]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
   \centering
-  \includegraphics[width=0.82\linewidth]{seq2seqEn.pdf}\\[1pt]
-  \caption{Encoder-decoder architecture shown on translation from Czech sentence to its English equivalent. Encoder processes embeddings of input sequence and produces fixed-length ``thought" vector. This vector is used as initial state of decoder, it tells it from what context should it produce output in target language. Prediction is started with the $\langle s \rangle$ starting token. Then the decoder is fed either correct output tokens during training time or its own output, from time $t - 1$, during inference time, until it generates the ending $\langle /s \rangle$ token.}
+  \includegraphics[width=0.75\linewidth]{seq2seqEn.pdf}\\[1pt]
+  \caption{The encoder-decoder architecture shown on translation from a Czech sentence to its English equivalent. The encoder processes embeddings of the input sequence and produces the fixed-length ``thought" vector. This vector is used as initial state of the decoder, it tells it from what context should it produce the output in the target language. The prediction is started with the $\langle s \rangle$ starting token. Then the decoder is fed either correct output tokens during the training time or its own output, from the time $t - 1$, during inference time, until it generates the ending $\langle /s \rangle$ token.}
   \label{fig:seq2seq}
 \end{figure*}
 
@@ -160,55 +188,139 @@ Equations of the encoder-decoder architecture:
     \item $M^{(f)}_{f_t}$ - embedding for encoder input in time $t$
     \item $M^{(e)}_{e_t}$ - embedding for decoder input in time $t$
     \item $h^{(f)}_t$ - encoder hidden state in time $t$
-    \item $h^{(e)}_t$ - encoder hidden state in time $t$
+    \item $h^{(e)}_t$ - decoder hidden state in time $t$
     \item $W_{hs}$ - weights
     \item $b_s$ - bias
 \end{itemize}
 
 
-Embedding is looked up for every word in time $t$ (eq. \ref{figure:encoderEmb}). Then the hidden state of encoder is computed (eq. \ref{figure:encoderState}). After processing the whole input sequence, there should be enough context stored for decoder initialisation. Then, as for encoder, embedding is looked up for decoder input (eq. \ref{figure:decoderEmb}). Only now the word is from time $t - 1$ as decoder generates new word based on the last one. In the time $t_0$ decoder is fed starting symbol $\langle s \rangle$. Eq. \ref{figure:decoderState} computes hidden state of decoder and shows that in the time $t_0$, decoder is initialised with encoder final state. Final output probability is resolved with $softmax$ function (eq. \ref{figure:resultSoftmax}).
+An embedding is looked up for every word in time $t$ (eq. \ref{figure:encoderEmb}). Then the hidden state of the encoder is computed (eq. \ref{figure:encoderState}). After processing of the whole input sequence, there should be enough context stored for the decoder initialisation. Then, as for the encoder, an embedding is looked up for the decoder input (eq. \ref{figure:decoderEmb}). Only now the word is from the time $t - 1$ as the decoder generates a new word based on the last one. In the time $t_0$ the decoder is fed the starting symbol $\langle s \rangle$. Eq. \ref{figure:decoderState} computes the hidden state of the decoder and shows that in the time $t_0$, the decoder is initialised with the encoder final state. The final output probability is resolved with the $softmax$ function (eq. \ref{figure:resultSoftmax}).
 
-For a deeper overview of NMT based systems, I would point the reader to \cite{nmtTutorial}.
+For a deeper overview of the NMT based systems, I would point the reader to \cite{nmtTutorial}.
 
 \section{Implementation of the NMT system}
+The presented system is done in Python with Keras library running on Tensorflow. The result is a python package \emph{nmt}, published on github\footnote{\url{https://github.com/jojkos/neural-machine-translation}}.
 
+\subsection{Datasets preprocessing}
+Some of the Moses scripts are used for preprocessing of the datasets. To tokenize sequences, \emph{tokenizer.perl} is used. To select proper uppercase first letter for each token, \emph{truecase.perl} is used. Cleaning is done with \emph{clean-corpus-n.perl} so that only sequences with max length of 15 tokens are kept in the dataset. To split tokens into sub-word units, \emph{subword-nmt}\footnote{\url{https://github.com/rsennrich/subword-nmt}} scripts are used.
 
-datasets
-preprocessing
-bucketing
-fit generator?
-bidirectional encoder
-subwords - BPE
-beam search
-shuffling
-main.py repo
+\subsection{Implementation details}
+Size of a source and a target vocabulary is clipped to a maximum size chosen in an experiment and unknown words are replaced with $\langle unk \rangle$ token. The package can be used with pre-trained word embeddings in \emph{fastText} format. To enhance performance, bi-directional encoder is implemented, it is possible to use multiple layers for both the decoder and the encoder and during training, dropout can be specified and teacher forcing is used. LSTM is used as an RNN unit in both the encoder and the decoder. During translation generation, beam search is used to find best hypothesis with maximum score.
 
-
-\begin{figure*}[h!]\centering
-  \centering
-  \includegraphics[width=1\linewidth]{model}
-  \caption{Layers of model in keras}
-  \label{fig:model}
-\end{figure*}
 
 \section{Experiments and results}
+This sections presents results of experiments conducted with the \emph{nmt} package compared with results made with baseline system created with the Moses tool. The evaluation is done with the standard BLEU metric. BLEU (\cite{BLEU}) is an algorithm for automatic evaluation of translation systems. It compares translated sentences with a reference translations. Those scores are averaged over the whole dataset and the output is a number between 0-100, indicating how similar is the candidate text to the reference texts, the higher the more similar.
+
+For all experiments, pre-trained embeddings with size of 300 dimensions were used, provided by Facebook\footnote{\url{https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md}}.
+
+Each experiment ran until the result of loss function for validation dataset did not decrease for 5 epochs.
+
+Datasets are taken from the yearly conference on machine translation (\emph{WMT} -- formerly \textbf{w}orkshop on statistical \textbf{m}achine \textbf{t}ranslation) conference. In particular, datasets from WMT17\footnote{\url{http://data.statmt.org/wmt17/translation-task/preprocessed/}} are used. They contain text data from different domains like subtitles, books, news and websites.
+
+First, several experiments with different settings were conducted on language pair Cs$\rightarrow$En, to find out optimal hyperparameters for the system. Training dataset had the size of 1000000 sentence pairs and validation dataset had a size of 2000 sentence pairs. The same training dataset was used to train baseline system with Moses tool. Best performing model was with parameters: 2 layers LSTM of size 1000 layers for encoder, 2 LSTM of size 1000 for decoder, 15000 maximum vocabulary size, dropout of 0.1, and beam size 15. Best performing model and baseline system were evaluated with test dataset with size of 2000 sentence pairs. Results are in the table \ref{table:results} and examples of translation are in the figure \ref{figure:translationExamples}.
+
+\begin{figure}[h!]
+    \begin{center}
+        \begin{tabular}{c|c|c}
+          & baseline system & created system \\
+          \hline
+          BLEU score & 23.08 & 9.87 \\
+          \hline
+        \end{tabular}
+    \end{center}
+	\caption{Resulting BLEU score on the $Cs->En$ test dataset of the baseline system and of the best performing model created with \emph{nmt} package. The system made with Moses tool is showing better performance.}
+	\label{table:results}
+\end{figure}
+
+
+Another experiment was conducted to find out how the performance of the model will be affected when its trained to translate on more language pairs. Training dataset included $Cs->En$ training dataset used in previous experiments, plus another 1000000 sentence pairs for $En->De$ pair. Model was then tested with test datasets of 2000 sentence pairs for $Cs->En$ pair, $En->De$ pair and for $Cs->De$ to try out zero-shot translation on a language pair that the model was not explicitly trained on. Results are shown in table \ref{table:resultsMulti}.
+
+\begin{figure}[h!]
+    \begin{center}
+        \begin{tabular}{c|c|c|c}
+          & $Cs->En$ & $En->De$ & $Cs->De$ \\
+          \hline
+          BLEU score & 7.10 & 7.39 & 0.14 \\
+          \hline
+        \end{tabular}
+    \end{center}
+	\caption{Resulting BLEU score for different test datasets, each for one language pair. Translation was done by one model trained on multiple language pairs. Results shows, that the model is now capable to translate $Cs->En$ and $En->De$ for the price of having worse results for the former. Zero-shot translation for $Cs->De$ does not show much success.}
+	\label{table:resultsMulti}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \begin{center}
+        \begin{tabular}{|p{1\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{original sentences} \\
+          \hline
+          1. budoucnost se jevila černě . \\
+          2. někdo mu musí dát lekci . \\
+          3. nejdůležitější výsledky studie jsou uvedeny v tabulce 4 a na obrázku 3 . \\
+          4. uvidíme , jak se ta schůze bude odvíjet . \\
+          5. Evropská unie je druhým největším obchodním partnerem ASEAN . \\
+          6. 13. prosinec \\
+          \hline
+        \end{tabular}
+    \end{center}
+    \begin{center}
+        \begin{tabular}{|p{1\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{reference translation} \\
+          \hline
+          1. the future was grey . \\
+          2. somebody '  s got to teach him a lesson . \\
+          3. the key results of the trial are listed in Table 4 and Figure 3 . \\
+          4. see how the meeting goes . \\
+          5. the European Union is ASEAN '  s second largest trading partner . \\
+          6. December 13 \\
+          \hline
+        \end{tabular}
+    \end{center}
+    \begin{center}
+        \begin{tabular}{|p{1\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{baseline Moses system translation} \\
+          \hline
+          1. the jevila black .  \\
+          2. someone must give him a lesson .  \\
+          3. the study results are provided in Table 4 and the picture 3 . \\
+          4. we ' ll see how the meeting is odvíjet . \\
+          5. the European Union ' s second largest partner ASEAN . \\
+          6. 13 December \\
+          \hline
+        \end{tabular}
+    \end{center}
+    \begin{center}
+        \begin{tabular}{|p{1\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{presented system translation} \\
+          \hline
+          1. the future was red . \\
+          2. someone needs to give him a lesson . \\
+          3. the most important results of the two and two are available in the level of the 3 . \\
+          4. let ' s see how the meeting goes . \\
+          5. the European Agreement is the most attractive partner of the European Union . \\
+          6. 13. \\
+          \hline
+        \end{tabular}
+    \end{center}
+	\caption{Examples of translation of sentences from the test dataset. Sentences are split to tokens.}
+	\label{figure:translationExamples}
+\end{figure}
+
 
 \section{Conclusions}
 \label{sec:Conclusions}
 
-\textbf{[Paper Summary]} What was the paper about, then? What the reader needs to remember about it?
+The goal of this paper was to explore neural machine translation and to develop a translation system with the encoder-decoder architecture. This system was built, published on github and tested against Moses statistical translation tool.
 
-\textbf{[Highlights of Results]} Exact numbers. Remind the reader that the paper matters.
-
-
-\textbf{[Paper Contributions]} What is the original contribution of this work? Two or three thoughts that one should definitely take home.
-
-
-\textbf{[Future Work]} How can other researchers / developers make use of the results of this work?  Do you have further plans with this work? Or anybody else?
+The best BLEU score on $Cs->En$ translation of the created system is \textbf{9.87} while the system built with Moses has score \textbf{23.08}. When the system was trained on multiple languages, score for $Cs->En$ pair dropped to \textbf{7.10} but the same model was able to translate even for $En->De$ pair with score \textbf{7.39}. Experiment with zero-shot was not very successful and would probably require bigger training dataset. Although presented system does not give excellent results, it shows that the core is working.
 
 
 \section*{Acknowledgements}
-I would like to thank my supervisor Ing.~Igor Szőke,~Ph.D. for his help.
+I would like to thank my supervisor Ing. Igor Szőke, Ph.D. for his guidance.
 
 
 %--------------------------------------------------------

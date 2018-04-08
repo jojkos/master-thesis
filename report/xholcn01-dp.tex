@@ -108,7 +108,7 @@
   author={Jonáš Holcner},   %cele jmeno a prijmeni autora / full name and surname of the author
   author.name={Jonáš},   %jmeno autora (pro citaci) / author name (for reference)
   author.surname={Holcner},   %prijmeni autora (pro citaci) / author surname (for reference)
-  %author.title.p=Bc., %titul pred jmenem (nepovinne) / title before the name (optional)
+  author.title.p=Bc., %titul pred jmenem (nepovinne) / title before the name (optional)
   %author.title.a=PhD, %titul za jmenem (nepovinne) / title after the name (optional)
   %Ustav / Department
   department=UPGM, % doplnte prislusnou zkratku dle ustavu na zadani: UPSY/UIFS/UITS/UPGM
@@ -139,9 +139,10 @@
   %acknowledgment={Here it is possible to express thanks to the supervisor and to the people which provided professional help.} % optional
 }
 
+
 %Abstrakt (cesky, slovensky ci anglicky) / Abstract (in czech, slovak or english)
-\abstract[cs]{Cílem této práce je popsat a vytvořit systém pro strojový překlad textu mezi různými jazyky. Systém je postavený na rekurentních neuronových sítích, konkrétně na enkodér-dekodér architektuře. Výsledky jsou porovnány vůči systému postaveném na nástroji Moses.}
-\abstract[en]{The goal of this thesis is to describe and build a system for neural machine translation. System is build using recurrent neural networks -- encoder-decoder architecture in particular. Results are compared with system build with statistical tool Moses.}
+\abstract[cs]{Cílem této práce je popsat vytvořit systém pro strojový překlad textu postavený na rekurentních neuronových sítí. K tomu je použita architektura enkodér-dekodér umožňující překlad po celých větách. Výsledkem je knihovna \emph{nmt}, určená k provádění experimentů s různými parametry modelu. Jejich výsledky jsou porovnány vůči systému postaveném na nástroji pro statistický překlad Moses.}
+\abstract[en]{The goal of this thesis is to describe and build a system for neural machine translation. System is build using recurrent neural networks -- encoder-decoder architecture in particular. The result is a \emph{nmt} library used to conduct experiments with different model parameters. Results of the experiments are compared with system build with the statistical tool Moses.}
 
 %Klicova slova (cesky, slovensky ci anglicky) / Keywords (in czech, slovak or english)
 \keywords[cs]{strojový překlad, neurální strojový překlad, neuronové sítě, rekurentní neuronové sítě, LSTM, enkodér, dekodér, model enkodér-dekodér, sekvence do sekvence, seq2seq, keras, moses, BLEU}
