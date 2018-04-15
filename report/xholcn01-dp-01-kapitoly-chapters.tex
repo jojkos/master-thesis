@@ -1,14 +1,18 @@
 \chapter{Úvod}
-Přísloví praví \uv{Kolik řečí znáš, tolikrát jsi člověkem}. Schopnost dorozumět se s ostatními lidmi na planetě je nesmírně důležitá a přitom jazyková bariéra je překážkou v mezilidské komunikace už od pradávných let. Proto vznikaly a vznikají jednoduché tištěné a následně digitální slovníky a vědci od počátků vzniku výpočetní techniky zkoumají jak vytvořit funkční překladový systém.
+Schopnost dorozumět se s ostatními lidmi na planetě je nesmírně důležitá, české přísloví dokonce praví \uv{Kolik řečí znáš, tolikrát jsi člověkem}. Proto učenci od pradávných let vytvářeli slovníky a vědci od vzniku výpočetní techniky zkoumají jak vytvořit kvalitní překladový systém.
 
-Ideálem je překlad tak jak ho známe ze science fiction materiálů. Dvě osoby, mluvící kompletně jiným jazykem, si navzájem rozumí v reálném čase. S intenzivním rozvojem strojového učení, který nastal v posledních letech, a s nástupem umělé inteligence používající hluboké neuronové sítě se k tomuto ideálu blížíme mílovými kroky. Automatické rozpoznání mluvené řeči je již ve skvělé kvalitě dostupné v běžných spotřebitelských zařízeních a automatický překlad se taky značně vylepšuje.
+Ideálem je překlad tak jak ho známe ze science fiction materiálů. Dvě osoby, mluvící kompletně jiným jazykem, si navzájem rozumí v reálném čase. S intenzivním rozvojem strojového učení a umělé inteligence, který nastal v posledních letech, se k tomuto ideálu blížíme mílovými kroky. Automatické rozpoznání mluvené řeči je již ve skvělé kvalitě dostupné v běžných spotřebitelských zařízeních a automatický překlad se taky značně vylepšuje.
 
-Obsahem této práce je návrh a realizace překladového systému schopného naučit se, za pomocí datasetů v různých zdrojových a cílových jazycích, překládat věty mezi těmito jazyky. K tomu jsou použity nejnovější metody objevených a široce nasazované v posledních letech, používající rekurentní neuronové sítě s architekturou enkodér-dekodér.
+Obsahem této práce je popis a realizace takovéhoto automatického překladového systému, schopného naučit se za pomocí datasetů v různých zdrojových a cílových jazycích, překládat věty mezi těmito jazyky. K tomu je použita architektura rekurentních neuronových sítí enkodér-dekodér, která vykazuje v posledních letech dobré výsledky.
 
-V kapitole \ref{chapter:draft} je neformálně nastíněn návrh a cíl této práce. V následující kapitole \ref{chapter:theory} jsou pak rozebrány důležité pojmy a teorie ze kterých je tato práce vystavěna. Kapitola \ref{chapter:implementation} popisuje co a jak bylo implementováno a kapitola \ref{chapter:results} podává výsledky experimentů s vytvořeným systémem a porovnává je s výsledky podané nástrojem pro statistický překlad Moses.
+ V následující kapitole \ref{chapter:theory} je popis překladového systému a jsou zde rozebrány důležité pojmy a teorie ze kterých je je systém vystavěn. Kapitola \ref{chapter:implementation} popisuje co a jak bylo implementováno a kapitola \ref{chapter:results} podává výsledky experimentů s vytvořeným systémem a porovnává je s výsledky podané nástrojem pro statistický překlad Moses.
 
-\chapter{Neformální návrh systému} \label{chapter:draft}
-Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné tomu co dělá Google Translator\footnote{\url{translate.google.cz}} -- blíže popsáno v článku \cite{googleBridgingGap}. Vezme se věta v původním jazyce a vytvoří se z ní co nejvěrnější překlad v jazyce cílovém a to za pomocí natrénované rekurentní neuronové sítě. V této kapitole je vysvětleno, jak by takový systém mohl vypadat a co za komponenty potřebuje k tomu aby fungoval.
+
+\chapter{Strojový překlad}\label{chapter:theory}
+Účelem této kapitoly je blíže vysvětlit a rozebrat jednotlivé pojmy a komponenty potřebné pro vytvoření překladového systému.
+
+\section{Popis cílového systému} \label{chapter:draft}
+Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné tomu co dělá Google Translator\footnote{\url{translate.google.cz}} -- blíže popsáno v článku \cite{googleBridgingGap}. Vezme se věta v původním jazyce a vytvoří se z ní co nejvěrnější překlad v jazyce cílovém a to za pomocí natrénované rekurentní neuronové sítě. V této sekci je vysvětleno, jak by takový systém mohl vypadat a co za komponenty potřebuje k tomu aby fungoval.
 
 \begin{description}
   \item[Dataset:] Aby bylo možné nacvičit neuronovou síť pro překlad, je nejprve zapotřebí mít nějaký dataset. Dataset obsahuje texty ve dvou jazycích mezi kterými se má překládat. Tyto texty musí být zarovnané, tak aby si jednotlivé věty v těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}).
@@ -19,23 +23,19 @@ Cílem této práce práce je vytvořit systém pro strojový překlad textu pom
 
   \item[Word Embeddings:] Obecně je možné vytvářet jazykové modely, které generují text po písmenech, částech slov nebo po slovech \cite{mikolovSubwords}. Word embeddings je další forma předzpracování. Každý token ze vstupního slovníku se převede do vektoru reálných čísel, ve kterém jsou zakódovány některé syntaktické a sémantické vlastnosti daného tokenu, což umožní neuronové síti se učit lépe, než kdyby se použilo například jenom číslo označující pozici tokenu ve slovníku. Více v sekci \ref{subsection:neuralembeddings}.
 
-  \item[Model:] V současné době nejúspěšnější architekturou používanou pro překlad je enkodér-dekodér umožňující překlad po celých větách (sequence to sequence, dále seq2seq \cite{seq2seq}). To je rozdíl oproti starším statistickým metodám překladu, kde se překládalo po slovech či frázích. 
-      
+  \item[Model:] V současné době nejúspěšnější architekturou používanou pro překlad je enkodér-dekodér umožňující překlad po celých větách (sequence to sequence, dále seq2seq \cite{seq2seq}). To je rozdíl oproti starším statistickým metodám překladu, kde se překládalo po slovech či frázích.
+
       Nejprve enkodér vezme word embedding na vstupu a pomocí rekurentní neuronové sítě (sekce \ref{section:rnn}) převede větu na vstupu do velkého vektoru reprezentující její význam (tzv. myšlenkový vektor -- intuice je taková, že když člověk překládá větu, také nejprve pochopí její význam a poté ji až začne překládat). Dekodér -- taky rekurentní neuronová síť -- následně z tohoto vektoru slovo po slovu vygeneruje výslednou přeloženou větu. Dekodér tedy funguje jako jazykový model (sekce \ref{section:langmodel}), který je na inicializovaný na jednu konkrétní větu.
 \end{description}
 
 
 \begin{figure}[H]
     \begin{center}
-            \tmpframe{\includegraphics[width=0.62\linewidth]{img/graphs/draft.pdf}}
+            \tmpframe{\includegraphics[width=0.99\linewidth]{img/graphs/draftEnhanced.pdf}}
     \end{center}
 	\caption{Schéma návrhu systému pro překlad. Dataset se předzpracuje pomocí tokenizeru. Do enkodéru vstupují tokeny převedené na embeddings. Enkodér větu zakóduje do velkého "myšlenkového" vektoru ze kterého dekodér generuje překlad.}
 	\label{img:draft}
 \end{figure}
-
-
-\chapter{Související teorie a pojmy}\label{chapter:theory}
-Účelem této kapitoly je blíže vysvětlit a rozebrat jednotlivé pojmy a komponenty potřebné pro vytvoření překladového systému.
 
 
 
@@ -501,7 +501,7 @@ BLEU pracuje s přesností n-gramů a je počítáno pro jednotlivé věty, kter
 
 
 \subsection{METEOR}
-\emph{METEOR} \cite{METEOR} je metoda založená na harmonickém průměru přesností unigramů. Narozdíl od BLEU metody, která se aplikuje na úrovni celého datasetu, METEOR podává dobrou korelaci s lidským hodnocením i na úrovni vět. 
+\emph{METEOR} \cite{METEOR} je metoda založená na harmonickém průměru přesností unigramů. Narozdíl od BLEU metody, která se aplikuje na úrovni celého datasetu, METEOR podává dobrou korelaci s lidským hodnocením i na úrovni vět.
 
 \subsection{LEPOR}
 \emph{LEPOR} \cite{LEPOR} je nejnovější z hodnotících metod a je jejich kombinací. Ostatní metriky mají tendenci dobře fungovat jen pro některé jazykové páry, LEPOR poskytuje škálu nastavitelných parametrů, kterými se má jazykový bias omezit.
@@ -509,7 +509,7 @@ BLEU pracuje s přesností n-gramů a je počítáno pro jednotlivé věty, kter
 %\section{Attention? nebo ne kdyz ji nepouziju}
 
 \chapter{Implementace} \label{chapter:implementation}
-Tato kapitola popisuje všechny autorem vytvořené a použité části. Sekce \ref{section:datasets} je o výběru a předzpracování datasetů. Následující sekce \ref{section:baseline} se zabývá vytvořením baseline systému, vůči kterému se porovnávají výsledky v kapitole \ref{chapter:results}. Poslední sekce této kapitoly (\ref{section:nmtSystem}) popisuje vytvořený překladový systém.
+Tato kapitola popisuje všechny autorem vytvořené a použité části. Sekce \ref{section:datasets} je o výběru a předzpracování datasetů. Následující sekce \ref{section:referent} se zabývá vytvořením referenčního systému, vůči kterému se porovnávají výsledky v kapitole \ref{chapter:results}. Poslední sekce této kapitoly (\ref{section:nmtSystem}) popisuje vytvořený překladový systém.
 
 \section{Datasety}\label{section:datasets}
 Jako dataset (nebo korpus) se v této práci považují dva soubory. Na každém řádku souboru je jedna věta a ta svým významem odpovídá větě na stejném řádku v druhém souboru. Dataset nese nějaký název (název souboru stejný pro oba jazykové soubory) a jako koncovku používá dvou písmenou zkratku jazyka. Pro lepší představu je přiložen obrázek \ref{img:dataset}.
@@ -575,8 +575,8 @@ Před použitím na trénování a vyhodnocování překládacího systému je p
 \end{description}
 
 
-\section{Baseline systém v Moses}\label{section:baseline}
-Moses \cite{moses} je nástroj na vytváření statistických strojových překladových systémů. Vzniklý model bude sloužit jako baseline vůči kterému se porovnají výsledky implementovaného překladového systému (sekce \ref{section:nmtSystem}). Kromě toho se také používají některé skripty z tohoto nástroje pro přípravu datasetů (sekce \ref{subsection:preparing}) a získání skóre BLEU. Konkrétní postup jeho přípravy je dostupný na stránkách Moses \footnote{\url{statmt.org/moses/?n=Moses.Baseline}}, byly použity výchozí nastavení.
+\section{Referenční systém v Moses}\label{section:referent}
+Moses \cite{moses} je nástroj na vytváření statistických strojových překladových systémů. Vzniklý model bude sloužit jako referenční vůči kterému se porovnají výsledky implementovaného překladového systému (sekce \ref{section:nmtSystem}). Kromě toho se také používají některé skripty z tohoto nástroje pro přípravu datasetů (sekce \ref{subsection:preparing}) a získání skóre BLEU. Konkrétní postup jeho přípravy je dostupný na stránkách Moses \footnote{\url{statmt.org/moses/?n=Moses.Baseline}}, byly použity výchozí nastavení.
 
 \section{Překladový systém}\label{section:nmtSystem}
 Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{python.org}} v jeho verzi 3.6. Na výběr bylo z několika vhodných knihoven/frameworků pro práci se strojovým učením:
@@ -649,6 +649,8 @@ Pro potřeby trénování a překladu jsou pomocí knihovny Keras vystavěny tř
   \item[testy:] Repozitář \emph{nmt} obsahuje sadu testů pokrývajících jeho funkcionalitu, převážně jednotlivých metod (unit testy) a celkového fungování trénování a překladu. Testy jsou implementovány ve frameworku \emph{pytest}.
 \end{description}
 
+
+
 \subsection{Rozdělení dat podle velikosti}\label{subsection:Bucketing}
 Všechny sekvence při trénování v rámci jedné dávky musí mít stejnou délku. Věty však mají délku různou. To bývá řešeno tak, že se každá věta zarovná pomocí nul nebo zarovnávacího tokenu na délku nejdelší věty (obrázek \ref{figure:padding}). Na první pohled může být jasné, že pokud se všechny věty v datasetu zarovnají na velikost nejdelší věty, způsobí to zbytečně větší vytížení paměti a delší trénování modelu.
 
@@ -678,7 +680,7 @@ Tento problém je omezen pomocí rozdělení vět v datasetech do skupin podle j
 Protože se data při trénování upravují datasety do podoby velkých matic, není možné, kvůli paměťovým omezením, vyrobit jednu matici pro všechna data zaráz. Proto se dávky (batche) v průběhu trénování vytváří postupně, pomocí generátorové funkce. Ta před každou epochou (jedna epocha znamená, že modelem prošly všechna vstupní data), zamíchá vstupní data. Správné míchání vstupních dat je důležité pro dobrou konvergenci modelu. Dále postupně generuje matice s jednotlivými dávkami. V případě, že je použité dělení do skupin podle velikosti, probíhá míchání na úrovní skupin a dávek tak, aby se model nepřetrénoval v jednu chvíli na například krátké věty a v jiné části epochy zase na dlouhé. Je použit \texttt{random.seed(0)} pro opakovatelnost experimentů.
 
 \chapter{Experimenty a výsledky} \label{chapter:results}
-V této sekci jsou prezentovány experimenty prováděné na vytvořeném systému a baseline systému.
+V této sekci jsou prezentovány experimenty prováděné na vytvořeném systému a na referenčním systému. Všechny experimenty byly pouštěny na výpočetním clusteru VUT FIT\footnote{\url{https://merlin.fit.vutbr.cz/wiki/index.php/SGE}}.
 
 V experimentech \ref{subsection:experimentsOptimal} byl systém natrénován pro překlad z češtiny (cs) do angličtiny (en). Tyto experimenty byly provedeny za účelem najití nejlepších hyperparametrů pro model a pro jeho otestování.
 
@@ -692,7 +694,7 @@ Každý experiment běžel tak dlouho, dokud se 5 epoch nezlepšil výsledek los
 
 Použitá velikost jedné trénovací dávky je 128. Je použito generování dávek (\ref{subsection:generation}) a rozdělení dat podle velikosti (\ref{subsection:Bucketing}).
 
-Hodnotící metrikou je standardní skóre BLEU (\ref{subsection:bleu}). Pro jeho výpočet byl použit skript \emph{multi-blue.pl} dodávaný s nástrojem Moses.
+Hodnotící metrikou je standardní skóre BLEU (\ref{subsection:bleu}), protože je to nejčastěji používaná metrika a je použita i ve všech citovaných pracích. Pro jeho výpočet byl použit skript \emph{multi-blue.pl} dodávaný s nástrojem Moses.
 
 
 \section{Použité datasety}
@@ -700,7 +702,7 @@ Všechny použité datasety pochází z každoročně publikovaného překládac
 
 Stažené datasety byly rozdělený na několik menších datasetů, které spolu nesdílí páry vět:
 \begin{description}
-  \item[Trénovací malý cs-en dataset:] Obsahuje 1000000 párů vět. Je určený pro trénování v experimentech, pomocí kterých se hledají optimální hyperparametry modelu a pro trénování baseline systému.
+  \item[Trénovací malý cs-en dataset:] Obsahuje 1000000 párů vět. Je určený pro trénování v experimentech, pomocí kterých se hledají optimální hyperparametry modelu a pro trénování referenčního systému.
   \item[Trénovací velký cs-en dataset:] Obsahuje 33962614 párů vět. Je určený pro finální otestování modelu s nejlepšími výsledky nad malým trénovacím datasetem.
   \item[Validační cs-en dataset:] Obsahuje 2000 párů vět. Je určený pro testování modelu trénovaném s malým trenovacím datasetem, za účelem hledání optimalních hyperparametrů modelu.
   \item[Testovací cs-en dataset:] Obsahuje 2000 párů vět. Je určený pro finální otestování modelu natrénovaného s velkým trenovacím datasetem. Používá se místo validačního modelu aby se vyzkoušelo, že výsledný model je skutečně schopný generalizace a nebyl jen úzce přizpůsoben pro dobré výsledky s validačním datasetem.
@@ -711,20 +713,20 @@ Stažené datasety byly rozdělený na několik menších datasetů, které spol
 
 V případě, že byl dataset v experimentu předzpracován pomocí subword-nmt pro rozdělení slov na menší jednotky, byl vždy přeložený text před vyhodnocením BLEU skóre převeden zpátky na celá slova.
 
-\section{Baseline systém v Moses}
-Systém (popsaný v \ref{section:baseline}) byl natrénován za účelem porovnání jeho výsledku s výsledky prezentovaného systému. Pro trénování byl použit \textbf{trénovací malý dataset} a pro vyhodnocení \textbf{testovací dataset}. Výsledek je v tabulce \ref{table:baseline}.
+\section{Referenční systém v Moses}
+Systém (popsaný v \ref{section:referent}) byl natrénován za účelem porovnání jeho výsledku s výsledky prezentovaného systému. Pro trénování byl použit \textbf{trénovací malý dataset} a pro vyhodnocení \textbf{testovací dataset}. Výsledek je v tabulce \ref{table:referent}.
 
 \begin{figure}[H]
     \begin{center}
         \begin{tabular}{c|c}
-          & baseline systém v Moses  \\
+          & referenční systém v Moses  \\
           \hline
           BLEU skóre & 23.08\\
           \hline
         \end{tabular}
     \end{center}
 	\caption{Výsledky modelu natrénovaného pomocí statistického nástroje Moses.}
-	\label{table:baseline}
+	\label{table:referent}
 \end{figure}
 
 \section{Experimenty}
@@ -732,7 +734,9 @@ Systém (popsaný v \ref{section:baseline}) byl natrénován za účelem porovn�
 \subsection{Hledání optimálních hyperparametrů}\label{subsection:experimentsOptimal}
 V této sekci je popsán průběh a výsledky experimentů prováděných za účelem nalezení co nejlepších hyperparametrů modelu. Všechny experimenty jsou provedeny na překladu z češtiny do angličtiny za pomocí malého trénovacího cs-en datasetu a překlad je testován pomocí validačního cs-en datasetu.
 
-\subsubsection{1. experiment}\label{experiment1}
+\subsubsection{1. experiment -- baseline}\label{experiment1}
+Model a jeho parametry z tohoto experimentu bude považován za baseline vůči kterému budou porovnány výsledky modelů z dalších experimentů aby se dalo určit k jak velkému došlo vylepšení.
+
 Parametry:
 \begin{itemize}
   \item Používají se celá slova
@@ -742,7 +746,7 @@ Parametry:
   \item paprskové prohledávání o velikosti 1
 \end{itemize}
 
-Trénování bylo ukončeno po 9. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.855}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{7.26}.
+Trénování bylo ukončeno po 9. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.855}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{7.26}. Pro možnost porovnání s výsledným nejlepším modelem byl proveden překlad i testovacího datasetu a to se \textbf{skóre 7.36}.
 
 \begin{figure}[H]
     \begin{center}
@@ -1106,7 +1110,7 @@ Parametry:
   \item paprskové prohledávání o velikosti 15
 \end{itemize}
 
-Trénování bylo ukončeno po 12. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.818}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{9.78}, takže nejlepším zůstavá model z experimentu \ref{experiment8}.
+Trénování bylo ukončeno po 12. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.818}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{9.78}, takže nejlepším modelem zůstavá model z experimentu \ref{experiment8}.
 
 \begin{figure}[H]
     \begin{center}
@@ -1133,66 +1137,19 @@ Trénování bylo ukončeno po 12. epoše. Nejlepší dosažený výsledek \text
 \end{figure}
 
 \subsection{Otestování nejlepšího modelu} \label{experimentBestModel}
-V této sekci je popsán průběh a výsledek experimentu provedeném s použitím nejlepších najitých hyperparametrů. Experiment byl proveden s velkým cs-en trénovacím datasetem a překlad je testován pomocí testovacího cs-en datasetu.
-
+Modelem s nejlepšími dosaženými výsledky je model s parametry z experimentu \ref{experiment8}. Výsledky jeho překladu pro testovací dataset jsou v tabulce \ref{table:bestResults}.
 
 \begin{figure}[H]
     \begin{center}
-        \begin{tabular}{|p{0.42\linewidth}|}
+        \begin{tabular}{c|c}
+          & nejlepší vytvořený model  \\
           \hline
-          \multicolumn{1}{|c|}{originální text} \\
-          \hline
-          1. budoucnost se jevila černě . \\
-          2. někdo mu musí dát lekci . \\
-          3. nejdůležitější výsledky studie jsou uvedeny v tabulce 4 a na obrázku 3 . \\
-          4. uvidíme , jak se ta schůze bude odvíjet . \\
-          5. Evropská unie je druhým největším obchodním partnerem ASEAN . \\
-          6. 13. prosinec \\
-          \hline
-        \end{tabular}
-        \hspace{10mm}
-        \begin{tabular}{|p{0.42\linewidth}|}
-          \hline
-          \multicolumn{1}{|c|}{originální překlad} \\
-          \hline
-          1. the future was grey . \\
-          2. somebody '  s got to teach him a lesson . \\
-          3. the key results of the trial are listed in Table 4 and Figure 3 . \\
-          4. see how the meeting goes . \\
-          5. the European Union is ASEAN '  s second largest trading partner . \\
-          6. December 13 \\
+          BLEU skóre & 9.87\\
           \hline
         \end{tabular}
     \end{center}
-    \begin{center}
-        \begin{tabular}{|p{0.42\linewidth}|}
-          \hline
-          \multicolumn{1}{|c|}{překlad baseline systému Moses} \\
-          \hline
-          1. the jevila black .  \\
-          2. someone must give him a lesson .  \\
-          3. the study results are provided in Table 4 and the picture 3 . \\
-          4. we ' ll see how the meeting is odvíjet . \\
-          5. the European Union ' s second largest partner ASEAN . \\
-          6. 13 December \\
-          \hline
-        \end{tabular}
-        \hspace{10mm}
-        \begin{tabular}{|p{0.42\linewidth}|}
-          \hline
-          \multicolumn{1}{|c|}{překlad vytvořeného systému} \\
-          \hline
-          1. the future was red . \\
-          2. someone needs to give him a lesson . \\
-          3. the most important results of the two and two are available in the level of the 3 . \\
-          4. let ' s see how the meeting goes . \\
-          5. the European Agreement is the most attractive partner of the European Union . \\
-          6. 13. \\
-          \hline
-        \end{tabular}
-    \end{center}
-	\caption{Ukázky překladu vět z testovacího datasetu. V první tabulce jsou originální věty v českém jazyce, v druhé tabulce jsou originální anglické překlady. Ve třetí tabulce je překlad, který vytvořil baseline systém vytvořený v nástroji Moses a v poslední tabulce jsou překlady vytvořené prezentovaným systémem. Je vidět že překlad z Moses si pomáhá přenášením neznámých slov do přeložené věty, což v případě například jmen může pomoct, ale v jiných případech jako je 1. věta může být ke škodě.}
-	\label{img:exampleResults}
+	\caption{Výsledné skóre BLEU nad testovacím datasetem. Překlad byl proveden s modelem který dosáhl nejlepších výsledků pro validační dataset.}
+	\label{table:bestResults}
 \end{figure}
 
 
@@ -1234,16 +1191,119 @@ Použité parametry jsou stejné jako v experimetu \ref{experiment8}, tedy param
           \hline
         \end{tabular}
     \end{center}
-	\caption{Výsledné skóre BLEU pro testovací datasety různých jazykových párů. Překlad byl proveden jedním modelem natrénovaným na párech $Cs->En$ a $En->De$. Výsledky ukazují, že model je schopný překládat pro oba natrénované páry, ale za cenu horšího výsledku pro $Cs->En$, než když byl natrénován jen pro tento jeden pár. Zero-shot překlad páru $Cs->De$ nevykazuje velký úspěch.}
+	\caption{Výsledné skóre BLEU pro testovací datasety různých jazykových párů. Překlad byl proveden jedním modelem natrénovaným na párech $Cs->En$ a $En->De$. Výsledky ukazují, že model je schopný překládat pro oba natrénované páry, ale za cenu horšího výsledku pro $Cs->En$, než když byl natrénován jen pro tento jeden pár. Zero-shot překlad páru $Cs->De$ nevykazuje úspěch.}
 	\label{table:resultsMulti}
 \end{figure}
 
+\subsection{Výsledky}
+Všechny dosažené výsledky získané s cs-en testovacím datasetem jsou shrnuty v tabulce \ref{table:results}. Ukázky překladů jsou v \ref{img:exampleResults}.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{c|c|c|c|c}
+           & Moses & baseline model & nejúspěšnější model & více jazykový model \\
+          \hline
+          skóre BLEU & 23.08 & 7.36 & 9.87 & 7.10 \\
+          \hline
+        \end{tabular}
+    \end{center}
+	\caption{Výsledky různých modelů pro překlad cs-en testovacího datasetu. Žádný z vytvořených modelů nedosáhl výsledků referenčního modelu vytvořeného v nástroji Moses. Nejúspěšnější model z experimentu \ref{experiment8} dosáhl zlepšení vůči baseline modelu, což se projevuje i na ukázkách překladu \ref{img:exampleResults}. Model natrénovaný pro překlad mezi více jazyky má skóre horší jak baseline model pro překlad $Cs->En$, ale za to dosahuje podobného výsledku i pro překlad $Cs->De$.}
+	\label{table:results}
+\end{figure}
+
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{tabular}{|p{0.44\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{originální text} \\
+          \hline
+          1. budoucnost se jevila černě . \\
+          2. někdo mu musí dát lekci . \\
+          3. nejdůležitější výsledky studie jsou uvedeny v tabulce 4 a na obrázku 3 . \\
+          4. uvidíme , jak se ta schůze bude odvíjet . \\
+          5. Evropská unie je druhým největším obchodním partnerem ASEAN . \\
+          6. 13. prosinec \\
+          \hline
+        \end{tabular}
+        \hspace{5mm}
+        \begin{tabular}{|p{0.44\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{originální překlad} \\
+          \hline
+          1. the future was grey . \\
+          2. somebody '  s got to teach him a lesson . \\
+          3. the key results of the trial are listed in Table 4 and Figure 3 . \\
+          4. see how the meeting goes . \\
+          5. the European Union is ASEAN '  s second largest trading partner . \\
+          6. December 13 \\
+          \hline
+        \end{tabular}
+    \end{center}
+    \begin{center}
+        \begin{tabular}{|p{0.44\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{překlad referenčního systému Moses} \\
+          \hline
+          1. the jevila black .  \\
+          2. someone must give him a lesson .  \\
+          3. the study results are provided in Table 4 and the picture 3 . \\
+          4. we ' ll see how the meeting is odvíjet . \\
+          5. the European Union ' s second largest partner ASEAN . \\
+          6. 13 December \\
+          \hline
+        \end{tabular}
+        \hspace{5mm}
+        \begin{tabular}{|p{0.44\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{překlad baseline modelu} \\
+          \hline
+          1. the future future became \_UNK . \\
+          2. somebody must teach him a lesson . \\
+          3. the following involved interested in the results of the information and the \_UNK are available in the .\\
+          4. see how the \_UNK will be happening . \\
+          5. the European Union is the European Union \_UNK . \\
+          6. 13 \_UNK \\
+          \hline
+        \end{tabular}
+    \end{center}
+    \begin{center}
+        \begin{tabular}{|p{0.44\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{překlad nejlepšího modelu} \\
+          \hline
+          1. the future was red . \\
+          2. someone needs to give him a lesson . \\
+          3. the most important results of the two and two are available in the level of the 3 . \\
+          4. let ' s see how the meeting goes . \\
+          5. the European Agreement is the most attractive partner of the European Union . \\
+          6. 13. \\
+          \hline
+        \end{tabular}
+        \hspace{3mm}
+        \begin{tabular}{|p{0.44\linewidth}|}
+          \hline
+          \multicolumn{1}{|c|}{překlad více jazykového modelu} \\
+          \hline
+          1. the whole body was ty . \\
+          2. someone ' s got to take care of him . \\
+          3. the same \\
+          4. we ' ll see how it ' s going to be done . \\
+          5. the the EU ' s the right of the ASEE . \\
+          6. 13 . ( 1 ) \\
+          \hline
+        \end{tabular}        
+    \end{center}
+	\caption{Ukázky překladu vět z testovacího datasetu. V první tabulce jsou originální věty v českém jazyce, v druhé tabulce jsou originální anglické překlady. Ve třetí tabulce je překlad, který vytvořil referenční systém vytvořený v nástroji Moses, ve čtvrté překlady baseline modelu, v páté tabulce jsou překlady vytvořené nejlepším dosaženým modelem a v poslední tabulce jsou překlady modelu trénovaného nad více jazyky. Je vidět že překlad z Moses si pomáhá přenášením neznámých slov do přeložené věty, což v případě například jmen může pomoct, ale v jiných případech jako je 1. věta může být ke škodě. I přes nevelkou změnu v BLEU skóre je vidět značné zlepšení mezi větami přeloženými baseline modelem a modelem s nejlepším skóre.}
+	\label{img:exampleResults}
+\end{figure}
 
 \chapter{Závěr}
 Práce popisuje komponenty potřebné pro vytvoření překladového systému s pomocí neuronových sítí. Za pomocí těchto komponent byl vytvořen systém realizovaný pythoním balíčkem \emph{nmt}. Byly zvoleny trénovací a testovací data s kterými byl tento systém otestován. Hodnotícím kritériem je skóre BLEU, které pro testovací dataset newtest2017 vyšlo 2.03. V porovnání se skóre 14.0, které vyšlo pro systém natrénovaný nástrojem Moses to není velmi úspěšný výsledek. Systém bude potřeba rozšířit a vylepšit, tak aby fungoval výrazně lépe.
 
 Je několik vhodných rozšíření systému, které by mohly pomoci dosáhnout lepších výsledků. Použití více, případně i větších, vrstev LSTM. Na místo invertování vstupů enkodéru, je možné první vrstvu enkodéru udělat obousměrnou (viz \ref{subsection:optimization}). Dále by bylo vhodné přidat paprskové vyhledávání na místo hladového pro určování slov při generování. Dosavadní implementace systému vykazuje velký problém s neznámými (\emph{UNK}) slovy. Tento problém by se mohl vyřešit pomocí tzv. \emph{attention} mechanismu a přenášení neznámých slov v nezměněné podobě do výsledného překladu.
 
+\todo{napsat o excel@fit}
 
 \todo{knihovna neni nutne specificka pro nmt, ale zavisla na datech, upravil bych api na vic genericky a zkusil natrenovat chatbota}
 \todo{ze jsem se hodne zameroval na experimenty a data, ale chtel bych vylepsit dekompozici knihovny a jeji api a distribuovat na PyPI}

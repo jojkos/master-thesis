@@ -103,11 +103,6 @@ def set_gpu():
     return free_gpu
 
 
-# python main.py --train --training_dataset "data/anki_ces-eng" --test_dataset "data/OpenSubtitles2016-moses-10000.cs-en-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --num_units 100 --num_training_samples 100 --num_test_samples 100 --clear True --use_fit_generator False
-# python main.py --train --training_dataset "data/mySmallTest" --test_dataset "data/mySmallTest" --source_lang "cs" --target_lang "en" --epochs 5 --log_folder "logs/smallTest"
-
-# SMT pousteni
-# python main.py --train --training_dataset "G:\Clouds\DPbigFiles\WMT17\newsCommentary\news-commentary-v12.cs-en-tokenized.truecased.cleaned" --test_dataset "G:\Clouds\DPbigFiles\WMT17\testSet\newstest2017-csen-tokenized.truecased.cleaned" --source_lang "cs" --target_lang "en" --model_folder "G:\Clouds\DPbigFiles\WMT17\newsCommentary" --model_file "newsCommentarySmtModel.h5" --batch_size 64 --num_units 256 --optimizer "rmsprop" --max_source_vocab_size 10000 --max_target_vocab_size 10000 --source_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.cs.vec" --target_embedding_path "G:\Clouds\DPbigFiles\facebookVectors\facebookPretrained-wiki.en.vec"
 def main():
     parser = argparse.ArgumentParser(description='Arguments for the main.py that uses nmt package')
     add_arguments(parser)
@@ -149,8 +144,6 @@ def main():
             tokenize=args.tokenize, clear=args.clear
         )
 
-        # TODO osamostatnit veci v modulu a vyndat je sem, z modulu udelat jen generic modul
-
         if args.train:
             translator.fit(epochs=args.epochs, initial_epoch=args.initial_epoch,
                            batch_size=args.batch_size, use_fit_generator=args.use_fit_generator,
@@ -160,10 +153,6 @@ def main():
         if args.evaluate:
             translator.translate_test_data(args.batch_size, args.beam_size)
 
-            # remove bpe subwords before bleu scoring
-            # TODO rucne to pak az porovnam u sebe pro uplne vysledny skore, protoze potrebuju mit spravnej test BPE data set pro validaci pri fitovani
-            # utils.restore_subwords(args.test_dataset + "." + args.target_lang + ".translated")
-
             bleu = translator.get_bleu_for_test_data_translation()
             print("BLEU: {}".format(bleu))
 
@@ -171,8 +160,6 @@ def main():
             while True:
                 seq = input("Enter sequence: ")
                 translator.translate(seq)
-
-        # TODO class for encoder/decoder (model)
 
 
 # autogenerate docs
