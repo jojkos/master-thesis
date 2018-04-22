@@ -1,9 +1,3 @@
-\todo{presny sekvence prikazu pro pripravu datasetu}
-
-\todo{mozna i presny prikazy pro jednotlivy testy?}
-
-sge runner? moses runner?
-
 \chapter{Obsah přiloženého média}
 \begin{itemize}
   \item text práce ve formátu PDF a zdrojové soubory pro prostředí \LaTeX
@@ -15,10 +9,32 @@ sge runner? moses runner?
       \item[složka docs/\_build] obsahuje dokumentaci balíčku vygenerovanou pomocí \emph{sphinx}
     \end{description}
   \item skript \emph{main.py}, který byl použit při experimentech pro volání metod balíčku \emph{nmt}
+  \item složku s~experimenty, která obsahuje jejich průběh, výsledný model ve formátu \emph{h5} a překlady
 \end{itemize}
 
-\chapter{Parametry balíčku nmt} 
+\chapter{Parametry třídy Translator}\label{append:parameters}
 \begin{description}
-  \item[a] a
-  \item[b] b
-\end{description}
+  \item[clear] Jestli před začátkem trénování mají být smazané staré logy a uložený model
+  \item[dropout] Velikost dropout
+  \item[log\_folder] Cesta ke složce, do které se mají ukládat záznamy
+  \item[max\_source\_embedding\_num] Maximální počet řádků načtených ze zdrojových embeddings
+  \item[max\_target\_embedding\_num] Maximální počet řádků načtených z cílových embeddings
+  \item[max\_source\_vocab\_size] Maximální velikost zdrojového slovníku
+  \item[max\_target\_vocab\_size] Maximální velikost cílového slovníku
+  \item[model\_file] Pojmenování souboru s modelem
+  \item[model\_folder] Pojmenování složky do které se uloží model
+  \item[num\_decoder\_layers] Počet vrstev v dekodéru
+  \item[num\_encoder\_layers] Počet vrstev v enkodéru
+  \item[num\_test\_samples] Kolik se má použít řádků z testovacího datasetu
+  \item[num\_training\_samples] Kolik se má použít řádků z trénovacího datasetu
+  \item[num\_units] Počet jednotek LSTM pro vrstvy enkodéru a dekodéru
+  \item[source\_embedding\_dim] Rozměr zdrojových embeddings
+  \item[source\_embedding\_path] Cesta k souboru se zdrojovými embeddings
+  \item[source\_lang] Zdrojový jazyk (koncovka datasetu)
+  \item[target\_embedding\_dim] Rozměr cílových embeddings
+  \item[source\_target\_path] Cesta k souboru s cílovými embeddings
+  \item[target\_lang] Cílový jazyk (koncovka datasetu)
+  \item[test\_dataset] Cesta k testovacímu datasetu
+  \item[tokenize] Jestli se má provést před tréninkem tokenizace datasetů
+  \item[training\_dataset] Cesta k trénovacímu datasetu
+\end{description} 

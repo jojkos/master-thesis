@@ -1,4 +1,7 @@
 # coding: utf-8
+__author__ = "Jonáš Holcner"
+__email__ = "xholcn01@stud.fit.vutbr.cz"
+__license__ = "MIT"
 
 import logging
 import argparse

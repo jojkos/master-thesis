@@ -36,7 +36,7 @@
 %----------------------------------------------------------------------
 %	MARGINS	
 %----------------------------------------------------------------------
-	  	  
+	  	
 \RequirePackage[left=2cm,%
                 right=2cm,%
 				top=2.25cm,%
@@ -88,7 +88,7 @@
   {}
   {0em}
   {\colorbox{color-orange!100}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{#1}}}
-  []  
+  []
 \titleformat{\subsection}
   {\color{color-sections}\sffamily\bfseries}
   {\thesubsection}
@@ -100,12 +100,12 @@
   {\thesubsubsection}
   {0.5em}
   {#1}
-  []    
+  []
 \titleformat{\paragraph}[runin]
   {\sffamily\small\bfseries}
   {}
   {0em}
-  {#1} 
+  {#1}
 \titlespacing*{\section}{0pc}{3ex \@plus4pt \@minus3pt}{5pt}
 \titlespacing*{\subsection}{0pc}{2.5ex \@plus3pt \@minus2pt}{1pt}
 \titlespacing*{\subsubsection}{0pc}{2ex \@plus2.5pt \@minus1.5pt}{0pt}
@@ -114,7 +114,7 @@
 %----------------------------------------------------------------------
 %	TABLEOFCONTENTS SET-UP
 %----------------------------------------------------------------------
-\newlength{\tocsep} 
+\newlength{\tocsep}
 \setlength\tocsep{1.5pc} % Sets the indentation of the sections in the table of contents
 \setcounter{tocdepth}{3} % Three levels in the table of contents section: sections, subsections and subsubsections
 
@@ -137,12 +137,12 @@
   {}
   {}
   {}
-  [\ \textbullet\ ]  
+  [\ \textbullet\ ]
 
 %----------------------------------------------------------------------
 %	MULTIPLE AUTHOR SET
-%----------------------------------------------------------------------  
-  
+%----------------------------------------------------------------------
+
 \newcount\@authcnt
 \newcount\@tmpcnt\@tmpcnt\z@
 
@@ -155,7 +155,7 @@
    \let\next\relax
   \fi
 \next}
-	 
+	
 \newcommand{\affiliation}[1]{%
     \global\advance\@authcnt1
     \expandafter\gdef\csname @auth\romannumeral\the\@authcnt\endcsname
@@ -164,7 +164,7 @@
 	
 %----------------------------------------------------------------------
 %	LIST CONTROL
-%----------------------------------------------------------------------  
+%----------------------------------------------------------------------
 
 \RequirePackage{enumitem}
 %\setlist{nolistsep} % Uncomment to remove spacing between items in lists (enumerate, itemize)
@@ -172,7 +172,7 @@
 
 %----------------------------------------------------------------------
 %	ABSTRACT+AUTHOR FRAME
-%----------------------------------------------------------------------  
+%----------------------------------------------------------------------
 
 \newcommand{\PaperTitle}[1]{\def\@PaperTitle{#1}}
 \newcommand{\Archive}[1]{\def\@Archive{#1}}
@@ -238,7 +238,7 @@
 
 %----------------------------------------------------------------------
 %	REFERENCES
-%----------------------------------------------------------------------  
+%----------------------------------------------------------------------
 
 % Remove brackets from numbering in List of References
 \renewcommand{\@biblabel}[1]{[{\color{color-ref}#1}]}
@@ -271,7 +271,7 @@
 
 %----------------------------------------------------------------------
 %	ADDED STUFF FOR Excel@FIT
-%----------------------------------------------------------------------  
+%----------------------------------------------------------------------
 \setlength{\columnsep}{0.55cm} % Distance between the two columns of text
 \setlength{\fboxrule}{0.75pt} % Width of the border around the abstract
 
@@ -382,4 +382,3 @@
 \newcommand{\blind}[1]{\textcolor{gray}{\Blindtext[#1]}}
 
 \usepackage[switch]{lineno}
-
