@@ -3,29 +3,29 @@ Schopnost dorozumět se s~ostatními lidmi na planetě je nesmírně důležitá
 
 Ideálem je překlad tak jak ho známe ze science fiction materiálů. Dvě osoby, mluvící kompletně jiným jazykem, si navzájem rozumí v~reálném čase. S~intenzivním rozvojem strojového učení a umělé inteligence, který nastal v~posledních letech, se k~tomuto ideálu blížíme mílovými kroky. Automatické rozpoznání mluvené řeči je již ve skvělé kvalitě dostupné v~běžných spotřebitelských zařízeních a automatický překlad se taky značně vylepšuje.
 
-Obsahem této práce je popis a realizace takovéhoto automatického překladového systému, schopného naučit se za pomocí datasetů v~různých zdrojových a cílových jazycích, překládat věty mezi těmito jazyky. K~tomu je použita architektura rekurentních neuronových sítí enkodér-dekodér, která vykazuje v~posledních letech dobré výsledky.
+Obsahem této práce je popis a realizace takovéhoto automatického překladového systému. Systém by měl být schopný naučit se za pomocí velkého množství zarovnaných vět v~různých jazycích překládat věty mezi těmito jazyky. K~tomu je použita architektura rekurentních neuronových sítí enkodér-dekodér, která vykazuje v~posledních letech dobré výsledky.
 
- V~následující kapitole \ref{chapter:theory} je popis překladového systému a jsou zde rozebrány důležité pojmy a teorie ze kterých je je systém vystavěn. Kapitola \ref{chapter:implementation} popisuje co a jak bylo implementováno a kapitola \ref{chapter:results} podává výsledky experimentů s~vytvořeným systémem a porovnává je s~výsledky podané nástrojem pro statistický překlad Moses.
+V~následující kapitole \ref{chapter:theory} je popis překladového systému a jsou zde rozebrány důležité pojmy a teorie ze kterých je je systém vystavěn. Větší část této kapitoly vznikla v~rámci semestrálního projektu. Kapitola \ref{chapter:implementation} popisuje implementovaný systém a kapitola \ref{chapter:results} podává výsledky experimentů s~vytvořeným systémem a porovnává je s~výsledky podanými nástrojem pro statistický překlad Moses.
 
 
 \chapter{Strojový překlad}\label{chapter:theory}
 Účelem této kapitoly je blíže vysvětlit a rozebrat jednotlivé pojmy a komponenty potřebné pro vytvoření překladového systému.
 
 \section{Popis cílového systému} \label{chapter:draft}
-Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné tomu co dělá Google Translator\footnote{\url{translate.google.cz}} -- blíže popsáno v~článku \cite{googleBridgingGap}. Vezme se věta v~původním jazyce a vytvoří se z~ní co nejvěrnější překlad v~jazyce cílovém a to za pomocí natrénované rekurentní neuronové sítě. V~této sekci je vysvětleno, jak by takový systém mohl vypadat a co za komponenty potřebuje k~tomu aby fungoval.
+Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné tomu co dělá Google Translator\footnote{\url{translate.google.cz}} -- blíže popsáno v~článku \cite{googleBridgingGap}. Vezme se věta v~původním jazyce a vytvoří se z~ní co nejvěrnější překlad v~jazyce cílovém a to za pomocí natrénované rekurentní neuronové sítě. V~této sekci je vysvětleno, jak by takový systém mohl vypadat jaké komponenty potřebuje k~tomu, aby fungoval.
 
 \begin{description}
-  \item[Dataset:] Aby bylo možné nacvičit neuronovou síť pro překlad, je nejprve zapotřebí mít nějaký dataset. Dataset obsahuje texty ve dvou jazycích mezi kterými se má překládat. Tyto texty musí být zarovnané, tak aby si jednotlivé věty v~těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}).
+  \item[Dataset:] Aby bylo možné nacvičit neuronovou síť pro překlad, je nejprve zapotřebí mít dataset. Dataset obsahuje texty ve dvou jazycích, mezi kterými se má překládat. Tyto texty musí být zarovnané tak, aby si jednotlivé věty v~těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}).
 
-  \item[Tokenizer:] Dataset a jeho jednotlivé věty před začátkem trénování sítě je nejprve potřeba připravit. Tokenizer rozdělí věty na jednotlivé tokeny a zahodí zvolené nepodstatné vlastnosti, které mohou být třeba velká písmena na počátku vět nebo interpunkce. To usnadňuje práci s~datasety a také snižuje velikost slovníků.
+  \item[Tokenizer:] Dataset a jeho jednotlivé věty je nejprve potřeba před začátkem trénování sítě připravit. Tokenizer rozdělí věty na jednotlivé tokeny a zahodí zvolené nepodstatné vlastnosti, například velká písmena na počátku vět nebo interpunkce. To usnadňuje práci s~datasety a také snižuje velikost slovníků.
 
-  \item[Slovník:] Slovník se vytvoří jako seznam $n$ nejčastějších slov v~datasetu ve vstupním a cílovém jazyce. Čím je slovník menší, tím se zmenší požadavky na vypočetní výkon. Na druhou stranu je pak potřeba vyřešit při trénování a překladu problém se slovy nevyskytujícími se ve slovníku (popsáno v~sekci \ref{subsection:oov}).
+  \item[Slovník:] Slovník se vytvoří jako seznam $n$ nejčastějších slov v~datasetu ve vstupním a cílovém jazyce. Čím je slovník menší, tím jsou menší požadavky na vypočetní výkon. Na druhou stranu je pak potřeba vyřešit při trénování a překladu problém se slovy nevyskytujícími se ve slovníku (popsáno v~sekci \ref{subsection:oov}).
 
   \item[Word Embeddings:] Obecně je možné vytvářet jazykové modely, které generují text po písmenech, částech slov nebo po slovech \cite{mikolovSubwords}. Word embeddings je další forma předzpracování. Každý token ze vstupního slovníku se převede do vektoru reálných čísel, ve kterém jsou zakódovány některé syntaktické a sémantické vlastnosti daného tokenu, což umožní neuronové síti se učit lépe, než kdyby se použilo například jenom číslo označující pozici tokenu ve slovníku. Více v~sekci \ref{subsection:neuralembeddings}.
 
   \item[Model:] V~současné době nejúspěšnější architekturou používanou pro překlad je enkodér-dekodér umožňující překlad po celých větách (sequence to sequence, dále seq2seq \cite{seq2seq}). To je rozdíl oproti starším statistickým metodám překladu, kde se překládalo po slovech či frázích.
 
-      Nejprve enkodér vezme word embedding na vstupu a pomocí rekurentní neuronové sítě (sekce \ref{section:rnn}) převede větu na vstupu do velkého vektoru reprezentující její význam (tzv. myšlenkový vektor -- intuice je taková, že když člověk překládá větu, také nejprve pochopí její význam a poté ji až začne překládat). Dekodér -- taky rekurentní neuronová síť -- následně z~tohoto vektoru slovo po slovu vygeneruje výslednou přeloženou větu. Dekodér tedy funguje jako jazykový model (sekce \ref{section:langmodel}), který je na inicializovaný na jednu konkrétní větu.
+      Nejprve enkodér vezme word embedding na vstupu a pomocí rekurentní neuronové sítě (sekce \ref{section:rnn}) převede větu na vstupu do velkého vektoru reprezentujícího její význam (tzv. myšlenkový vektor -- intuice je taková, že když člověk překládá větu, také nejprve pochopí její význam a až poté ji začne překládat). Dekodér -- taky rekurentní neuronová síť -- následně z~tohoto vektoru slovo po slovu vygeneruje výslednou přeloženou větu. Dekodér tedy funguje jako jazykový model (sekce \ref{section:langmodel}), který je inicializovaný na jednu konkrétní větu.
 \end{description}
 
 
@@ -33,14 +33,14 @@ Cílem této práce práce je vytvořit systém pro strojový překlad textu pom
     \begin{center}
             \tmpframe{\includegraphics[width=0.99\linewidth]{img/graphs/draftEnhanced.pdf}}
     \end{center}
-	\caption{Schéma návrhu systému pro překlad. Dataset se předzpracuje pomocí tokenizeru. Do enkodéru vstupují tokeny převedené na embeddings. Enkodér větu zakóduje do velkého "myšlenkového" vektoru ze kterého dekodér generuje překlad.}
+	\caption{Schéma návrhu systému pro překlad. Dataset se předzpracuje pomocí tokenizeru. Do enkodéru vstupují tokeny převedené na embeddings. Enkodér větu zakóduje do velkého "myšlenkového" vektoru, ze kterého dekodér generuje překlad.}
 	\label{img:draft}
 \end{figure}
 
 
 
 \section{Jazykové modely}\label{section:langmodel}
-Zatímco u~programovacích jazyků existuje jejich formální definice přesně popisující jejich syntaxy a význam, u~přirozených jazyků to tak není. Přirozený jazyk vznikl náhodným způsobem v~průběhu staletí a tisíciletí narozdíl od formálně definovaných jazyků, které byly precizně navrženy. Přestože běžný jazyk se řídí nějakými pravidly, existuje značné množství výjimek a odchylek. I~napříč tomu si však lidé navzájem rozumí. Problém však je tyto neurčitá pravidla převést do formálních pravidel, tak, aby jim rozuměl počítač. Řešením pro tento problém mohou být jazykové modely, které nevznikají nadefinováním formálních pravidel, ale natrénováním modelu z~příkladů. Sekce vychází z~práce \cite{nmtThesis} a článku \cite{nmtTutorial}.
+Zatímco u~programovacích jazyků existuje formální definice přesně popisující jejich syntaxy a význam, u~přirozených jazyků to tak není. Přirozený jazyk vznikl náhodným způsobem v~průběhu staletí a tisíciletí narozdíl od formálně definovaných jazyků, které byly precizně navrženy. Přestože běžný jazyk se řídí nějakými pravidly, existuje značné množství výjimek a odchylek. I~napříč tomu si však lidé navzájem rozumí. Problém však je tato neurčitá pravidla převést do formálních pravidel, tak, aby jim rozuměl počítač. Řešením pro tento problém mohou být jazykové modely, které nevznikají nadefinováním formálních pravidel, ale natrénováním modelu z~příkladů. Sekce vychází z~práce \cite{nmtThesis} a článku \cite{nmtTutorial}.
 \\\\
 Jazykový model udává pro každou větu $w$ jaká je její pravděpodobnost. Respektive pro sekvenci slov $w = w_1, w_2..., w_m$ získá pravděpodobnost podle rovnice \ref{figure:probdistr}.
 
@@ -48,15 +48,15 @@ Jazykový model udává pro každou větu $w$ jaká je její pravděpodobnost. R
   p(w) = \prod_{i=1}^{m} p(w_i|w_{<i})
 \end{align}
 
-Pro každé slovo $w_i$ ze sekvence $w$ určí jaká je jeho podmíněná pravděpodobnost v~případě, že se před ním nachází slova $w_{<i}$.
+Pro každé slovo $w_i$ ze sekvence $w$ určí, jaká je jeho podmíněná pravděpodobnost v~případě, že se před ním nachází slova $w_{<i}$.
 
 \subsection{N-gram modely}\label{subsection:ngram}
-Ve výsledku je pro překladový systém potřeba získat model, který pro zdrojovou větu $F$ vrátí přeloženou větu $E$, tak že $P(E|F)$. N-gram model je však jazykový model, který udává jen pro pravděpodobnost věty P(E) (pro nějaký daný kontext nad kterým se model nacvičil).
+Ve výsledku je pro překladový systém potřeba získat model, který pro zdrojovou větu $F$ vrátí přeloženou větu $E$, tak že $P(E|F)$. N-gram model je však jazykový model, který udává jen pravděpodobnost věty P(E) (pro nějaký daný kontext nad kterým se model natrénoval).
 
 Takovýto model umožní zhodnotit přirozenost věty a generovat text podobný tomu, na kterém byl model nacvičen.
 
 \begin{description}
-  \item[Zhodnocení přirozenosti:] Pomocí jazykového modelu je možné pro větu $w$ zhodnotit, jak moc je přirozená nebo-li jak moc je pravděpodobné, že by takováto věta mohla existovat v~textu na kterém byl model natrénován.
+  \item[Zhodnocení přirozenosti:] Pomocí jazykového modelu je možné pro větu $w$ zhodnotit, jak moc je přirozená neboli jak moc je pravděpodobné, že by takováto věta mohla existovat v~textu, na kterém byl model natrénován.
   \item[Generování textu:] Protože model umožňuje pro každé slovo $w_i$ získat pravděpodobnost následujícího slova $w_{i+1}$, je takto možné generovat náhodný, přirozeně (vůči zdrojovému textu) vypadající text. Přesně tato vlastnost je potřeba pro generování překladů.
 \end{description}
 
@@ -66,12 +66,12 @@ $N$-gram modely umožňují určit pravděpodobnost následujícího slova ve v�
     P(x_{i}\mid x_{{i-(n-1)}},\dots ,x_{{i-1}})
 \end{align}
 
-Se zvětšujícím se $n$ se výrazně zvětšuje náročnost výpočtu. Tímto způsobem tak není snadné zachytit závislosti mezi slovy vzdálenými od sebe více než pár míst.
+Se zvětšujícím se $n$ se výrazně zvětšuje náročnost výpočtu. Tímto způsobem tak není snadné zachytit závislosti mezi slovy vzdálenými od sebe více než několik málo míst.
 
 \subsection{Log-lineární modely} \label{subsection:loglinear}
 Stejně jako v~případě $n$-gram modelů (sekce \ref{subsection:ngram}), tyto modely počítají pravděpodobnost následujícího slova $w_i$ při kontextu $w_{<i}$. $N$-gram model počítá pouze s~výskytem (identitou) slova. Log-lineární modely pracují s~\textbf{rysy} (z~anglického features). Rys je něco užitečného ohledně daného slova, co se dá použít pro zapamatování a pro předpověď slova dalšího. Jak už bylo řečeno, u~n-gram modelů to je pouze identita minulého slova. Formálněji je rys funkce $\phi(e^{t-1}_{t-n+1})$, která dostane na vstupu aktuální kontext a jako výsledek vrátí reálnou hodnotu -- vektor rysů $x \in \mathbb{R}^N$ popisující kontext při použití $N$ různých rysů.
 
-Stejně jako u~$n$-gram modelů, nastává problém když je potřeba zaznamenat vzdálenější závislosti. Například u~věty \uv{farmář jí steak} je potřeba zaznamenat pro předpovězení slova \uv{steak} jak jeho předcházející slovo $w_{t_1}=j\acute{\imath}$, tak $w_{t_2}=farm\acute{a}\check{r}$. V~případě, že by se použil pouze rys $w_{t_1}$, mohl by model předpovídat i věty, které nedávají smysl. Jako je například \uv{kráva jí steak}. Při použití většího množství rysů vznikají mnohem větší nároky na paměť a výkon a taky na velikost trénovacího datasetu. Řešením těchto problémů může být použití neuronových sítí (sekce \ref{subsection:neuralembeddings}).
+Stejně jako u~$n$-gram modelů nastává problém, když je potřeba zaznamenat vzdálenější závislosti. Například u~věty \uv{farmář jí steak} je potřeba zaznamenat pro předpovězení slova \uv{steak} jak jeho předcházející slovo $w_{t_1}=j\acute{\imath}$, tak $w_{t_2}=farm\acute{a}\check{r}$. V~případě, že by se použil pouze rys $w_{t_1}$, mohl by model předpovídat i věty, které nedávají smysl. Jako je například \uv{kráva jí steak}. Při použití většího množství rysů vznikají mnohem větší nároky na paměť a výkon a taky na velikost trénovacího datasetu. Řešením těchto problémů může být použití neuronových sítí (sekce \ref{subsection:neuralembeddings}).
 
 
 \subsection{Neuronové sítě a word embeddings}\label{subsection:neuralembeddings}
@@ -136,7 +136,7 @@ Existuje několik variant výpočtů word embeddings -- word2vec \cite{word2vec}
 Embbedings jsou vhodné pro \textbf{transfer learning}. To je způsob využití znalostí natrénovaných již třeba dříve pro jiný problém. Word embeddings je možné buďto získat v~průběhu učení modelu nebo použít už předtrénované, připravené pro tento účel. Díky tomu může model získat více znalostí o~jednotlivých slovech a celkový výsledek tak může být výrazně lepší.
 
 \subsection{Zpracování neznámých slov} \label{subsection:oov}
-Jazykový model typicky pracuje s~pevně danou velikostí slovníku (počtem slov, co se mohou vyskytovat), což je problém, protože překlad je obecně problém s~otevřenou slovní zásobou. Existuje-li dataset $\varepsilon_{train}$ obsahující texty na kterých se model bude učit a dataset $\varepsilon_{test}$, který bude sloužit k~ověření výkonosti a generalizace modelu, je více než pravděpodobně, že v~testovacím setu se budou nacházet slova, která se v~trénovacím nenacházela. To znamená, že se v~testovacím datasetu budou vyskytovat \textbf{neznámá slova}. Pro pokrytí co největšího množství slov by tak bylo potřeba učit model s~co největším slovníkem. To by ale bylo neefektivní a tak naopak může být vhodné pro zlepšení výkonu, omezit celkový počet slov se kterými se bude model trénovat pracovat. Tím pádem se však zvýší výskyt neznámých slov. Práce \cite{nmtTutorial} uvádí tři běžné způsoby jak se vypořádat s~neznámými slovy.
+Jazykový model typicky pracuje s~pevně danou velikostí slovníku (počtem slov, co se mohou vyskytovat), což je problém, protože překlad je obecně problém s~otevřenou slovní zásobou. Existuje-li dataset $\varepsilon_{train}$ obsahující texty na kterých se model bude učit a dataset $\varepsilon_{test}$, který bude sloužit k~ověření výkonnosti a generalizace modelu, je více než pravděpodobně, že v~testovacím setu se budou nacházet slova, která se v~trénovacím nenacházela. To znamená, že se v~testovacím datasetu budou vyskytovat \textbf{neznámá slova}. Pro pokrytí co největšího množství slov by tak bylo potřeba učit model s~co největším slovníkem. To by ale bylo neefektivní a tak naopak může být vhodné pro zlepšení výkonu, omezit celkový počet slov se kterými se bude model trénovat pracovat. Tím pádem se však zvýší výskyt neznámých slov. Práce \cite{nmtTutorial} uvádí tři běžné způsoby jak se vypořádat s~neznámými slovy.
 
 \begin{description}
   \item[Předpokládat že slovník je konečně velký:] V~některých případech se dá počítat s~tím, že slovník je omezený. Tím pádem se neznámá slova nebo znaky nemohou vyskytovat. Například, když by se trénoval model pouze na znacích ASCII, tak při dostatečně velkém vstupním datasetu by bylo rozumné předpokládat, že se v~něm vyskytly všechny znaky a model se je tedy mohl všechny naučit.
@@ -147,7 +147,7 @@ Jazykový model typicky pracuje s~pevně danou velikostí slovníku (počtem slo
 Dalším uváděním řešením je, místo slov jako nejmenších tokenů se kterými se pracuje, použití takzvaných \textbf{subword units} nebo-li jednotek menších než slovo \cite{subwords}.
 
 \begin{description}
-  \item[Subword units:]\label{subsection:subwords} Kvůli velkému množství slov a jejich tvarů, se obvykle používá velikost slovníků kolem 30 000--50 000 tisíců slov. Kvůli tomu je trénink a překlad náročnější a také to nezaručuje kvalitní překlad pro vzácná slova ani že se nevyskytnou slova neznámá. Značné množství slov je tvořeno několika pod částmi, předložkami a spojeninami (například \uv{kladkostroj}). Ukázalo se, že v~případě, že se slova rozdělí na takovéto podčásti tak se:
+  \item[Subword units:]\label{subsection:subwords} Kvůli velkému množství slov a jejich tvarů, se obvykle používá velikost slovníků kolem 30 000--50 000 tisíců slov. Kvůli tomu je trénink a překlad náročnější a také to nezaručuje kvalitní překlad pro vzácná slova ani že se nevyskytnou slova neznámá. Značné množství slov je tvořeno několika pod částmi, předložkami a spojenými slovy (například \uv{kladkostroj}). Ukázalo se, že v~případě, že se slova rozdělí na takovéto podčásti tak se:
 
       \begin{enumerate}
         \item Zmenší velikost slovníku - když by se místo slov pro trénování sítě používaly jednotlivá písmena, velikost slovníku by byla jen samozřejmě nejmenší, ale trénink modelu by byl složitý. Při použití částí slov je možné z~nich skládat větší celky a nemusí se tak ve slovníku vyskytovat tolik slov. Je to vhodná kombinace mezi velikostí slovníku a množstvím závislostí co model musí natrénovat.
@@ -214,7 +214,7 @@ Rovnice pro RNN jazykový model jsou následující:
 \end{align}
 
 
-Kde \ref{figure:lastContext} je aktuální kontext, \ref{figure:rnnSimple} je zjednodušený přepis rovnice RNN (\ref{figure:rnn}) a rovnice \ref{figure:rnnSoftmax} je funkce softmax, která je podrobněji popsána v~\ref{figure:softmax}. Softmaxvezme všechny hodnoty skóre pro jednotlivá slova a transformuje je do pravděpodobnostního rozložení $p_t$. Díky tomu pak lze již snadno určit, které slovo bude vygenerováno s~největší pravděpodobností.
+Kde \ref{figure:lastContext} je aktuální kontext, \ref{figure:rnnSimple} je zjednodušený přepis rovnice RNN (\ref{figure:rnn}) a rovnice \ref{figure:rnnSoftmax} je funkce softmax, která je podrobněji popsána v~\ref{figure:softmax}. Softmax vezme všechny hodnoty skóre pro jednotlivá slova a transformuje je do pravděpodobnostního rozložení $p_t$. Díky tomu pak lze již snadno určit, které slovo bude vygenerováno s~největší pravděpodobností.
 
 
 \begin{align}\label{figure:softmax}
@@ -392,7 +392,7 @@ Cílem jazykového modelu je předpovídat následující slovo ve větě. Při 
     \begin{center}
             \tmpframe{\includegraphics[width=0.8\linewidth]{img/graphs/inference.pdf}}
     \end{center}
-	\caption{Ukázka práce dekodéru v~době predikce překladu (inference). Na vstup jako první příchází startovací symbol <s>. Následně v~každém dalším kroku na vstup dekodéru dostane svůj vlastní výstup z~kroku minulého. Takto generuje tak dlouho, dokud nenarazí na koncový symbol </s>.}
+	\caption{Ukázka práce dekodéru v~době predikce překladu (inference). Na vstup jako první přichází startovací symbol <s>. Následně v~každém dalším kroku na vstup dekodéru dostane svůj vlastní výstup z~kroku minulého. Takto generuje tak dlouho, dokud nenarazí na koncový symbol </s>.}
 	\label{img:inference}
 \end{figure}
 
@@ -512,7 +512,7 @@ BLEU pracuje s~přesností n-gramů a je počítáno pro jednotlivé věty, kter
 Tato kapitola popisuje všechny autorem vytvořené a použité části. Sekce \ref{section:datasets} je o~výběru a předzpracování datasetů. Následující sekce \ref{section:referent} se zabývá vytvořením referenčního systému, vůči kterému se porovnávají výsledky v~kapitole \ref{chapter:results}. Poslední sekce této kapitoly (\ref{section:nmtSystem}) popisuje vytvořený překladový systém.
 
 \section{Datasety}\label{section:datasets}
-Jako dataset (nebo korpus) se v~této práci považují dva soubory. Na každém řádku souboru je jedna věta a ta svým významem odpovídá větě na stejném řádku v~druhém souboru. Dataset nese nějaký název (název souboru stejný pro oba jazykové soubory) a jako koncovku používá dvou písmenou zkratku jazyka. Pro lepší představu je přiložen obrázek \ref{img:dataset}.
+Jako dataset (nebo korpus) se v~této práci považují dva soubory. Na každém řádku souboru je jedna věta a ta svým významem odpovídá větě na stejném řádku v~druhém souboru. Dataset nese nějaký název (název souboru stejný pro oba jazykové soubory) a jako koncovku používá dvou písmennou zkratku jazyka. Pro lepší představu je přiložen obrázek \ref{img:dataset}.
 
 \begin{figure}[H]
     \begin{center}
@@ -584,7 +584,7 @@ Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{p
 \begin{itemize}
   \item Tensorflow -- je open source knihovna, která původně vznikla v~rámci výzkumného týmu Google Brain uvnitř společnosti Google. Tensorflow používá pro výpočty graf, kde jednotlivé uzly reprezentují operace a hrany reprezentují datové struktury (tensory). Tensorflow se stala velice populární v~oblasti vývoje neuronových sítí.
   \item Theano -- knihovna pro efektivní práci s~mnoho rozměrnými poli. Využívá pole z~hojně používané pythoní knihovny Numpy. Nedávno se knihovna dostala na verzi 1.0 a naráz s~tím se ukončil její vývoj.
-  \item CNTK -- Cognitive Toolik je open-source nástroj deep learning od firmy Microsoft. Poskytuje API pro jazyky C\#, C++ i Python. Pro výpočty také používá graf, kde listy reprezentují vstupní hodnoty nebo parametry a ostatní uzly reprezentují maticové operace.
+  \item CNTK -- Cognitive Toolkit je open-source nástroj deep learning od firmy Microsoft. Poskytuje API pro jazyky C\#, C++ i Python. Pro výpočty také používá graf, kde listy reprezentují vstupní hodnoty nebo parametry a ostatní uzly reprezentují maticové operace.
   \item Keras -- je pythoní knihovna poskytující vysoko úrovňové API pro deep learning. Je vysoce modulární a určená pro snadné prototypování. Knihovna běží nad backendem, který používá pro výpočty. Backend může být jedna z~předchozích knihoven -- Tensorflow, Theano nebo CNTK.
 \end{itemize}
 
@@ -691,7 +691,7 @@ V~experimentu \ref{experimentMultiLingual} byl systém natrénován pro překlad
 
 Pro všechny experimenty byly použity předučené word embeddings, jak pro vstupní tak výstupní jazyk, poskytnuté firmou Facebook\footnote{\url{https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md}}.
 
-Jako optimalizační metoda byl použit RMSprop (\cite{gradientDescent}) s koeficientem učení 0.001. Každý experiment běžel tak dlouho, dokud se 5 epoch nezlepšil výsledek loss funkce počítané pro validační dataset. Z~experimentu se ukládají váhy modelu s~nejlepším výsledkem loss funkce.
+Jako optimalizační metoda byl použit RMSprop (\cite{gradientDescent}) s~koeficientem učení 0.001. Každý experiment běžel tak dlouho, dokud se 5 epoch nezlepšil výsledek loss funkce počítané pro validační dataset. Z~experimentu se ukládají váhy modelu s~nejlepším výsledkem loss funkce.
 
 Použitá velikost jedné trénovací dávky je 128. Je použito generování dávek (\ref{subsection:generation}) a rozdělení dat podle velikosti (\ref{subsection:Bucketing}).
 
@@ -705,7 +705,7 @@ Stažené datasety byly rozdělený na několik menších datasetů, které spol
 \begin{description}
   \item[Trénovací malý cs-en dataset:] Obsahuje 1000000 párů vět. Je určený pro trénování v~experimentech, pomocí kterých se hledají optimální hyperparametry modelu a pro trénování referenčního systému.
   \item[Trénovací velký cs-en dataset:] Obsahuje 33962614 párů vět. Je určený pro finální otestování modelu s~nejlepšími výsledky nad malým trénovacím datasetem.
-  \item[Validační cs-en dataset:] Obsahuje 2000 párů vět. Je určený pro testování modelu trénovaném s~malým trenovacím datasetem, za účelem hledání optimalních hyperparametrů modelu.
+  \item[Validační cs-en dataset:] Obsahuje 2000 párů vět. Je určený pro testování modelu trénovaném s~malým trenovacím datasetem, za účelem hledání optimálních hyperparametrů modelu.
   \item[Testovací cs-en dataset:] Obsahuje 2000 párů vět. Je určený pro finální otestování modelu natrénovaného s~velkým trenovacím datasetem. Používá se místo validačního modelu aby se vyzkoušelo, že výsledný model je skutečně schopný generalizace a nebyl jen úzce přizpůsoben pro dobré výsledky s~validačním datasetem.
   \item[Trénovací en-de dataset:] Obsahuje 1000000 párů vět. Je určený pro trénování modelu pro překlad nad více jazyky.
   \item[Testovací en-de dataset:] Obsahuje 2000 párů vět. Je určený pro otestování překladu nad více jazyky.
@@ -721,7 +721,7 @@ Systém (popsaný v~\ref{section:referent}) byl natrénován za účelem porovn�
     \begin{center}
         \begin{tabular}{ll}
           \toprule
-          systém & BLEU skóre  \\          
+          systém & BLEU skóre  \\
           \midrule
           referenční v~Moses & 23.08\\
           \bottomrule
@@ -1141,9 +1141,9 @@ Modelem s~nejlepšími dosaženými výsledky je model s~parametry z~experimentu
 
 
 \subsection{Překlad mezi více jazyky} \label{experimentMultiLingual}
-V~této sekci je popsán experiment kdy se jeden model trénuje na překlad vícero jazykových párů. Trénovací dataset vznikl spojením a promícháním trénovacího cs-en datasetu a trénovacího en-de datasetu. Před věty ve výchozím jazyce se přidal token jazyku do kterého se překladají, tak jak je uvedeno v~sekci \ref{section:multilingual}. Model natrénovaný na těchto datech by tedy měl umět překládat z~češtiny do angličtiny, z~angličtiny do němčiny a možná trochu z~češtiny do němčiny.
+V~této sekci je popsán experiment kdy se jeden model trénuje na překlad vícero jazykových párů. Trénovací dataset vznikl spojením a promícháním trénovacího cs-en datasetu a trénovacího en-de datasetu. Před věty ve výchozím jazyce se přidal token jazyku do kterého se překládají, tak jak je uvedeno v~sekci \ref{section:multilingual}. Model natrénovaný na těchto datech by tedy měl umět překládat z~češtiny do angličtiny, z~angličtiny do němčiny a možná trochu z~češtiny do němčiny.
 
-Použité parametry jsou stejné jako v~experimetu \ref{experiment8}, tedy parametry se kterými model dosáhl nejlepších výsledků. Trénování bylo ukončeno po 7. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{3.447}. \textbf{Skóre BLEU} pro všechny testované jazykové páry jsou v~tabulce \ref{table:resultsMulti}.
+Použité parametry jsou stejné jako v~experimentu \ref{experiment8}, tedy parametry se kterými model dosáhl nejlepších výsledků. Trénování bylo ukončeno po 7. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{3.447}. \textbf{Skóre BLEU} pro všechny testované jazykové páry jsou v~tabulce \ref{table:resultsMulti}.
 
 \begin{figure}[H]
     \begin{center}
@@ -1186,7 +1186,7 @@ Použité parametry jsou stejné jako v~experimetu \ref{experiment8}, tedy param
 \end{table}
 
 \subsection{Výsledky}
-Všechny dosažené výsledky získané s~cs-en testovacím datasetem jsou shrnuty v~tabulce \ref{table:results}. Ukázky překladů jsou v~tabulce \ref{img:exampleResults}.
+Všechny dosažené výsledky získané s~Cs$\Rightarrow$En testovacím datasetem jsou shrnuty v~tabulce \ref{table:results}. Ukázky překladů jsou v~tabulce \ref{img:exampleResults}. Doposud se nepodařilo objasnit proč vytvořený model nedosahuje lepších výsledků a bylo by vhodné to dále v~budoucnu adresovat.
 
 \begin{table}[H]
     \begin{center}
@@ -1288,16 +1288,23 @@ Všechny dosažené výsledky získané s~cs-en testovacím datasetem jsou shrnu
           \bottomrule
         \end{tabular}
     \end{center}
-	\caption{Ukázky překladu vět z~testovacího datasetu. V~první tabulce jsou originální věty v~českém jazyce, v~druhé tabulce jsou originální anglické překlady. Ve třetí tabulce je překlad, který vytvořil referenční systém vytvořený v~nástroji Moses, ve čtvrté překlady baseline modelu, v~páté tabulce jsou překlady vytvořené nejlepším dosaženým modelem a v~poslední tabulce jsou překlady modelu trénovaného nad více jazyky. Je vidět že překlad z~Moses si pomáhá přenášením neznámých slov do přeložené věty, což v~případě například jmen může pomoct, ale v~jiných případech jako je 1. věta může být ke škodě. I~přes nevelkou změnu v~BLEU skóre je vidět značné zlepšení mezi větami přeloženými baseline modelem a modelem s~nejlepším skóre.}
+	\caption{Ukázky překladu vět z~testovacího datasetu. V~první tabulce jsou originální věty v~českém jazyce, v~druhé tabulce jsou originální anglické překlady. Ve třetí tabulce je překlad, který vytvořil referenční systém vytvořený v~nástroji Moses, ve čtvrté překlady baseline modelu, v~páté tabulce jsou překlady vytvořené nejlepším dosaženým modelem a v~poslední tabulce jsou překlady modelu trénovaného nad více jazyky. Je vidět že překlad z~Moses si pomáhá přenášením neznámých slov do přeložené věty, což v~případě například jmen může pomoci, ale v~jiných případech jako je 1. věta může být ke škodě. I~přes nevelkou změnu v~BLEU skóre je vidět značné zlepšení mezi větami přeloženými baseline modelem a modelem s~nejlepším skóre.}
 	\label{img:exampleResults}
 \end{table}
 
 \chapter{Závěr}
-Práce popisuje komponenty potřebné pro vytvoření překladového systému s~pomocí neuronových sítí. Za pomocí těchto komponent byl vytvořen systém realizovaný pythoním balíčkem \emph{nmt}. Byly zvoleny trénovací a testovací data s~kterými byl tento systém otestován. Hodnotícím kritériem je skóre BLEU, které pro testovací dataset newtest2017 vyšlo 2.03. V~porovnání se skóre 14.0, které vyšlo pro systém natrénovaný nástrojem Moses to není velmi úspěšný výsledek. Systém bude potřeba rozšířit a vylepšit, tak aby fungoval výrazně lépe.
+Cílem této práce bylo prozkoumat a vytvořit systém pro strojový překlad s~pomocí neuronových sítí. Systém byl vytvořen s~pomocí architektury enkodér-dekodér, která používá jednotek LSTM pro překlad celých vět mezi dvěmi jazyky. Výsledkem je pythoní balíček \emph{nmt}, který je publikován na serveru github pro veřejné použití.
 
-Je několik vhodných rozšíření systému, které by mohly pomoci dosáhnout lepších výsledků. Použití více, případně i větších, vrstev LSTM. Na místo invertování vstupů enkodéru, je možné první vrstvu enkodéru udělat obousměrnou (viz \ref{subsection:optimization}). Dále by bylo vhodné přidat paprskové vyhledávání na místo hladového pro určování slov při generování. Dosavadní implementace systému vykazuje velký problém s~neznámými (\emph{UNK}) slovy. Tento problém by se mohl vyřešit pomocí tzv. \emph{attention} mechanismu a přenášení neznámých slov v~nezměněné podobě do výsledného překladu.
+Pro trénink a otestování modelu vytvořeného vzniklým systémem byly zvoleny data z~konference WMT. Byla provedena řada experimentů pro získání hyperparametrů se kterými model dosahuje nejlepších výsledků, které jsou hodnoceny pomocí standardní metriky BLEU. Model s~nejlepším výkonem dosáhl při překladu $Cs\rightarrow En$ skóre \textbf{9.87}. Pro porovnání byl na stejných trénovacích datech natrénován systém vytvořený nástrojem Moses, který pro stejná testovací data dosáhl skóre \textbf{23.08}, tedy lepšího výsledku.
 
-\todo{napsat o~excel@fit}
+Dále byl proveden experiment ve kterém byl model natrénován pro překlad mezi více jazykovými páry, konkrétně $Cs\rightarrow En$ a $En\rightarrow De$. Tento model dosáhl výsledků \textbf{7.10} pro první pár a \textbf{7.39} pro druhý. Za cenu mírného zhoršení překladu pro $Cs\rightarrow En$ je jeden model schopný překládat mezi více jazyky. Zero-shot překlad pro pár $Cs\rightarrow De$ byl neúspěšný.
 
-\todo{knihovna neni nutne specificka pro nmt, ale zavisla na datech, upravil bych api na vic genericky a zkusil natrenovat chatbota}
-\todo{ze jsem se hodne zameroval na experimenty a data, ale chtel bych vylepsit dekompozici knihovny a jeji api a distribuovat na PyPI}
+Aktuálně dosažené výsledky sice ukazují, že systém funguje, ale nejsou dostačující a nedosahují výsledků aktuálního state-of-the-art ani systému Moses, se kterými jsou porovnávány. Bylo by tedy potřeba zjistit čím je to způsobené a systém vylepšit.
+
+Dále by v~budoucnu vhodným rozšířením bylo přidat modul attention, který umožňuje modelu lépe se vypořádat s~dlouhými větami a závislosti mezi jednotlivými slovy.
+
+%\todo{napsat o~excel@fit}
+%
+%\todo{knihovna neni nutne specificka pro nmt, ale zavisla na datech, upravil bych api na vic genericky a zkusil natrenovat chatbota}
+%\todo{ze jsem se hodne zameroval na experimenty a data, ale chtel bych vylepsit dekompozici knihovny a jeji api a distribuovat na PyPI}
+
