@@ -6,7 +6,7 @@
 Published as [paper](http://excel.fit.vutbr.cz/submissions/2018/001/1.pdf) on [Excel@FIT 2018](http://excel.fit.vutbr.cz/) conference.
 
 ## Code
-More about the nmt package is on standalone repo http://github.com/jojkos/neural-machine-translation
+More about the nmt package is in standalone repo http://github.com/jojkos/neural-machine-translation
 
 
 ## Report
