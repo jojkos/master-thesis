@@ -683,7 +683,7 @@ Tento problém je omezen pomocí rozdělení vět v~datasetech do skupin podle j
 Protože se data při trénování upravují datasety do podoby velkých matic, není možné, kvůli paměťovým omezením, vyrobit jednu matici pro všechna data zaráz. Proto se dávky (batche) v~průběhu trénování vytváří postupně, pomocí generátorové funkce. Ta před každou epochou (jedna epocha znamená, že modelem prošla všechna vstupní data), zamíchá vstupní data. Správné míchání vstupních dat je důležité pro dobrou konvergenci modelu. Dále postupně generuje matice s~jednotlivými dávkami. V~případě, že je použité dělení do skupin podle velikosti, probíhá míchání na úrovni skupin a dávek tak, aby se model nepřetrénoval v~jednu chvíli na například krátké věty a v~jiné části epochy zase na dlouhé. Je použit \texttt{random.seed(0)} pro opakovatelnost experimentů.
 
 \chapter{Experimenty a výsledky} \label{chapter:results}
-V~této sekci jsou prezentovány experimenty prováděné na vytvořeném systému a na referenčním systému. Všechny experimenty byly pouštěny na výpočetním clusteru VUT FIT\footnote{\url{http://www.fit.vutbr.cz/CVT/cluster/}} na GPU.
+V~této sekci jsou prezentovány experimenty prováděné na vytvořeném a na referenčním systému. Všechny experimenty byly pouštěny na výpočetním clusteru VUT FIT\footnote{\url{http://www.fit.vutbr.cz/CVT/cluster/}} na GPU.
 
 V~experimentech \ref{subsection:experimentsOptimal} byl systém natrénován pro překlad z~češtiny (cs) do angličtiny (en). Tyto experimenty byly provedeny za účelem najití nejlepších hyperparametrů pro model a pro jeho otestování.
 
@@ -693,7 +693,7 @@ V~experimentu \ref{experimentMultiLingual} byl systém natrénován pro překlad
 
 Pro všechny experimenty byly použity předučené word embeddings, jak pro vstupní tak výstupní jazyk, poskytnuté firmou Facebook\footnote{\url{https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md}}.
 
-Jako optimalizační metoda byl použit RMSprop (\cite{gradientDescent}) s~koeficientem učení 0.001. Každý experiment běžel tak dlouho, dokud se 5 epoch nezlepšil výsledek loss funkce počítané pro validační dataset. Z~experimentu se ukládají váhy modelu s~nejlepším výsledkem loss funkce.
+Jako optimalizační metoda byl použit RMSprop (\cite{gradientDescent}) s~koeficientem učení 0.001. Každý experiment běžel tak dlouho, dokud se po dobu pěti epoch nezlepšil výsledek loss funkce počítané pro validační dataset. Z~experimentu se ukládají váhy modelu s~nejlepším výsledkem loss funkce.
 
 Použitá velikost jedné trénovací dávky je 128. Je použito generování dávek (\ref{subsection:generation}) a rozdělení dat podle velikosti (\ref{subsection:Bucketing}).
 
@@ -728,33 +728,33 @@ Stažené datasety byly rozdělený na několik menších datasetů, které spol
           \bottomrule
         \end{tabular}
     \end{center}
-	\caption{Přehled použitých datasetů a pro každý z nich kolik obsahuje párů vět.}
+	\caption{Přehled použitých datasetů a pro každý z nich, kolik obsahuje párů vět.}
 	\label{table:datasets}
 \end{table}
 
 V~případě, že byl dataset v~experimentu předzpracován pomocí subword-nmt pro rozdělení slov na menší jednotky, byl vždy přeložený text před vyhodnocením BLEU skóre převeden zpátky na celá slova.
 
 \section{Referenční systém v~Moses}
-Systém (popsaný v~\ref{section:referent}) byl natrénován za účelem porovnání jeho výsledku s~výsledky prezentovaného systému. Pro trénování byl použit \textbf{trénovací malý dataset} a pro vyhodnocení \textbf{testovací dataset}. Výsledek je v~tabulce \ref{table:referent}.
+Systém (popsaný v~\ref{section:referent}) byl natrénován za účelem porovnání jeho výsledku s~výsledky prezentovaného systému. Pro trénování byl použit $Cs\rightarrow En$ \textbf{trénovací dataset} a pro vyhodnocení $Cs\rightarrow En$ \textbf{testovací dataset}. Výsledek je v~tabulce \ref{table:referent}.
 
 \begin{table}[H]
     \begin{center}
         \begin{tabular}{ll}
           \toprule
-          systém & BLEU skóre  \\
+          model & BLEU skóre  \\
           \midrule
-          referenční v~Moses v4.0 & 23.08\\
+          referenční z nástroje Moses & 23.08\\
           \bottomrule
         \end{tabular}
     \end{center}
-	\caption{Výsledky modelu natrénovaného pomocí statistického nástroje Moses.}
+	\caption{Výsledky modelu natrénovaného pomocí statistického nástroje Moses v4.0.}
 	\label{table:referent}
 \end{table}
 
 \section{Experimenty}
 
 \subsection{Hledání optimálních hyperparametrů}\label{subsection:experimentsOptimal}
-V~této sekci je popsán průběh a výsledky experimentů prováděných za účelem nalezení co nejlepších hyperparametrů modelu. Všechny experimenty jsou provedeny na překladu z~češtiny do angličtiny za pomocí malého trénovacího cs-en datasetu a překlad je testován pomocí validačního cs-en datasetu.
+V~této sekci je popsán průběh a výsledky experimentů prováděných za účelem nalezení co nejlepších hyperparametrů modelu. Všechny experimenty jsou provedeny na překladu z~češtiny do angličtiny za pomocí $Cs\rightarrow En$ \textbf{trénovacího datasetu} a překlad je testován pomocí $Cs\rightarrow En$ \textbf{validačního datasetu}.
 
 \subsubsection{1. experiment -- baseline -- WordsEn1-512Dec1-512Voc15000Beam1}\label{experiment1}
 Model a jeho parametry z~tohoto experimentu bude považován za baseline vůči kterému budou porovnány výsledky modelů z~dalších experimentů, aby se dalo určit, k~jak velkému došlo vylepšení.
@@ -782,7 +782,7 @@ Trénování bylo ukončeno po 9. epoše. Nejlepší dosažený výsledek \textb
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final1_logs-tag-loss.csv};
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final1_logs-tag-val_loss.csv};
             \end{axis}
-            \end{tikzpicture}            
+            \end{tikzpicture}
     \end{center}
 	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
@@ -1175,22 +1175,24 @@ Použité parametry jsou stejné jako v~experimentu \ref{experiment8}, tedy para
 \end{table}
 
 \subsection{Výsledky}
-Všechny dosažené výsledky získané $Cs\rightarrow En$ testovacím datasetem jsou shrnuty v~tabulce \ref{table:results}. Ukázky překladů jsou v~tabulce \ref{img:exampleResults}. Doposud se nepodařilo objasnit proč vytvořený model nedosahuje lepších výsledků, a bylo by vhodné to dále v~budoucnu zkoumat.
+Všechny dosažené výsledky jsou shrnuty v~tabulce \ref{table:results}. Ukázky překladů pro $Cs\rightarrow En$ pár jsou v~tabulce \ref{img:exampleResults}. Doposud se nepodařilo objasnit proč vytvořený model nedosahuje lepších výsledků, a bylo by vhodné to dále v~budoucnu zkoumat.
 
 \begin{table}[H]
     \begin{center}
-        \begin{tabular}{ll}
+        \begin{tabular}{lll}
           \toprule
-           model & skóre BLEU \\
+           model & jazykový pár & skóre BLEU \\
           \midrule
-           referenční Moses & 23.08 \\
-           baseline & 7.36 \\
-           nejúspěšnější & 9.87 \\
-           více jazykový & 7.10 \\
+           referenční z nástroje Moses & $Cs\rightarrow En$ & 23.08 \\
+           baseline model & $Cs\rightarrow En$ & 7.36 \\
+           nejúspěšnější vytvořený model & $Cs\rightarrow En$ & 9.87 \\
+           více jazykový model & $Cs\rightarrow En$ & 7.10 \\
+           více jazykový model & $En\rightarrow De$ & 7.39 \\
+           více jazykový model & $Cs\rightarrow De$ & 0.14 \\
           \bottomrule
         \end{tabular}
     \end{center}
-	\caption{Výsledky různých modelů pro překlad $Cs\rightarrow En$ testovacího datasetu. Žádný z~vytvořených modelů nedosáhl výsledků referenčního modelu vytvořeného v~nástroji Moses. Nejúspěšnější model z~experimentu \ref{experiment8} dosáhl zlepšení vůči baseline modelu, což se projevuje i na ukázkách překladu \ref{img:exampleResults}. Model natrénovaný pro překlad mezi více jazyky má skóre horší jak baseline model pro překlad $Cs\rightarrow En$, ale za to dosahuje podobného výsledku i pro překlad $Cs\rightarrow De$, jak je ukázáno v taublce \ref{table:resultsMulti}.}
+	\caption{Dosažené skóre BLEU pro různé modely a jazykové páry. Žádný z~vytvořených modelů pro pár $Cs\rightarrow En$ nedosáhl výsledků referenčního modelu vytvořeného v~nástroji Moses. Nejúspěšnější model z~experimentu \ref{experiment8} dosáhl zlepšení vůči baseline modelu, což se projevuje i na ukázkách překladu \ref{img:exampleResults}. Model natrénovaný pro překlad mezi více jazyky má skóre horší jak baseline model pro překlad $Cs\rightarrow En$, ale za to dosahuje podobného výsledku i pro překlad $Cs\rightarrow De$.}
 	\label{table:results}
 \end{table}
 
@@ -1282,9 +1284,9 @@ Všechny dosažené výsledky získané $Cs\rightarrow En$ testovacím datasetem
 \end{table}
 
 \chapter{Závěr}
-Cílem této práce bylo prozkoumat a vytvořit systém pro strojový překlad s~pomocí neuronových sítí. Systém byl vytvořen s~pomocí architektury enkodér-dekodér, která používá jednotek LSTM pro překlad celých vět mezi dvěmi jazyky. Výsledkem je balíček pro Python \emph{nmt}, který je publikován na serveru github \url{github.com/jojkos/neural-machine-translation} pro veřejné použití.
+Cílem této práce bylo prozkoumat a vytvořit systém pro strojový překlad s~použitím neuronových sítí. Systém byl vytvořen s~pomocí architektury enkodér-dekodér, která používá jednotek LSTM pro překlad celých vět mezi dvěmi jazyky. Výsledkem je balíček pro Python \emph{nmt}, který je publikován na serveru github \url{github.com/jojkos/neural-machine-translation} pro veřejné použití.
 
-Pro trénink a otestování modelu vytvořeného vzniklým systémem byla zvolena data z~konference WMT. Byla provedena řada experimentů pro získání hyperparametrů, se kterými model dosahuje nejlepších výsledků. Experimenty byly prováděny nad jazykovým párem $Cs\rightarrow En$ pro který měl trénovací dataset 1 milion párů vět. Výsledky jsou hodnoceny pomocí standardní metriky BLEU kde vyšší skóre znamená lepší výsledek. Model s~nejlepším výkonem dosáhl při překladu $Cs\rightarrow En$ skóre \textbf{9.87}. Pro porovnání byl na stejných trénovacích datech natrénován systém vytvořený nástrojem Moses, který pro stejná testovací data dosáhl skóre \textbf{23.08}, tedy lepšího výsledku.
+Pro trénink a otestování modelu vytvořeného vytvořeným systémem byla zvolena data z~konference WMT. Byla provedena řada experimentů pro získání hyperparametrů, se kterými model dosahuje nejlepších výsledků. Experimenty byly prováděny nad jazykovým párem $Cs\rightarrow En$ pro který měl trénovací dataset 1 milion párů vět. Výsledky jsou hodnoceny pomocí standardní metriky BLEU kde vyšší skóre znamená lepší výsledek. Model s~nejlepším výkonem dosáhl při překladu $Cs\rightarrow En$ skóre \textbf{9.87}. Pro porovnání byl na stejných trénovacích datech natrénován systém vytvořený nástrojem Moses, který pro stejná testovací data dosáhl skóre \textbf{23.08}, tedy lepšího výsledku.
 
 Dále byl proveden experiment, ve kterém byl model natrénován pro překlad mezi více jazykovými páry, konkrétně $Cs\rightarrow En$ a $En\rightarrow De$. Pro každý jazykový pár obsahoval trénovací dataset 1 milion párů vět. Tento model dosáhl výsledků \textbf{7.10} pro první jazykový pár a \textbf{7.39} pro druhý. Za cenu mírného zhoršení překladu pro $Cs\rightarrow En$ je jeden model schopný překládat mezi více jazyky. Zero-shot překlad pro pár $Cs\rightarrow De$ byl neúspěšný. Pro testovací dataset bylo skóre \textbf{0.14}.
 
@@ -1294,8 +1296,6 @@ Po dosažení lepších výsledků pro překlad mezi jedním jazykem by se mohli
 
 Práce byla prezentována v rámci konference Excel@FIT 2018.
 
-%\todo{napsat o~excel@fit}
-%
 %\todo{knihovna neni nutne specificka pro nmt, ale zavisla na datech, upravil bych api na vic genericky a zkusil natrenovat chatbota}
 %\todo{ze jsem se hodne zameroval na experimenty a data, ale chtel bych vylepsit dekompozici knihovny a jeji api a distribuovat na PyPI}
 
