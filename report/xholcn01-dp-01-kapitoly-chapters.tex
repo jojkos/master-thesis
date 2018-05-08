@@ -1,13 +1,13 @@
 \chapter{Úvod}
 Schopnost dorozumět se s~ostatními lidmi na planetě je nesmírně důležitá, české přísloví dokonce praví \uv{Kolik řečí znáš, tolikrát jsi člověkem}. Proto učenci od pradávných let vytvářeli slovníky a vědci od vzniku výpočetní techniky zkoumají jak vytvořit kvalitní překladový systém.
 
-Ideálem je překlad tak jak ho známe ze science fiction materiálů. Dvě osoby, mluvící kompletně jiným jazykem, si navzájem rozumí v~reálném čase. S~intenzivním rozvojem strojového učení a umělé inteligence, který nastal v~posledních letech, se k~tomuto ideálu blížíme mílovými kroky. Automatické rozpoznání mluvené řeči je již ve skvělé kvalitě dostupné v~běžných spotřebitelských zařízeních a automatický překlad se taky značně vylepšuje.
+Ideálem je překlad tak, jak ho známe ze science fiction materiálů. Dvě osoby, mluvící jiným jazykem, si navzájem rozumí v~reálném čase. S~intenzivním rozvojem strojového učení a umělé inteligence, který nastal v~posledních letech, se k~tomuto ideálu blížíme mílovými kroky. Automatické rozpoznání mluvené řeči je již dostupné v~běžných spotřebitelských zařízeních a automatický překlad se taky značně vylepšuje.
 
-Obsahem této práce je popis a realizace takovéhoto automatického překladového systému. Systém by měl být schopný naučit se za pomocí velkého množství zarovnaných vět v~různých jazycích překládat věty mezi těmito jazyky. K~tomu je použita architektura rekurentních neuronových sítí enkodér-dekodér, která vykazuje v~posledních letech dobré výsledky.
+Obsahem této práce je popis a realizace takového automatického překladového systému. Systém by měl být schopný naučit se za pomocí velkého množství zarovnaných vět v~různých jazycích překládat věty mezi těmito jazyky. K~tomu je použita architektura rekurentních neuronových sítí enkodér-dekodér, která vykazuje v~posledních letech dobré výsledky.
 
 V~následující kapitole \ref{chapter:theory} je popis překladového systému a jsou zde rozebrány důležité pojmy a teorie ze kterých je je systém vystavěn. Větší část této kapitoly vznikla v~rámci semestrálního projektu. Kapitola \ref{chapter:implementation} popisuje implementovaný systém a kapitola \ref{chapter:results} podává výsledky experimentů s~vytvořeným systémem a porovnává je s~výsledky podanými nástrojem pro statistický překlad Moses.
 
-Vytvořený balíček je publikovaný na githubu \url{github.com/jojkos/neural-machine-translation}.
+Vytvořený balíček je publikovaný na serveru github \url{github.com/jojkos/neural-machine-translation}.
 
 
 \chapter{Strojový překlad}\label{chapter:theory}
@@ -17,11 +17,11 @@ Vytvořený balíček je publikovaný na githubu \url{github.com/jojkos/neural-m
 Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné tomu co dělá Google Translator\footnote{\url{translate.google.cz}} -- blíže popsáno v~článku \cite{googleBridgingGap}. Vezme se věta v~původním jazyce a vytvoří se z~ní co nejvěrnější překlad v~jazyce cílovém a to za pomocí natrénované rekurentní neuronové sítě. V~této sekci je vysvětleno, jak by takový systém mohl vypadat jaké komponenty potřebuje k~tomu, aby fungoval.
 
 \begin{description}
-  \item[Dataset:] Aby bylo možné nacvičit neuronovou síť pro překlad, je nejprve zapotřebí mít dataset. Dataset obsahuje texty ve dvou jazycích, mezi kterými se má překládat. Tyto texty musí být zarovnané tak, aby si jednotlivé věty v~těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}).
+  \item[Dataset:] Aby bylo možné natrénovat neuronovou síť pro překlad, je nejprve zapotřebí mít dataset. Dataset obsahuje texty ve dvou jazycích, mezi kterými se má překládat. Tyto texty musí být zarovnané tak, aby si jednotlivé věty v~těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}).
 
   \item[Tokenizer:] Dataset a jeho jednotlivé věty je nejprve potřeba před začátkem trénování sítě připravit. Tokenizer rozdělí věty na jednotlivé tokeny a zahodí zvolené nepodstatné vlastnosti, například velká písmena na počátku vět nebo interpunkce. To usnadňuje práci s~datasety a také snižuje velikost slovníků.
 
-  \item[Slovník:] Slovník se vytvoří jako seznam $n$ nejčastějších slov v~datasetu ve vstupním a cílovém jazyce. Čím je slovník menší, tím jsou menší požadavky na vypočetní výkon. Na druhou stranu je pak potřeba vyřešit při trénování a překladu problém se slovy nevyskytujícími se ve slovníku (popsáno v~sekci \ref{subsection:oov}).
+  \item[Slovník:] Slovník se vytvoří jako seznam $n$ nejčastějších slov v~datasetu, ve vstupním a cílovém jazyce. Čím je slovník menší, tím jsou menší požadavky na vypočetní výkon. Na druhou stranu je pak potřeba vyřešit při trénování a překladu problém se slovy nevyskytujícími se ve slovníku (popsáno v~sekci \ref{subsection:oov}).
 
   \item[Word Embeddings:] Obecně je možné vytvářet jazykové modely, které generují text po písmenech, částech slov nebo po slovech \cite{mikolovSubwords}. Word embeddings je další forma předzpracování. Každý token ze vstupního slovníku se převede do vektoru reálných čísel, ve kterém jsou zakódovány některé syntaktické a sémantické vlastnosti daného tokenu, což umožní neuronové síti se učit lépe, než kdyby se použilo například jenom číslo označující pozici tokenu ve slovníku. Více v~sekci \ref{subsection:neuralembeddings}.
 
@@ -33,7 +33,7 @@ Cílem této práce práce je vytvořit systém pro strojový překlad textu pom
 
 \begin{figure}[H]
     \begin{center}
-            \tmpframe{\includegraphics[width=0.99\linewidth]{img/graphs/draftEnhanced.pdf}}
+            \tmpframe{\includegraphics[width=0.75\linewidth]{img/graphs/draftEnhanced.pdf}}
     \end{center}
 	\caption{Schéma návrhu systému pro překlad. Dataset se předzpracuje pomocí tokenizeru. Do enkodéru vstupují tokeny převedené na embeddings. Enkodér větu zakóduje do velkého "myšlenkového" vektoru, ze kterého dekodér generuje překlad.}
 	\label{img:draft}
@@ -42,7 +42,7 @@ Cílem této práce práce je vytvořit systém pro strojový překlad textu pom
 
 
 \section{Jazykové modely}\label{section:langmodel}
-Zatímco u~programovacích jazyků existuje formální definice přesně popisující jejich syntaxy a význam, u~přirozených jazyků to tak není. Přirozený jazyk vznikl náhodným způsobem v~průběhu staletí a tisíciletí narozdíl od formálně definovaných jazyků, které byly precizně navrženy. Přestože běžný jazyk se řídí nějakými pravidly, existuje značné množství výjimek a odchylek. I~napříč tomu si však lidé navzájem rozumí. Problém však je tato neurčitá pravidla převést do formálních pravidel, tak, aby jim rozuměl počítač. Řešením pro tento problém mohou být jazykové modely, které nevznikají nadefinováním formálních pravidel, ale natrénováním modelu z~příkladů. Sekce vychází z~práce \cite{nmtThesis} a článku \cite{nmtTutorial}.
+Zatímco u~programovacích jazyků existuje formální definice přesně popisující jejich syntax a význam, u~přirozených jazyků to tak není. Přirozený jazyk vznikl náhodným způsobem v~průběhu staletí a tisíciletí narozdíl od formálně definovaných jazyků, které byly precizně navrženy. Přestože běžný jazyk se řídí nějakými pravidly, existuje značné množství výjimek a odchylek. I~napříč tomu si však lidé navzájem rozumí. Problém však je tato neurčitá pravidla převést do formálních pravidel tak, aby jim rozuměl počítač. Řešením pro tento problém mohou být jazykové modely, které nevznikají nadefinováním formálních pravidel, ale natrénováním modelu z~příkladů. Sekce vychází z~práce \cite{nmtThesis} a článku \cite{nmtTutorial}.
 \\\\
 Jazykový model udává pro každou větu $w$ jaká je její pravděpodobnost. Respektive pro sekvenci slov $w = w_1, w_2..., w_m$ získá pravděpodobnost podle rovnice \ref{figure:probdistr}.
 
@@ -77,7 +77,7 @@ Stejně jako u~$n$-gram modelů nastává problém, když je potřeba zaznamenat
 
 
 \subsection{Neuronové sítě a word embeddings}\label{subsection:neuralembeddings}
-Stejně jako předchozí modely i NLM (neural language model) je trénován tak aby předpovídal rozdělení pravděpodobností přes slova v~cílovém slovníku na základě aktuálního kontextu (rovnice \ref{figure:probdistr}).
+Stejně jako předchozí modely i NLM (neural language model) je trénován tak, aby předpovídal rozdělení pravděpodobností přes slova v~cílovém slovníku na základě aktuálního kontextu (rovnice \ref{figure:probdistr}).
 
 Předchozí modely při použití většího datasetu a tím pádem většího slovníku čelí \uv{prokletí} dimenzionality. Jednotlivá slova jsou běžně reprezentována jako \textbf{one-hot vektor} (obrázek \ref{figure:oneHot}). Pro reprezentaci jednoho slova je tak použit rozsáhlý vektor $x_i \in \mathbb{R}^{V}$, kde $V$ je použitý slovník daného jazyka. Většina hodnot, až na hodnotu označující dané slovo, je nulová (řídký vektor neboli sparse vector).
 
@@ -171,7 +171,7 @@ Jejich hlavních výhodou oproti jednoduchým dopředným neuronovým sítím je
   y = f (x, W)
 \end{align}
 
-Pokud pak takováto síť pracuje s~nějakou sekvencí měnící se v~čase, například se slovy v~rámci jedné věty, pro každé slovo na vstupu $x_t$, kde $t$ znázorňuje čas (pozici) slova ve větě, použije stejné váhy pro získání výstupu $y_t$ a nezjistí ani nezachová žádnou úvahu o~vzájemném vztahu těchto slov.
+Pokud pak taková síť pracuje s~nějakou sekvencí měnící se v~čase, například se slovy v~rámci jedné věty, pro každé slovo na vstupu $x_t$, kde $t$ znázorňuje čas (pozici) slova ve větě, použije stejné váhy pro získání výstupu $y_t$ a nezjistí ani nezachová žádnou úvahu o~vzájemném vztahu těchto slov.
 
 RNN tento problém řeší zavedením skrytého stavu $h_t$ a zpětné smyčky (obrázek \ref{img:rnn}). Vstupem dalšího stavu je kromě nového vstupu vždycky také výstup ze stavu minulého. Pro každé $x_t$ ze sekvence se tedy nyní může získat výstup $y_t$ pomocí vnitřního stavu $h_t$ z~předchozího kroku $t$ (rovnice \ref{figure:rnn}). Přičemž počáteční stav  $h_0$ je obvykle nastaven na nulu.
 
@@ -462,8 +462,8 @@ Jediným rozdílem je přidání speciálního tokenu před zdrojové věty. Ten
         $\Longleftrightarrow$
         \begin{tabular}{| >{\centering\arraybackslash}p{0.3\linewidth} |}
           \hline
-          Venku prší. \\
-          It's raining outside. \\
+          Hello world. \\
+          Ahoj světe. \\
           \hspace{1mm} \vdots \\
           Bonjour monde \\
           \hline
@@ -499,7 +499,7 @@ Je také možné hodnotit překlad ručně, za pomocí lidí, ale pro tuto prác
 BLEU pracuje s~přesností n-gramů. Skóre je počítáno pro jednotlivé věty, které porovnává s~jedním nebo více referenčními překlady. Skóre se pak zprůměruje přes celý dataset. Algoritmus porovnává shody v~n-gramech a výsledkem je skóre 0--1 respektive 0--100\%.
 
 \subsection{NIST}
-\emph{NIST} \cite{NIST} je metoda založená na metodě BLEU, vyvinutá Národním institutem standardů a technologie. Zatímco BLEU jednoduše pracuje s~přeností n-gramů a nedává jim různou váhu, NIST váhu upravuje podle výskytu daného n-gramu. Čím vzácnější n-gram je, tím větší váhu v~hodnocení dostane.
+\emph{NIST} \cite{NIST} je metoda založená na metodě BLEU, vyvinutá Národním institutem standardů a technologie. Zatímco BLEU jednoduše pracuje s~přesností n-gramů a nedává jim různou váhu, NIST váhu upravuje podle výskytu daného n-gramu. Čím vzácnější n-gram je, tím větší váhu v~hodnocení dostane.
 
 
 \subsection{METEOR}
@@ -578,7 +578,7 @@ Před použitím na trénování a vyhodnocování překládacího systému je p
 
 
 \section{Referenční systém v~Moses}\label{section:referent}
-Moses \cite{moses} je nástroj na vytváření statistických strojových překladových systémů. Vzniklý model bude sloužit jako referenční, vůči kterému se porovnají výsledky implementovaného překladového systému (sekce \ref{section:nmtSystem}). Kromě toho se také používají některé skripty z~tohoto nástroje pro přípravu datasetů (sekce \ref{subsection:preparing}) a získání skóre BLEU. Konkrétní postup jeho přípravy je dostupný na stránkách Moses \footnote{\url{statmt.org/moses/?n=Moses.Baseline}}, byla použita výchozí nastavení.
+Moses \cite{moses} je nástroj na vytváření statistických strojových překladových systémů. Vzniklý model bude sloužit jako referenční, vůči kterému se porovnají výsledky implementovaného překladového systému (sekce \ref{section:nmtSystem}). Kromě toho se také používají některé skripty z~tohoto nástroje pro přípravu datasetů (sekce \ref{subsection:preparing}) a získání skóre BLEU. Konkrétní postup jeho přípravy je dostupný na stránkách Moses\footnote{\url{statmt.org/moses/?n=Moses.Baseline}}, byla použita výchozí nastavení a verze 4.0.
 
 \section{Překladový systém}\label{section:nmtSystem}
 Pro implementaci překladového systému byl zvolen jazyk Python\footnote{\url{python.org}} v~jeho verzi 3.6. Na výběr bylo z~několika vhodných knihoven/frameworků pro práci se strojovým učením:
@@ -687,7 +687,7 @@ V~této sekci jsou prezentovány experimenty prováděné na vytvořeném systé
 
 V~experimentech \ref{subsection:experimentsOptimal} byl systém natrénován pro překlad z~češtiny (cs) do angličtiny (en). Tyto experimenty byly provedeny za účelem najití nejlepších hyperparametrů pro model a pro jeho otestování.
 
-V~experimentu \ref{experimentBestModel} byl systém natrénován pro překlad z~češtiny (cs) do angličtiny (en) za pomoci nejlepších parametrů zjištěných z~předchozích experimentů.
+V~experimentu \ref{experimentBestModel} byl systém s nejlepšími parametry vyhodnocen na testovacím datasetu.
 
 V~experimentu \ref{experimentMultiLingual} byl systém natrénován pro překlad mezi více jazyky za pomoci nejlepších parametrů zjištěných z~předchozích experimentů.
 
@@ -697,22 +697,40 @@ Jako optimalizační metoda byl použit RMSprop (\cite{gradientDescent}) s~koefi
 
 Použitá velikost jedné trénovací dávky je 128. Je použito generování dávek (\ref{subsection:generation}) a rozdělení dat podle velikosti (\ref{subsection:Bucketing}).
 
-Hodnotící metrikou je standardní skóre BLEU (\ref{subsection:bleu}), protože je to nejčastěji používaná metrika a je použita i ve všech citovaných pracích. Pro jeho výpočet byl použit skript \emph{multi-blue.pl} dodávaný s~nástrojem Moses.
+Hodnotící metrikou je standardní skóre BLEU (\ref{subsection:bleu}), protože je to nejčastěji používaná metrika a je použita i ve všech citovaných pracích. Čím větší skóre, tím lepší výsledek. Pro jeho výpočet byl použit skript \emph{multi-blue.pl} dodávaný s~nástrojem Moses.
 
 
 \section{Použité datasety}
 Všechny použité datasety pocházejí z~každoročně publikovaného překládacího úkolu konference o~strojovém překladu \textbf{WMT} (dříve \textbf{w}orkshop on statistical \textbf{m}achine \textbf{t}ranslation). Konkrétně jsou použity datasety z~WMT17\footnote{\url{http://data.statmt.org/wmt17/translation-task/preprocessed/}} obsahující textová data z~různých domén, jako jsou titulky, knihy, noviny a internet.
 
-Stažené datasety byly rozdělený na několik menších datasetů, které spolu nesdílí páry vět:
+Stažené datasety byly rozdělený na několik menších datasetů, které spolu nesdílí páry vět. Následuje jejich popis a přehled v tabulce \ref{table:datasets}.
 \begin{description}
-  \item[Trénovací malý cs-en dataset:] Obsahuje milion párů vět. Je určený pro trénování v~experimentech, pomocí kterých se hledají optimální hyperparametry modelu a pro trénování referenčního systému.
-  \item[Trénovací velký cs-en dataset:] Obsahuje skoro třicet čtyři milionů párů vět. Je určený pro finální otestování modelu s~nejlepšími výsledky nad malým trénovacím datasetem.
-  \item[Validační cs-en dataset:] Obsahuje dva tisíce párů vět. Je určený pro testování modelu trénovaném s~malým trénovacím datasetem za účelem hledání optimálních hyperparametrů modelu.
-  \item[Testovací cs-en dataset:] Obsahuje dva tisíce párů vět. Je určený pro finální otestování modelu natrénovaného s~velkým trénovacím datasetem. Používá se místo validačního modelu aby se vyzkoušelo, že výsledný model je skutečně schopný generalizace a nebyl jen úzce přizpůsoben pro dobré výsledky s~validačním datasetem.
-  \item[Trénovací en-de dataset:] Obsahuje milion párů vět. Je určený pro trénování modelu pro překlad nad více jazyky.
-  \item[Testovací en-de dataset:] Obsahuje dva tisíce párů vět. Je určený pro otestování překladu nad více jazyky.
-  \item[Testovací cs-de dataset:] Obsahuje dva tisíce párů vět. Je určený pro otestování zero-shot překladu, tedy překladu, pro který model nebyl explicitně natrénován.
+  \item[$Cs\rightarrow En$ trénovací dataset:] Obsahuje milion párů vět. Je určený pro trénování v~experimentech, pomocí kterých se hledají optimální hyperparametry modelu a pro trénování referenčního systému.
+  \item[$Cs\rightarrow En$ validační dataset:] Obsahuje dva tisíce párů vět. Je určený pro testování modelu trénovaném s~malým trénovacím datasetem za účelem hledání optimálních hyperparametrů modelu.
+  \item[$Cs\rightarrow En$ testovací dataset:] Obsahuje dva tisíce párů vět. Je určený pro finální otestování modelu natrénovaného s nejlepšími nalezenými parametry. Používá se místo validačního modelu aby se vyzkoušelo, že výsledný model je skutečně schopný generalizace a nebyl jen úzce přizpůsoben pro dobré výsledky s~validačním datasetem.
+  \item[$En\rightarrow De$ trénovací dataset:] Obsahuje milion párů vět. Je určený pro trénování modelu pro překlad nad více jazyky.
+  \item[$En\rightarrow De$ testovací dataset:] Obsahuje dva tisíce párů vět. Je určený pro otestování překladu nad více jazyky.
+  \item[$Cs\rightarrow De$ testovací dataset:] Obsahuje dva tisíce párů vět. Je určený pro otestování zero-shot překladu, tedy překladu, pro který model nebyl explicitně natrénován.
 \end{description}
+
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{ll}
+          \toprule
+          dataset & počet párů vět  \\
+          \midrule
+          $Cs\rightarrow En$ trénovací & 1 000 000 \\
+          $Cs\rightarrow En$ validační & 2 000 \\
+          $Cs\rightarrow En$ testovací & 2 000 \\
+          $En\rightarrow De$ trénovací & 1 000 000 \\
+          $En\rightarrow De$ testovací & 2 000 \\
+          $Cs\rightarrow De$ testovací & 2 000 \\
+          \bottomrule
+        \end{tabular}
+    \end{center}
+	\caption{Přehled použitých datasetů a pro každý z nich kolik obsahuje párů vět.}
+	\label{table:datasets}
+\end{table}
 
 V~případě, že byl dataset v~experimentu předzpracován pomocí subword-nmt pro rozdělení slov na menší jednotky, byl vždy přeložený text před vyhodnocením BLEU skóre převeden zpátky na celá slova.
 
@@ -725,7 +743,7 @@ Systém (popsaný v~\ref{section:referent}) byl natrénován za účelem porovn�
           \toprule
           systém & BLEU skóre  \\
           \midrule
-          referenční v~Moses & 23.08\\
+          referenční v~Moses v4.0 & 23.08\\
           \bottomrule
         \end{tabular}
     \end{center}
@@ -738,7 +756,7 @@ Systém (popsaný v~\ref{section:referent}) byl natrénován za účelem porovn�
 \subsection{Hledání optimálních hyperparametrů}\label{subsection:experimentsOptimal}
 V~této sekci je popsán průběh a výsledky experimentů prováděných za účelem nalezení co nejlepších hyperparametrů modelu. Všechny experimenty jsou provedeny na překladu z~češtiny do angličtiny za pomocí malého trénovacího cs-en datasetu a překlad je testován pomocí validačního cs-en datasetu.
 
-\subsubsection{1. experiment -- baseline}\label{experiment1}
+\subsubsection{1. experiment -- baseline -- WordsEn1-512Dec1-512Voc15000Beam1}\label{experiment1}
 Model a jeho parametry z~tohoto experimentu bude považován za baseline vůči kterému budou porovnány výsledky modelů z~dalších experimentů, aby se dalo určit, k~jak velkému došlo vylepšení.
 
 Parametry:
@@ -759,24 +777,17 @@ Trénování bylo ukončeno po 9. epoše. Nejlepší dosažený výsledek \textb
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                         xtick=data]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final1_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         xtick=data]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final1_logs-tag-val_loss.csv};
             \end{axis}
-            \end{tikzpicture}
+            \end{tikzpicture}            
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
 
-\subsubsection{2. experiment}\label{experiment2}
+\subsubsection{2. experiment -- WordsEn1-512Dec1-512Voc30000Beam1}\label{experiment2}
 Parametry:
 \begin{itemize}
   \item používají se celá slova
@@ -795,25 +806,18 @@ Trénování bylo ukončeno po 11. epoše. Nejlepší dosažený výsledek \text
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                         xtick=data]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final2_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         xtick=data]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final2_logs-tag-val_loss.csv};
             \end{axis}
             \end{tikzpicture}
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
 
 
-\subsubsection{3. experiment}\label{experiment3}
+\subsubsection{3. experiment -- SubwordsEn1-512Dec1-512Voc15000Beam1}\label{experiment3}
 Parametry:
 \begin{itemize}
   \item slova jsou rozdělena na menší jednotky
@@ -832,24 +836,17 @@ Trénování bylo ukončeno po 11. epoše. Nejlepší dosažený výsledek \text
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                         xtick=data]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final3_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         xtick=data]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final3_logs-tag-val_loss.csv};
             \end{axis}
             \end{tikzpicture}
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
 
-\subsubsection{4. experiment}\label{experiment4}
+\subsubsection{4. experiment -- SubwordsEn1-1000Dec1-1000Voc15000Beam1-15}\label{experiment4}
 Parametry:
 \begin{itemize}
   \item slova jsou rozdělena na menší jednotky
@@ -868,21 +865,14 @@ Trénování bylo ukončeno po 10. epoše. Nejlepší dosažený výsledek \text
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                         xtick=data]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final4_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         xtick=data]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final4_logs-tag-val_loss.csv};
             \end{axis}
             \end{tikzpicture}
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
 
 \begin{table}[H]
@@ -896,11 +886,11 @@ Trénování bylo ukončeno po 10. epoše. Nejlepší dosažený výsledek \text
           8 & 9.4 \\
           10 & 9.41 \\
           12 & 9.43 \\
-          15 & 9.47 \\
+          \textbf{15} & \textbf{9.47} \\
           \bottomrule
         \end{tabular}
     \end{center}
-	\caption{Porovnání výsledků pro různou velikost paprskového prohledávání.}
+	\caption{Porovnání výsledků pro různou velikost paprskového prohledávání. Nejlepší výsledek byl dosažen z velikostí 15.}
 	\label{table:resultsExperiment4}
 \end{table}
 
@@ -919,14 +909,14 @@ Trénování bylo ukončeno po 10. epoše. Nejlepší dosažený výsledek \text
 	\label{table:beamTranslation}
 \end{table}
 
-\subsubsection{5. experiment}\label{experiment5}
+\subsubsection{5. experiment -- SubwordsEn1-1000Dec1-1000Voc15000Beam15Dropout0.1-0.3}\label{experiment5}
 Parametry:
 \begin{itemize}
   \item slova jsou rozdělena na menší jednotky
   \item jedna vrstva LSTM v~enkodéru o~velikosti 1000
   \item jedna vrstva LSTM v~dekodéru o~velikosti 1000
   \item velikost slovníku je omezena na 15000
-  \item paprskové prohledávání o~velikosti
+  \item paprskové prohledávání o~velikosti 15
   \item dropout o~velikosti 0.1, 0.2, 0.3
 \end{itemize}
 
@@ -941,7 +931,7 @@ Parametry:
                          ylabel=loss,
                          minor xtick={1,3,...,13},
                          xtick={0,2, ..., 12},
-                         legend entries = {dropout=0.1, dropout=0.2, dropout=0.3},]]
+                         legend entries = {dropout=0.1, dropout=0.2, dropout=0.3}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5-2_logs-tag-loss.csv};
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5_logs-tag-loss.csv};
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5-3_logs-tag-loss.csv};
@@ -954,7 +944,7 @@ Parametry:
                          ylabel=val\_loss,
                          minor xtick={1,3,...,13},
                          xtick={0,2, ..., 12},
-                         legend entries = {dropout=0.1, dropout=0.2, dropout=0.3},]]
+                         legend entries = {dropout=0.1, dropout=0.2, dropout=0.3}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5-2_logs-tag-val_loss.csv};
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5_logs-tag-val_loss.csv};
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final5-3_logs-tag-val_loss.csv};
@@ -980,7 +970,7 @@ Parametry:
 	\label{table:resultsExperiment5}
 \end{table}
 
-\subsubsection{6. experiment}\label{experiment6}
+\subsubsection{6. experiment -- SubwordsEn2-1000Dec1-1000Voc15000Beam15Dropout0.1}\label{experiment6}
 Parametry:
 \begin{itemize}
   \item slova jsou rozdělena na menší jednotky
@@ -988,6 +978,7 @@ Parametry:
   \item jedna vrstva LSTM v~dekodéru o~velikosti 1000
   \item velikost slovníku je omezena na 15000
   \item paprskové prohledávání o~velikosti 15
+  \item dropout 0.1
 \end{itemize}
 
 Trénování bylo ukončeno po 13. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.930}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{9.99}.
@@ -999,27 +990,17 @@ Trénování bylo ukončeno po 13. epoše. Nejlepší dosažený výsledek \text
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                         minor xtick={1,3,...,11},
-                         xtick={0,2, ..., 12}]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final6_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         minor xtick={1,3,...,11},
-                         xtick={0,2, ..., 12}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final6_logs-tag-val_loss.csv};
             \end{axis}
             \end{tikzpicture}
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
 
-
-\subsubsection{7. experiment}\label{experiment7}
+\subsubsection{7. experiment -- SubwordsEn1-1000Dec2-1000Voc15000Beam15Dropout0.1}\label{experiment7}
 Parametry:
 \begin{itemize}
   \item slova jsou rozdělena na menší jednotky
@@ -1027,6 +1008,7 @@ Parametry:
   \item dvě vrstvy LSTM v~dekodéru o~velikosti 1000
   \item velikost slovníku je omezena na 15000
   \item paprskové prohledávání o~velikosti 15
+  \item dropout 0.1
 \end{itemize}
 
 Trénování bylo ukončeno po 12. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.835}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{10.14}.
@@ -1038,27 +1020,18 @@ Trénování bylo ukončeno po 12. epoše. Nejlepší dosažený výsledek \text
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                         minor xtick={1,3,...,11},
-                         xtick={0,2, ..., 10}]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final7_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         minor xtick={1,3,...,11},
-                         xtick={0,2, ..., 10}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final7_logs-tag-val_loss.csv};
             \end{axis}
             \end{tikzpicture}
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
 
 
-\subsubsection{8. experiment}\label{experiment8}
+\subsubsection{8. experiment -- SubwordsEn2-1000Dec2-1000Voc15000Beam15Dropout0.1}\label{experiment8}
 Parametry:
 \begin{itemize}
   \item slova jsou rozdělena na menší jednotky
@@ -1066,6 +1039,7 @@ Parametry:
   \item dvě vrstvy LSTM v~dekodéru o~velikosti 1000
   \item velikost slovníku je omezena na 15000
   \item paprskové prohledávání o~velikosti 15
+  \item dropout 0.1
 \end{itemize}
 
 Trénování bylo ukončeno po 13. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.817}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{10.42}.
@@ -1077,26 +1051,17 @@ Trénování bylo ukončeno po 13. epoše. Nejlepší dosažený výsledek \text
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                         minor xtick={1,3,...,12},
-                         xtick={0,2, ..., 12}]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final8_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         minor xtick={1,3,...,12},
-                         xtick={0,2, ..., 12}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final8_logs-tag-val_loss.csv};
             \end{axis}
             \end{tikzpicture}
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
 
-\subsubsection{9. experiment}\label{experiment9}
+\subsubsection{9. experiment -- SubwordsEn4-1000Dec4-1000Voc15000Beam15Dropout0.1}\label{experiment9}
 Parametry:
 \begin{itemize}
   \item slova jsou rozdělena na menší jednotky
@@ -1104,6 +1069,7 @@ Parametry:
   \item čtyři vrstvy LSTM v~dekodéru o~velikosti 1000
   \item velikost slovníku je omezena na 15000
   \item paprskové prohledávání o~velikosti 15
+  \item dropout 0.1
 \end{itemize}
 
 Trénování bylo ukončeno po 12. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{2.818}. \textbf{Skóre BLEU} překladu vygenerovaného pro validační dataset je \textbf{9.78}, takže nejlepším modelem zůstavá model z~experimentu \ref{experiment8}.
@@ -1115,24 +1081,41 @@ Trénování bylo ukončeno po 12. epoše. Nejlepší dosažený výsledek \text
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                        minor xtick={1,3,...,12},
-                         xtick={0,2, ..., 10}]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final9_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         minor xtick={1,3,...,12},
-                         xtick={0,2, ..., 10}]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final9_logs-tag-val_loss.csv};
             \end{axis}
             \end{tikzpicture}
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
+
+\subsubsection{Shrnutí}\label{experimentsSummary}
+V tabulce \ref{table:experimentSummary} je shrnutí výsledků všech experimentů provedených za účelem nalezení nejlepších hyperparametrů.
+
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{ll}
+          \toprule
+          model & BLEU skóre\\
+          \midrule
+          Baseline -- WordsEn1-512Dec1-512Voc15000Beam1 & 7.36 \\
+          WordsEn1-512Dec1-512Voc30000Beam1 & 7.79 \\
+          SubwordsEn1-512Dec1-512Voc15000Beam1 & 8.37 \\
+          SubwordsEn1-1000Dec1-1000Voc15000Beam15 & 9.47 \\
+          SubwordsEn1-1000Dec1-1000Voc15000Beam15Dropout0.1 & 10.02 \\
+          SubwordsEn2-1000Dec1-1000Voc15000Beam15Dropout0.1 & 9.99 \\
+          SubwordsEn1-1000Dec2-1000Voc15000Beam15Dropout0.1 & 10.14 \\
+          SubwordsEn2-1000Dec2-1000Voc15000Beam15Dropout0.1 & \textbf{10.42} \\
+           SubwordsEn4-1000Dec4-1000Voc15000Beam15Dropout0.1 & 9.78 \\
+          \bottomrule
+        \end{tabular}
+    \end{center}
+	\caption{Výsledky všech experimentů prováděných na $Cs\rightarrow En$ datasetu za účelem nalezení nejlepších hyperparametrů.}
+	\label{table:experimentSummary}
+\end{table}
+
 
 \subsection{Otestování nejlepšího modelu} \label{experimentBestModel}
 Modelem s~nejlepšími dosaženými výsledky je model s~parametry z~experimentu \ref{experiment8}. Výsledky jeho překladu pro testovací dataset jsou v~tabulce \ref{table:bestResults}.
@@ -1143,17 +1126,17 @@ Modelem s~nejlepšími dosaženými výsledky je model s~parametry z~experimentu
           \toprule
           model & BLEU skóre \\
           \midrule
-          nejlepší vytvořený & 9.87 \\
+          SubwordsEn2-1000Dec2-1000Voc15000Beam15Dropout0.1 & 9.87 \\
           \bottomrule
         \end{tabular}
     \end{center}
-	\caption{Výsledné skóre BLEU nad testovacím datasetem. Překlad byl proveden s~modelem, který dosáhl nejlepších výsledků pro validační dataset.}
+	\caption{Výsledné skóre BLEU nad $Cs\rightarrow En$ testovacím datasetem. Překlad byl proveden s~modelem, který dosáhl nejlepších výsledků pro validační dataset.}
 	\label{table:bestResults}
 \end{table}
 
 
 \subsection{Překlad mezi více jazyky} \label{experimentMultiLingual}
-V~této sekci je popsán experiment, kdy se jeden model trénuje na překlad vícero jazykových párů. Trénovací dataset vznikl spojením a promícháním trénovacího cs-en datasetu a trénovacího en-de datasetu. Před věty ve výchozím jazyce se přidal token jazyku do kterého se překládají, tak jak je uvedeno v~sekci \ref{section:multilingual}. Model natrénovaný na těchto datech by tedy měl umět překládat z~češtiny do angličtiny, z~angličtiny do němčiny a možná trochu z~češtiny do němčiny.
+V~této sekci je popsán experiment, kdy se jeden model trénuje na překlad vícero jazykových párů. Trénovací dataset vznikl spojením a promícháním trénovacího $Cs\rightarrow En$ datasetu a trénovacího $En\rightarrow De$ datasetu. Před věty ve výchozím jazyce se přidal token jazyku do kterého se překládají, tak jak je uvedeno v~sekci \ref{section:multilingual}. Model natrénovaný na těchto datech by tedy měl umět překládat z~češtiny do angličtiny, z~angličtiny do němčiny a možná trochu z~češtiny do němčiny.
 
 Použité parametry jsou stejné jako v~experimentu \ref{experiment8}, tedy parametry se kterými model dosáhl nejlepších výsledků. Trénování bylo ukončeno po 7. epoše. Nejlepší dosažený výsledek \textbf{loss funkce} pro validační dataset je \textbf{3.447}. \textbf{Skóre BLEU} pro všechny testované jazykové páry jsou v~tabulce \ref{table:resultsMulti}.
 
@@ -1164,21 +1147,15 @@ Použité parametry jsou stejné jako v~experimentu \ref{experiment8}, tedy para
                          width=0.45\linewidth,
                          xlabel=epocha,
                          ylabel=loss,
-                         xtick=data]
+                         xtick=data,
+                         legend entries = {trénovací dataset, validační dataset},
+                         legend pos=outer north east]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final11_logs-tag-loss.csv};
-            \end{axis}
-            \end{tikzpicture}
-            \begin{tikzpicture}
-            \begin{axis}[grid=both,
-                         width=0.45\linewidth,
-                         xlabel=epocha,
-                         ylabel=val\_loss,
-                         xtick=data]
                 \addplot table [x=Step, y=Value, col sep=comma] {img/experiments/run_G_final11_logs-tag-val_loss.csv};
             \end{axis}
             \end{tikzpicture}
     \end{center}
-	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách. Levý graf je pro trénovací dataset a pravý pro validační dataset.}
+	\caption{Průběh vývoje hodnot loss funkce po jednotlivých epochách pro trénovací a validační dataset.}
 \end{figure}
 
 \begin{table}[H]
@@ -1198,7 +1175,7 @@ Použité parametry jsou stejné jako v~experimentu \ref{experiment8}, tedy para
 \end{table}
 
 \subsection{Výsledky}
-Všechny dosažené výsledky získané s~Cs$\Rightarrow$En testovacím datasetem jsou shrnuty v~tabulce \ref{table:results}. Ukázky překladů jsou v~tabulce \ref{img:exampleResults}. Doposud se nepodařilo objasnit proč vytvořený model nedosahuje lepších výsledků, a bylo by vhodné to dále v~budoucnu zkoumat.
+Všechny dosažené výsledky získané $Cs\rightarrow En$ testovacím datasetem jsou shrnuty v~tabulce \ref{table:results}. Ukázky překladů jsou v~tabulce \ref{img:exampleResults}. Doposud se nepodařilo objasnit proč vytvořený model nedosahuje lepších výsledků, a bylo by vhodné to dále v~budoucnu zkoumat.
 
 \begin{table}[H]
     \begin{center}
@@ -1206,14 +1183,14 @@ Všechny dosažené výsledky získané s~Cs$\Rightarrow$En testovacím datasete
           \toprule
            model & skóre BLEU \\
           \midrule
-           Moses & 23.08 \\
+           referenční Moses & 23.08 \\
            baseline & 7.36 \\
            nejúspěšnější & 9.87 \\
            více jazykový & 7.10 \\
           \bottomrule
         \end{tabular}
     \end{center}
-	\caption{Výsledky různých modelů pro překlad cs-en testovacího datasetu. Žádný z~vytvořených modelů nedosáhl výsledků referenčního modelu vytvořeného v~nástroji Moses. Nejúspěšnější model z~experimentu \ref{experiment8} dosáhl zlepšení vůči baseline modelu, což se projevuje i na ukázkách překladu \ref{img:exampleResults}. Model natrénovaný pro překlad mezi více jazyky má skóre horší jak baseline model pro překlad $Cs\rightarrow En$, ale za to dosahuje podobného výsledku i pro překlad $Cs\rightarrow De$.}
+	\caption{Výsledky různých modelů pro překlad $Cs\rightarrow En$ testovacího datasetu. Žádný z~vytvořených modelů nedosáhl výsledků referenčního modelu vytvořeného v~nástroji Moses. Nejúspěšnější model z~experimentu \ref{experiment8} dosáhl zlepšení vůči baseline modelu, což se projevuje i na ukázkách překladu \ref{img:exampleResults}. Model natrénovaný pro překlad mezi více jazyky má skóre horší jak baseline model pro překlad $Cs\rightarrow En$, ale za to dosahuje podobného výsledku i pro překlad $Cs\rightarrow De$, jak je ukázáno v taublce \ref{table:resultsMulti}.}
 	\label{table:results}
 \end{table}
 
@@ -1307,13 +1284,13 @@ Všechny dosažené výsledky získané s~Cs$\Rightarrow$En testovacím datasete
 \chapter{Závěr}
 Cílem této práce bylo prozkoumat a vytvořit systém pro strojový překlad s~pomocí neuronových sítí. Systém byl vytvořen s~pomocí architektury enkodér-dekodér, která používá jednotek LSTM pro překlad celých vět mezi dvěmi jazyky. Výsledkem je balíček pro Python \emph{nmt}, který je publikován na serveru github \url{github.com/jojkos/neural-machine-translation} pro veřejné použití.
 
-Pro trénink a otestování modelu vytvořeného vzniklým systémem byla zvolena data z~konference WMT. Byla provedena řada experimentů pro získání hyperparametrů, se kterými model dosahuje nejlepších výsledků. Výsledky jsou hodnoceny pomocí standardní metriky BLEU. Model s~nejlepším výkonem dosáhl při překladu $Cs\rightarrow En$ skóre \textbf{9.87}. Pro porovnání byl na stejných trénovacích datech natrénován systém vytvořený nástrojem Moses, který pro stejná testovací data dosáhl skóre \textbf{23.08}, tedy lepšího výsledku.
+Pro trénink a otestování modelu vytvořeného vzniklým systémem byla zvolena data z~konference WMT. Byla provedena řada experimentů pro získání hyperparametrů, se kterými model dosahuje nejlepších výsledků. Experimenty byly prováděny nad jazykovým párem $Cs\rightarrow En$ pro který měl trénovací dataset 1 milion párů vět. Výsledky jsou hodnoceny pomocí standardní metriky BLEU kde vyšší skóre znamená lepší výsledek. Model s~nejlepším výkonem dosáhl při překladu $Cs\rightarrow En$ skóre \textbf{9.87}. Pro porovnání byl na stejných trénovacích datech natrénován systém vytvořený nástrojem Moses, který pro stejná testovací data dosáhl skóre \textbf{23.08}, tedy lepšího výsledku.
 
-Dále byl proveden experiment, ve kterém byl model natrénován pro překlad mezi více jazykovými páry, konkrétně $Cs\rightarrow En$ a $En\rightarrow De$. Tento model dosáhl výsledků \textbf{7.10} pro první pár a \textbf{7.39} pro druhý. Za cenu mírného zhoršení překladu pro $Cs\rightarrow En$ je jeden model schopný překládat mezi více jazyky. Zero-shot překlad pro pár $Cs\rightarrow De$ byl neúspěšný.
+Dále byl proveden experiment, ve kterém byl model natrénován pro překlad mezi více jazykovými páry, konkrétně $Cs\rightarrow En$ a $En\rightarrow De$. Pro každý jazykový pár obsahoval trénovací dataset 1 milion párů vět. Tento model dosáhl výsledků \textbf{7.10} pro první jazykový pár a \textbf{7.39} pro druhý. Za cenu mírného zhoršení překladu pro $Cs\rightarrow En$ je jeden model schopný překládat mezi více jazyky. Zero-shot překlad pro pár $Cs\rightarrow De$ byl neúspěšný. Pro testovací dataset bylo skóre \textbf{0.14}.
 
 Aktuálně dosažené výsledky sice ukazují, že systém funguje, ale nejsou dostačující a nedosahují výsledků aktuálního state-of-the-art ani systému Moses, se kterými jsou porovnávány. Bylo by tedy potřeba zjistit, čím je to způsobené a systém vylepšit.
 
-Dále by v~budoucnu bylo vhodným rozšířením přidat modul attention, který umožňuje modelu lépe se vypořádat s~dlouhými větami a závislosti mezi jednotlivými slovy.
+Po dosažení lepších výsledků pro překlad mezi jedním jazykem by se mohli provést další experimenty s překlady mezi více jazyky a hlavně zero-shot překladem a to s použitím větších datasetů. Dále by v~budoucnu bylo vhodným rozšířením přidat modul attention, který umožňuje modelu lépe se vypořádat s~dlouhými větami a závislosti mezi jednotlivými slovy.
 
 Práce byla prezentována v rámci konference Excel@FIT 2018.
 
