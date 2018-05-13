@@ -7,14 +7,14 @@ Obsahem této práce je popis a realizace takového automatického překladovéh
 
 V~následující kapitole \ref{chapter:theory} je popis překladového systému a jsou zde rozebrány důležité pojmy a teorie ze kterých je je systém vystavěn. Větší část této kapitoly vznikla v~rámci semestrálního projektu. Kapitola \ref{chapter:implementation} popisuje implementovaný systém a kapitola \ref{chapter:results} podává výsledky experimentů s~vytvořeným systémem a porovnává je s~výsledky podanými nástrojem pro statistický překlad Moses.
 
-Vytvořený balíček je publikovaný na serveru github \url{github.com/jojkos/neural-machine-translation}.
+Vytvořený balíček je publikovaný na serveru github na adrese \url{github.com/jojkos/neural-machine-translation}.
 
 
 \chapter{Strojový překlad}\label{chapter:theory}
 Účelem této kapitoly je blíže vysvětlit a rozebrat jednotlivé pojmy a komponenty potřebné pro vytvoření překladového systému.
 
 \section{Popis cílového systému} \label{chapter:draft}
-Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné tomu co dělá Google Translator\footnote{\url{translate.google.cz}} -- blíže popsáno v~článku \cite{googleBridgingGap}. Vezme se věta v~původním jazyce a vytvoří se z~ní co nejvěrnější překlad v~jazyce cílovém a to za pomocí natrénované rekurentní neuronové sítě. V~této sekci je vysvětleno, jak by takový systém mohl vypadat jaké komponenty potřebuje k~tomu, aby fungoval.
+Cílem této práce práce je vytvořit systém pro strojový překlad textu pomocí umělých neuronových sítí. Pro snadnou představu, je to podobné tomu co dělá Google Translator\footnote{\url{translate.google.cz}} -- blíže popsáno v~článku \cite{googleBridgingGap}. Vezme se věta v~původním jazyce a vytvoří se z~ní co nejvěrnější překlad v~jazyce cílovém a to za pomocí natrénované rekurentní neuronové sítě. V~této sekci je vysvětleno, jak by takový systém mohl vypadat a jaké komponenty potřebuje k~tomu, aby fungoval.
 
 \begin{description}
   \item[Dataset:] Aby bylo možné natrénovat neuronovou síť pro překlad, je nejprve zapotřebí mít dataset. Dataset obsahuje texty ve dvou jazycích, mezi kterými se má překládat. Tyto texty musí být zarovnané tak, aby si jednotlivé věty v~těchto jazycích navzájem odpovídaly. Obecně platí, že čím větší množství použitých dat a čím větší model, tím lepší bude výsledek (článek \cite{googleLimits}).
@@ -239,7 +239,7 @@ Cílem trénování sítě je nalézt takové parametry $\theta$ (kombinace vah 
 
 K~optimalizaci parametrů pro nalezení minima loss funkce se používá \emph{zpětná propagace}. Vypočte se přírůstek pro každý parametr tak, aby síť s~novými váhami o~něco lépe pracovala a loss funkce se snížila. Existuje více různých metod optimalizace pro tento výpočet podrobně popsaných v~práci \cite{gradientDescent}.
 
-Úprava parametrů může probíhat po každém jednom průchodu dat (jedné sekevence) sítí. Takovýto přístup se nazývá \textbf{online} učení. Dalším přístupem je \textbf{učení po dávkách}. V~takovém to případě probíhá přepočet parametrů až po průchodu přes $n$ sekvencí. Toto číslo $n$ se nazývá \textbf{batch size}, tedy počet  v~jedné dávce.
+Úprava parametrů může probíhat po každém jednom průchodu dat (jedné sekevence) sítí. Takovýto přístup se nazývá \textbf{online} učení. Dalším přístupem je \textbf{učení po dávkách}. V~takovém to případě probíhá přepočet parametrů až po průchodu přes $n$ sekvencí. Toto číslo $n$ se nazývá \textbf{batch size}, tedy počet dat  v~jedné dávce.
 
 %\todo{epoch, batchsize....loss, back propagation (over time)}
 %\todo{z tutorialu, sekce 6.5 strana 35..nejak popsat batch, minibatch, online batch, sentence padding a masking}
@@ -1284,13 +1284,13 @@ Všechny dosažené výsledky jsou shrnuty v~tabulce \ref{table:results}. Ukázk
 \end{table}
 
 \chapter{Závěr}
-Cílem této práce bylo prozkoumat a vytvořit systém pro strojový překlad s~použitím neuronových sítí. Systém byl vytvořen s~pomocí architektury enkodér-dekodér, která používá jednotek LSTM pro překlad celých vět mezi dvěmi jazyky. Výsledkem je balíček pro Python \emph{nmt}, který je publikován na serveru github \url{github.com/jojkos/neural-machine-translation} pro veřejné použití.
+Cílem této práce bylo prozkoumat a vytvořit systém pro strojový překlad s~použitím neuronových sítí. Systém byl vytvořen s~pomocí architektury enkodér-dekodér, která používá jednotek LSTM pro překlad celých vět mezi dvěmi jazyky. Výsledkem je balíček pro Python \emph{nmt}, který je publikován na serveru github na adrese \url{github.com/jojkos/neural-machine-translation} pro veřejné použití.
 
 Pro trénink a otestování modelu vytvořeného vytvořeným systémem byla zvolena data z~konference WMT. Byla provedena řada experimentů pro získání hyperparametrů, se kterými model dosahuje nejlepších výsledků. Experimenty byly prováděny nad jazykovým párem $Cs\rightarrow En$ pro který měl trénovací dataset 1 milion párů vět. Výsledky jsou hodnoceny pomocí standardní metriky BLEU kde vyšší skóre znamená lepší výsledek. Model s~nejlepším výkonem dosáhl při překladu $Cs\rightarrow En$ skóre \textbf{9.87}. Pro porovnání byl na stejných trénovacích datech natrénován systém vytvořený nástrojem Moses, který pro stejná testovací data dosáhl skóre \textbf{23.08}, tedy lepšího výsledku.
 
 Dále byl proveden experiment, ve kterém byl model natrénován pro překlad mezi více jazykovými páry, konkrétně $Cs\rightarrow En$ a $En\rightarrow De$. Pro každý jazykový pár obsahoval trénovací dataset 1 milion párů vět. Tento model dosáhl výsledků \textbf{7.10} pro první jazykový pár a \textbf{7.39} pro druhý. Za cenu mírného zhoršení překladu pro $Cs\rightarrow En$ je jeden model schopný překládat mezi více jazyky. Zero-shot překlad pro pár $Cs\rightarrow De$ byl neúspěšný. Pro testovací dataset bylo skóre \textbf{0.14}.
 
-Aktuálně dosažené výsledky sice ukazují, že systém funguje, ale nejsou dostačující a nedosahují výsledků aktuálního state-of-the-art ani systému Moses, se kterými jsou porovnávány. Bylo by tedy potřeba zjistit, čím je to způsobené a systém vylepšit.
+Aktuálně dosažené výsledky sice ukazují, že systém funguje, ale nejsou dostačující a nedosahují výsledků aktuálního state-of-the-art ani systému Moses, se kterými jsou porovnávány. Bylo by tedy vhodné zjistit, čím je to způsobené a systém vylepšit.
 
 Po dosažení lepších výsledků pro překlad mezi jedním jazykem by se mohli provést další experimenty s překlady mezi více jazyky a hlavně zero-shot překladem a to s použitím větších datasetů. Dále by v~budoucnu bylo vhodným rozšířením přidat modul attention, který umožňuje modelu lépe se vypořádat s~dlouhými větami a závislosti mezi jednotlivými slovy.
 
